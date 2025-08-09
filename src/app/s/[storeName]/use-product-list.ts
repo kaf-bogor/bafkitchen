@@ -1,12 +1,13 @@
 import { CreateToastFnReturn } from '@chakra-ui/react'
-import axios from 'axios'
+import { collection, getDocs } from 'firebase/firestore'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 import { IStore } from '@/interfaces/store'
+import { db } from '@/utils/firebase'
 
 const filterStorePath = async (storeName: string) => {
-  const response = await axios.get('/api/stores')
-  const stores = response.data.stores as IStore[]
+  const qsnap = await getDocs(collection(db, 'stores'))
+  const stores = qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as IStore[]
   const storeNames = stores.map((store) => store.name)
   const isRegistered = storeNames.includes(storeName)
   return isRegistered

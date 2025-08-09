@@ -1,7 +1,8 @@
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 
 import { ICreateProductRequest } from '@/interfaces/product'
+import { db, uploadToFirebase } from '@/utils/firebase'
 
 export function useCreateProduct(
   toast: CreateToastFnReturn,
@@ -11,25 +12,32 @@ export function useCreateProduct(
 
   const handleCreateProduct = (request: ICreateProductRequest) => async () => {
     try {
-      const form = new FormData()
-      form.append('name', request.name)
-      form.append('price', request.price.toString())
-      if(request.stock){
-        form.append('stock', request.stock.toString())
-      }
-      form.append('storeId', request.storeId)
-      form.append('categoryIds', JSON.stringify(request.categoryIds))
-      form.append('description', request.description)
-      if(request.image){
-        form.append('image', request.image)
+      let imageUrl: string | undefined
+      if (request.image) {
+        const upload = await uploadToFirebase(request.image)
+        imageUrl = upload.downloadURL
       }
 
-      await axios.post('/api/products', form)
+      const payload = {
+        name: request.name,
+        priceBase: request.priceBase,
+        price: request.price,
+        stock: request.stock ?? 0,
+        storeId: request.storeId,
+        categoryIds: request.categoryIds,
+        description: request.description,
+        imageUrl: imageUrl ?? '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+
+      await addDoc(collection(db, 'products'), payload)
       fetchProducts()
       onClose()
     } catch (error) {
       let description
       if (
+        typeof (error as any)?.response?.data?.error === 'string' &&
         (error as any).response.data.error.includes('resource already exist')
       ) {
         description = 'Image name is already exist. Please use another image.'

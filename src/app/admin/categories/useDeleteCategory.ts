@@ -1,7 +1,9 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { deleteDoc, doc, getDoc } from 'firebase/firestore'
+
+import { db } from '@/utils/firebase'
 
 export function useDeleteCategory(
   toast: CreateToastFnReturn,
@@ -25,7 +27,10 @@ export function useDeleteCategory(
 
   const handleDeleteCategory = (id: string) => async () => {
     try {
-      await axios.delete(`/api/categories/${id}`)
+      const cref = doc(db, 'categories', id)
+      const csnap = await getDoc(cref)
+      if (!csnap.exists()) throw new Error('Category does not exist')
+      await deleteDoc(cref)
       fetchCategories()
       onClose()
     } catch (error) {

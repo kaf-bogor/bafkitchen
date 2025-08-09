@@ -13,9 +13,10 @@ import {
   UseQueryResult,
   MutateOptions
 } from '@tanstack/react-query'
-import axios, { AxiosResponse } from 'axios'
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, query, where, orderBy } from 'firebase/firestore'
 
 import { ISchedule } from '@/interfaces'
+import { db } from '@/utils/firebase'
 
 
 // Fungsi untuk mengambil data schedules menggunakan React Query
@@ -23,15 +24,18 @@ export const getSchedules = (start?: Date, end?: Date): UseQueryResult<ISchedule
   useQuery<ISchedule.ISchedule[], Error>({
     queryKey: ['schedules', start, end], // Ensure the query key is unique for different dates
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (start) params.append('start', start.toISOString());
-      if (end) params.append('end', end.toISOString());
-      const response = await fetch(`/api/schedules?${params}`, { next: { revalidate: 3600}});
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      if (!start || !end) {
+        const qsnap = await getDocs(collection(db, 'schedules'))
+        return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ISchedule.ISchedule[]
       }
-      const data = await response.json();
-      return data.schedules;
+      const qref = query(
+        collection(db, 'schedules'),
+        where('date', '>=', Timestamp.fromDate(start)),
+        where('date', '<=', Timestamp.fromDate(end)),
+        orderBy('date', 'asc')
+      )
+      const qsnap = await getDocs(qref)
+      return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ISchedule.ISchedule[]
     }
   });
 
@@ -50,9 +54,14 @@ export const postSchedules = (
   >({
     mutationKey: ['schedules', 'create'],
     mutationFn: async (params: ISchedule.ICreateScheduleRequest) => {
-      const response: AxiosResponse<ISchedule.IScheduleResponse, any> =
-        await axios.post('/api/schedules', params)
-      return response.data.schedule
+      const payload = {
+        productId: params.productId,
+        date: Timestamp.fromDate(new Date(params.date)),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+      const res = await addDoc(collection(db, 'schedules'), payload)
+      return { id: res.id, ...payload } as unknown as ISchedule.ISchedule
     },
     ...options
   })
@@ -73,9 +82,9 @@ export const deleteSchedule = (
   >({
     mutationKey: ['schedules', 'delete'],
     mutationFn: async (params: ISchedule.IDeleteScheduleRequest) => {
-      const response: AxiosResponse<ISchedule.IDeleteScheduleResponse, any> =
-        await axios.delete(`/api/schedules`, { data: params })
-      return response.data
+      // Assume scheduleId is the document id to delete
+      await deleteDoc(doc(db, 'schedules', params.scheduleId))
+      return { message: 'deleted', deletedProductSchedule: { id: params.scheduleId, productId: params.productId, scheduleId: params.scheduleId } }
     },
     ...options
   })

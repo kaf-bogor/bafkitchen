@@ -49,7 +49,8 @@ export default function AdminLoginPage() {
             onError() {
               setError('Error saving user to Firestore')
             },
-            onSuccess() {
+            async onSuccess() {
+              // Session cookies removed; rely on Firebase client auth
               router.push('/admin/')
             }
           }

@@ -4,4 +4,3 @@ export * as ISchedule from "./schedule";
 export * as IProduct from "./product";
 export * as IStore from "./store";
 export * as IUser from "./user";
-export * as ISupabase from "./supabase";

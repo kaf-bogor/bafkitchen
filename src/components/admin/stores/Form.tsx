@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 
 import { Button, FormControl, FormLabel, Input, Select } from '@chakra-ui/react'
+import { collection, getDocs } from 'firebase/firestore'
 
 import { IStore, IUser } from '@/interfaces'
+import { db } from '@/utils/firebase'
 
 export default function Form({
   store,
@@ -18,9 +20,9 @@ export default function Form({
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users?limit=100') // Adjust limit as needed
-      const data = await response.json()
-      setUsers(data.users)
+      const qsnap = await getDocs(collection(db, 'users'))
+      const list = qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as IUser.IUser[]
+      setUsers(list)
     } catch (error) {
       console.error('Error fetching users:', error)
     }

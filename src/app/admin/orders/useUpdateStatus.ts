@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 
 import { IUpdateOrderStatusRequest } from '@/interfaces/order'
+import { db } from '@/utils/firebase'
 
 
 export function useUpdateOrderStatus(
@@ -31,7 +32,8 @@ export function useUpdateOrderStatus(
 
   const onSubmit = async (request: IUpdateOrderStatusRequest) => {
     try {
-      await axios.patch(`/api/orders/${request.id}`, request)
+      const oref = doc(db, 'orders', request.id)
+      await updateDoc(oref, { status: request.status, updatedAt: serverTimestamp() })
       fetchOrders()
       clearRequestOnClose()
     } catch (error) {

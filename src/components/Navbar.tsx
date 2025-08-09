@@ -5,20 +5,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
-import { createClient } from '@/utils/supabase/client'
+import { auth } from '@/utils/firebase'
 
 export default function Navbar() {
-  const supabase = createClient()
   const router = useRouter()
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' })
-      document.cookie =
-        'sb-qviqbtgkunhmasnzbmoh-auth-token-code-verifier=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-      if (error) {
-        console.error('Error logging out:', error)
-      }
+      await auth.signOut()
       router.push(ADMIN_LOGIN_PATH)
     } catch (error) {
       console.log(error, 'error')

@@ -24,7 +24,7 @@ interface ProductCardProps {
 export default function ProductCard(props: ProductCardProps) {
   const product: IProduct.IProduct = props.product
   const defaultImage =
-    'https://qviqbtgkunhmasnzbmoh.supabase.co/storage/v1/object/public/storebuilder/store-builder-default.jpeg'
+    'https://via.placeholder.com/600x400?text=No+Image'
 
   return (
     <Card>

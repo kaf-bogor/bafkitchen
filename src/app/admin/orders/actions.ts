@@ -1,15 +1,16 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
-import axios from 'axios'
+import { collection, getDocs } from 'firebase/firestore'
 
 import { IOrder } from '@/interfaces'
+import { db } from '@/utils/firebase'
 
 export const getOrders = (): UseQueryResult<IOrder.IOrder[], Error> =>
   useQuery<IOrder.IOrder[], Error>({
     queryKey: ['order'],
     queryFn: async () => {
-      const { data } = await axios.get('/api/orders')
-      return data
+      const qsnap = await getDocs(collection(db, 'orders'))
+      return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as any
     }
   })
 

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 
 import {
   ISubmitStoreFormRequest,
   IUpdateStoreRequest
 } from '@/interfaces/store'
+import { db } from '@/utils/firebase'
 
 export function useUpdateStore(
   toast: CreateToastFnReturn,
@@ -20,7 +21,9 @@ export function useUpdateStore(
 
   const submitUpdateStore = (request: ISubmitStoreFormRequest) => async () => {
     try {
-      await axios.patch(`/api/stores/${request.id}`, request)
+      if (!request.id) throw new Error('Missing store id')
+      const sref = doc(db, 'stores', request.id)
+      await updateDoc(sref, { name: request.name, updatedAt: serverTimestamp() })
       fetchStores()
     } catch (error) {
       toast({
