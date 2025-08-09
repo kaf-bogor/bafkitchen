@@ -5,24 +5,18 @@ import React, { useEffect, useState } from 'react'
 import { Flex } from '@chakra-ui/react'
 
 import { Layout } from '@/components'
-import { createClient } from '@/utils/supabase/client'
+import { auth } from '@/utils/firebase'
 
 export default function HomeDashboard() {
   const [user, setUser] = useState<any | null>(null)
 
   useEffect(() => {
-    const supabase = createClient()
-    const fetchUser = async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser()
-      setUser(user)
-    }
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser)
+    })
 
-    console.log({ user })
-
-    fetchUser()
-  }, [user])
+    return () => unsubscribe()
+  }, [])
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/dashboard' },
@@ -39,7 +33,14 @@ export default function HomeDashboard() {
           alignItems: 'center'
         }}
       >
-        Ini halaman setting
+        <div>
+          <div>Ini halaman setting</div>
+          {user ? (
+            <div style={{ marginTop: 8 }}>Signed in as: {user.email}</div>
+          ) : (
+            <div style={{ marginTop: 8 }}>Not signed in</div>
+          )}
+        </div>
       </Flex>
     </Layout>
   )

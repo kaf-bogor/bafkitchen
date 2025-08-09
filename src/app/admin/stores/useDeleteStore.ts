@@ -1,7 +1,9 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { deleteDoc, doc, getDoc } from 'firebase/firestore'
+
+import { db } from '@/utils/firebase'
 
 export function useDeleteStore(
   toast: CreateToastFnReturn,
@@ -23,7 +25,10 @@ export function useDeleteStore(
 
   const submitDeleteStore = (id: string) => async () => {
     try {
-      await axios.delete(`/api/stores/${id}`)
+      const sref = doc(db, 'stores', id)
+      const ssnap = await getDoc(sref)
+      if (!ssnap.exists()) throw new Error('Store not found')
+      await deleteDoc(sref)
       fetchStores()
     } catch (error) {
       toast({

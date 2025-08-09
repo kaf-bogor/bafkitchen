@@ -1,12 +1,10 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 
-import {
-  IEditProductRequest,
-  IProduct
-} from '@/interfaces/product'
+import { IEditProductRequest, IProduct } from '@/interfaces/product'
+import { db, uploadToFirebase } from '@/utils/firebase'
 
 
 export function useUpdateProduct(
@@ -30,20 +28,27 @@ export function useUpdateProduct(
 
   const handleUpdateProduct = (request: IEditProductRequest) => async () => {
     try {
-      const form = new FormData()
-      form.append('name', request.name)
-      form.append('price', request.price.toString())
-      if(request.stock){
-        form.append('stock', request.stock.toString())
-      }
-      form.append('storeId', request.storeId)
-      form.append('categoryIds', JSON.stringify(request.categoryIds))
-      form.append('description', request.description)
-      if(request?.image){
-        form.append('image', request?.image)
+      const pref = doc(db, 'products', currentEditForm.id)
+      const psnap = await getDoc(pref)
+      if (!psnap.exists()) throw new Error('Product not found')
+
+      let imageUrl = request.imageUrl || (psnap.data() as any)?.imageUrl || ''
+      if (request?.image) {
+        const upload = await uploadToFirebase(request.image)
+        imageUrl = upload.downloadURL
       }
 
-      await axios.patch(`/api/products/${currentEditForm.id}`, form)
+      await updateDoc(pref, {
+        name: request.name,
+        priceBase: request.priceBase,
+        price: request.price,
+        stock: request.stock ?? 0,
+        storeId: request.storeId,
+        categoryIds: request.categoryIds,
+        description: request.description,
+        imageUrl,
+        updatedAt: serverTimestamp()
+      })
       fetchProducts()
       onClose()
     } catch (error) {

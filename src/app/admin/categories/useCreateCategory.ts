@@ -1,7 +1,8 @@
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { addDoc, collection, doc, getDoc } from 'firebase/firestore'
 
 import { ICreateCategoryRequest } from '@/interfaces/category'
+import { db } from '@/utils/firebase'
 
 export function useCreateCategory(
   toast: CreateToastFnReturn,
@@ -11,7 +12,17 @@ export function useCreateCategory(
   const handleCreateNewCategory =
     (request: ICreateCategoryRequest) => async () => {
       try {
-        await axios.post('/api/categories', request)
+        const sdoc = await getDoc(doc(db, 'stores', request.storeId))
+        if (!sdoc.exists() || (sdoc.data() as any)?.isDeleted) {
+          throw new Error('Store does not exist')
+        }
+        const categoryData = {
+          name: request.name,
+          storeId: request.storeId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        await addDoc(collection(db, 'categories'), categoryData)
         fetchCategories()
         onClose()
       } catch (error) {

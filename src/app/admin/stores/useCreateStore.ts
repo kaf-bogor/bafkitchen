@@ -1,29 +1,33 @@
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import { SupabaseClient } from '@supabase/supabase-js'
-import axios from 'axios'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 
 import {
   ISubmitStoreFormRequest,
   ICreateStoreRequest
 } from '@/interfaces/store'
+import { auth, db } from '@/utils/firebase'
 
 export function useCreateStore(
   toast: CreateToastFnReturn,
-  fetchStores: () => void,
-  supabase: SupabaseClient
+  fetchStores: () => void
 ) {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   const submitNewStore = (request: ISubmitStoreFormRequest) => async () => {
-    const { data } = await supabase.auth.getSession()
-    const user = data?.session?.user
+    const user = auth.currentUser
     const storRequest = {
       name: request.name,
-      email: user?.email
+      email: user?.email || null
     } as ICreateStoreRequest
 
     try {
-      await axios.post('/api/stores', storRequest)
+      await addDoc(collection(db, 'stores'), {
+        name: storRequest.name,
+        email: storRequest.email,
+        isDeleted: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
       await fetchStores()
     } catch (error) {
       toast({

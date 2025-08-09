@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
 import { CreateToastFnReturn, useDisclosure } from '@chakra-ui/react'
-import axios from 'axios'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 
 import {
   IUpdateCategoryRequest,
   ICreateCategoryRequest
 } from '@/interfaces/category'
+import { db } from '@/utils/firebase'
 
 
 export function useUpdateCategory(
@@ -24,7 +25,14 @@ export function useUpdateCategory(
 
   const handleSubmit = (request: ICreateCategoryRequest) => async () => {
     try {
-      await axios.patch(`/api/categories/${currentEditForm.id}`, request)
+      const cref = doc(db, 'categories', currentEditForm.id)
+      const csnap = await getDoc(cref)
+      if (!csnap.exists()) throw new Error('Category does not exist')
+      await updateDoc(cref, {
+        name: request.name,
+        storeId: request.storeId,
+        updatedAt: new Date().toISOString()
+      })
       fetchCategories()
       onClose()
     } catch (error) {

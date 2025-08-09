@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "src/app/api/products": {
-      "maxDuration": 30
-    }
-  },
   "regions": [
     "sin1"
   ]

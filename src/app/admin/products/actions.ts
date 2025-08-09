@@ -4,6 +4,18 @@ import {
   UseMutationOptions,
   UseQueryResult
 } from '@tanstack/react-query'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp
+} from 'firebase/firestore'
 
 import { IProduct } from '@/interfaces'
 import {
@@ -11,7 +23,7 @@ import {
   IEditProductRequest,
   ICreateProductRequest
 } from '@/interfaces/product'
-import { auth } from '@/utils/firebase'
+import { db, uploadToFirebase } from '@/utils/firebase'
 
 export const useGetProduct = (
   productId: String
@@ -19,9 +31,41 @@ export const useGetProduct = (
   useQuery<IProductResponse, Error>({
     queryKey: ['product', productId],
     queryFn: async () => {
-      const response = await fetch(`/api/products/${productId}`)
-      if (!response.ok) throw new Error('Network response was not ok')
-      return response.json()
+      const pref = doc(db, 'products', String(productId))
+      const psnap = await getDoc(pref)
+      if (!psnap.exists()) throw new Error('Product not found')
+      const pdata = psnap.data() as any
+
+      // fetch related store
+      const sref = doc(db, 'stores', pdata.storeId)
+      const ssnap = await getDoc(sref)
+      const store = { id: sref.id, ...(ssnap.data() as any) }
+
+      // fetch categories
+      const categoryIds: string[] = pdata.categoryIds || []
+      const categories = await Promise.all(
+        categoryIds.map(async (cid) => {
+          const cref = doc(db, 'categories', cid)
+          const csnap = await getDoc(cref)
+          return { id: cref.id, ...(csnap.data() as any) }
+        })
+      )
+
+      const result: IProductResponse = {
+        id: psnap.id,
+        name: pdata.name,
+        priceBase: pdata.priceBase,
+        price: pdata.price,
+        stock: pdata.stock ?? 0,
+        description: pdata.description ?? '',
+        imageUrl: pdata.imageUrl ?? '',
+        storeId: pdata.storeId,
+        createdAt: String(pdata.createdAt || ''),
+        updatedAt: String(pdata.updatedAt || ''),
+        store,
+        categories
+      }
+      return result
     }
   })
 
@@ -31,15 +75,60 @@ export const useGetProducts = (
   useQuery<IProductResponse[], Error>({
     queryKey: ['products', params],
     queryFn: async () => {
-      const queryString = params
-        ? new URLSearchParams(params as any).toString()
-        : ''
-      const response = await fetch(`/api/products?${queryString}`, {
-        next: { revalidate: 3600 }
-      })
-      if (!response.ok) throw new Error('Network response was not ok')
-      const data = await response.json()
-      return data.products
+      const col = collection(db, 'products')
+      let qref = query(col)
+      if (params?.categoryIds && params.categoryIds.length > 0) {
+        const ids = params.categoryIds.slice(0, 10) // Firestore limit for array-contains-any
+        qref = query(col, where('categoryIds', 'array-contains-any', ids))
+      }
+      const qsnap = await getDocs(qref)
+      const results: IProductResponse[] = await Promise.all(
+        qsnap.docs.map(async (d) => {
+          const pdata = d.data() as any
+
+          // related store
+          const sref = doc(db, 'stores', pdata.storeId)
+          const ssnap = await getDoc(sref)
+          const store = { id: sref.id, ...(ssnap.data() as any) }
+
+          // categories
+          const categoryIds: string[] = pdata.categoryIds || []
+          const categories = await Promise.all(
+            categoryIds.map(async (cid) => {
+              const cref = doc(db, 'categories', cid)
+              const csnap = await getDoc(cref)
+              return { id: cref.id, ...(csnap.data() as any) }
+            })
+          )
+
+          return {
+            id: d.id,
+            name: pdata.name,
+            priceBase: pdata.priceBase,
+            price: pdata.price,
+            stock: pdata.stock ?? 0,
+            description: pdata.description ?? '',
+            imageUrl: pdata.imageUrl ?? '',
+            storeId: pdata.storeId,
+            createdAt: String(pdata.createdAt || ''),
+            updatedAt: String(pdata.updatedAt || ''),
+            store,
+            categories
+          } as IProductResponse
+        })
+      )
+
+      // client-side q filter
+      if (params?.q) {
+        const q = params.q.toLowerCase()
+        return results.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            (p.description || '').toLowerCase().includes(q)
+        )
+      }
+
+      return results
     }
   })
 
@@ -47,9 +136,9 @@ export const useDeleteProducts = (id: string) =>
   useMutation({
     mutationKey: ['products', 'delete'],
     mutationFn: async () => {
-      const response = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-      if (!response.ok) throw new Error('Network response was not ok')
-      return response.json()
+      const pref = doc(db, 'products', id)
+      await deleteDoc(pref)
+      return { id }
     }
   })
 
@@ -66,18 +155,26 @@ export const useCreateProducts = (
   useMutation({
     mutationKey: ['products', 'create'],
     mutationFn: async (product: ICreateProductRequest) => {
-      const token = await auth.currentUser?.getIdToken()
-     
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: createFormData(product)
-      })
-      if (!response.ok) throw new Error('Network response was not ok')
-      const data = await response.json()
-      return data.products
+      let imageUrl = ''
+      if (product.image) {
+        const upload = await uploadToFirebase(product.image)
+        imageUrl = upload.downloadURL
+      }
+      const payload = {
+        name: product.name,
+        priceBase: product.priceBase,
+        price: product.price,
+        stock: product.stock ?? 0,
+        storeId: product.storeId,
+        categoryIds: product.categoryIds,
+        description: product.description,
+        imageUrl,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+      const res = await addDoc(collection(db, 'products'), payload)
+      const snap = await getDoc(res)
+      return { id: res.id, ...(snap.data() as any) } as any
     },
     ...options
   })
@@ -91,34 +188,34 @@ export const useUpdateProducts = (
   useMutation<Awaited<IProduct.IProduct>, Error, IProduct.IEditProductRequest>({
     mutationKey: ['products', 'update'],
     mutationFn: async (product: IEditProductRequest) => {
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: 'PATCH',
-        body: createFormData(product)
+      const pref = doc(db, 'products', product.id)
+      const psnap = await getDoc(pref)
+      if (!psnap.exists()) throw new Error('Product not found')
+
+      let imageUrl = (psnap.data() as any)?.imageUrl || ''
+      if (product.image) {
+        const upload = await uploadToFirebase(product.image)
+        imageUrl = upload.downloadURL
+      }
+
+      await updateDoc(pref, {
+        name: product.name,
+        priceBase: product.priceBase,
+        price: product.price,
+        stock: product.stock ?? 0,
+        storeId: product.storeId,
+        categoryIds: product.categoryIds,
+        description: product.description,
+        imageUrl,
+        updatedAt: serverTimestamp()
       })
-      if (!response.ok) throw new Error('Network response was not ok')
-      return response.json()
+      const updated = await getDoc(pref)
+      return { id: pref.id, ...(updated.data() as any) } as any
     },
     ...options
   })
 
-const createFormData = (
-  product: IEditProductRequest | ICreateProductRequest
-) => {
-  const form = new FormData()
-  form.append('name', product.name)
-  form.append('priceBase', product.priceBase.toString())
-  form.append('price', product.price.toString())
-  if (product.stock) {
-    form.append('stock', product.stock.toString())
-  }
-  form.append('storeId', product.storeId)
-  form.append('categoryIds', JSON.stringify(product.categoryIds))
-  form.append('description', product.description)
-  if (product?.image) {
-    form.append('image', product.image)
-  }
-  return form
-}
+// createFormData removed; using Firestore + Storage directly
 
 export interface IFetchProductRequest {
   categoryIds?: string[]
