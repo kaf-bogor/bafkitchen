@@ -11,11 +11,12 @@ import {
   useQuery,
   useMutation,
   UseQueryResult,
-  MutateOptions
+  MutateOptions,
+  useQueryClient
 } from '@tanstack/react-query'
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, query, where, orderBy } from 'firebase/firestore'
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, query, where, orderBy, getDoc } from 'firebase/firestore'
 
-import { ISchedule } from '@/interfaces'
+import { ISchedule, IProduct } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
 
@@ -24,18 +25,70 @@ export const getSchedules = (start?: Date, end?: Date): UseQueryResult<ISchedule
   useQuery<ISchedule.ISchedule[], Error>({
     queryKey: ['schedules', start, end], // Ensure the query key is unique for different dates
     queryFn: async () => {
+      let schedulesQuery;
+      
       if (!start || !end) {
-        const qsnap = await getDocs(collection(db, 'schedules'))
-        return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ISchedule.ISchedule[]
+        schedulesQuery = collection(db, 'schedules')
+      } else {
+        schedulesQuery = query(
+          collection(db, 'schedules'),
+          where('date', '>=', Timestamp.fromDate(start)),
+          where('date', '<=', Timestamp.fromDate(end)),
+          orderBy('date', 'asc')
+        )
       }
-      const qref = query(
-        collection(db, 'schedules'),
-        where('date', '>=', Timestamp.fromDate(start)),
-        where('date', '<=', Timestamp.fromDate(end)),
-        orderBy('date', 'asc')
-      )
-      const qsnap = await getDocs(qref)
-      return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ISchedule.ISchedule[]
+
+      const schedulesSnap = await getDocs(schedulesQuery)
+      const rawSchedules = schedulesSnap.docs.map((d) => ({ 
+        id: d.id, 
+        ...d.data(),
+        date: d.data().date?.toDate?.()?.toISOString() || d.data().date
+      }))
+
+      // Group schedules by date and fetch product details
+      const schedulesByDate = new Map<string, any[]>()
+      
+      for (const schedule of rawSchedules) {
+        const dateKey = new Date(schedule.date).toDateString()
+        if (!schedulesByDate.has(dateKey)) {
+          schedulesByDate.set(dateKey, [])
+        }
+        schedulesByDate.get(dateKey)!.push(schedule)
+      }
+
+      const transformedSchedules: ISchedule.ISchedule[] = []
+
+      for (const [, schedules] of Array.from(schedulesByDate.entries())) {
+        const productSchedules = []
+        
+        for (const schedule of schedules) {
+          try {
+            const productDoc = await getDoc(doc(db, 'products', schedule.productId))
+            if (productDoc.exists()) {
+              const productData = { id: productDoc.id, ...productDoc.data() } as IProduct.IProductResponse
+              productSchedules.push({
+                productId: schedule.productId,
+                scheduleId: schedule.id,
+                product: productData
+              })
+            }
+          } catch (error) {
+            console.error(`Error fetching product ${schedule.productId}:`, error)
+          }
+        }
+
+        if (productSchedules.length > 0) {
+          transformedSchedules.push({
+            id: schedules[0].id, // Use first schedule's ID as group ID
+            date: schedules[0].date,
+            createdAt: schedules[0].createdAt,
+            updatedAt: schedules[0].updatedAt,
+            productSchedules
+          })
+        }
+      }
+
+      return transformedSchedules
     }
   });
 
@@ -47,6 +100,8 @@ export const postSchedules = (
     ISchedule.ICreateScheduleRequest
   >
 ) => {
+  const queryClient = useQueryClient()
+  
   return useMutation<
     ISchedule.ISchedule,
     Error,
@@ -61,7 +116,34 @@ export const postSchedules = (
         updatedAt: serverTimestamp()
       }
       const res = await addDoc(collection(db, 'schedules'), payload)
-      return { id: res.id, ...payload } as unknown as ISchedule.ISchedule
+      
+      // Fetch the product data to return properly structured response
+      const productDoc = await getDoc(doc(db, 'products', params.productId))
+      const productData = productDoc.exists() 
+        ? { id: productDoc.id, ...productDoc.data() } as IProduct.IProductResponse
+        : null
+
+      if (!productData) {
+        throw new Error('Product not found')
+      }
+
+      const newSchedule: ISchedule.ISchedule = {
+        id: res.id,
+        date: new Date(params.date).toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        productSchedules: [{
+          productId: params.productId,
+          scheduleId: res.id,
+          product: productData
+        }]
+      }
+
+      return newSchedule
+    },
+    onSuccess: () => {
+      // Invalidate and refetch schedules
+      queryClient.invalidateQueries({ queryKey: ['schedules'] })
     },
     ...options
   })
@@ -75,6 +157,8 @@ export const deleteSchedule = (
     ISchedule.IDeleteScheduleRequest
   >
 ) => {
+  const queryClient = useQueryClient()
+  
   return useMutation<
     ISchedule.IDeleteScheduleResponse,
     Error,
@@ -85,6 +169,10 @@ export const deleteSchedule = (
       // Assume scheduleId is the document id to delete
       await deleteDoc(doc(db, 'schedules', params.scheduleId))
       return { message: 'deleted', deletedProductSchedule: { id: params.scheduleId, productId: params.productId, scheduleId: params.scheduleId } }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch schedules
+      queryClient.invalidateQueries({ queryKey: ['schedules'] })
     },
     ...options
   })

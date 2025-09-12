@@ -17,18 +17,17 @@ const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket:
-    process.env.FIREBASE_STORAGE_BUCKET || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-} as const
+}
 
 export const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const storage = getStorage(app)
-export const db = getFirestore(app, 'bafkitchen-db')
+export const db = getFirestore(app)
 
 export const handleGoogleLogin = async ({
   onError,
@@ -142,28 +141,54 @@ interface IFirebaseUploadResponse {
 export const uploadToFirebase = async (
   image: File
 ): Promise<IFirebaseUploadResponse> => {
-  console.log("-------------------bucket", process.env.FIREBASE_STORAGE_BUCKET)
-  if (!process.env.FIREBASE_STORAGE_BUCKET) {
-    throw new Error('FIREBASE_STORAGE_BUCKET is not defined')
+  // Check authentication status
+  const currentUser = auth.currentUser;
+  console.log('Current user during upload:', currentUser ? { uid: currentUser.uid, email: currentUser.email } : 'Not authenticated');
+  
+  if (!currentUser) {
+    throw new Error('User not authenticated. Please log in again.');
   }
 
-  console.log("-------------------0")
+  // Check user role before attempting upload
+  try {
+    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    if (!userDoc.exists()) {
+      throw new Error('User profile not found. Please contact administrator.');
+    }
+    
+    const userData = userDoc.data();
+    if (userData.role !== 'admin') {
+      throw new Error('Access denied. Only administrators can upload images.');
+    }
+    
+    console.log('User role verified:', userData.role);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to verify user permissions.');
+  }
 
   const uniqueImageName = `${image.name}_${crypto.randomUUID()}`
   const imageRef = ref(storage, `images/${uniqueImageName}`)
 
-  console.log("-------------------1")
-  // Upload the file
-  const uploadResult = await uploadBytes(imageRef, image)
+  try {
+    // Upload the file
+    const uploadResult = await uploadBytes(imageRef, image)
 
-  console.log("-------------------2")
-
-  // Get the download URL
-  const downloadURL = await getDownloadURL(uploadResult.ref)
-  console.log("-------------------3")
-  return {
-    downloadURL,
-    fullPath: uploadResult.ref.fullPath
+    // Get the download URL
+    const downloadURL = await getDownloadURL(uploadResult.ref)
+    
+    return {
+      downloadURL,
+      fullPath: uploadResult.ref.fullPath
+    }
+  } catch (error) {
+    console.error('Firebase Storage upload error:', error);
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'storage/unauthorized') {
+      throw new Error('Upload failed: You do not have permission to upload images. Please ensure you are logged in as an administrator.');
+    }
+    throw error;
   }
 }
 

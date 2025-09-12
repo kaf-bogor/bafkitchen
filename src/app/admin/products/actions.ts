@@ -39,7 +39,26 @@ export const useGetProduct = (
       // fetch related store
       const sref = doc(db, 'stores', pdata.storeId)
       const ssnap = await getDoc(sref)
-      const store = { id: sref.id, ...(ssnap.data() as any) }
+      const storeData = ssnap.exists() ? ssnap.data() : {}
+      const store = { 
+        id: sref.id, 
+        name: 'Unknown Store',
+        userId: '',
+        isDeleted: false,
+        createdAt: '',
+        updatedAt: '',
+        user: {
+          id: '',
+          name: '',
+          email: '',
+          role: 'user' as const,
+          createdAt: '',
+          updatedAt: '',
+          phoneNumber: null,
+          lastSignInAt: ''
+        },
+        ...storeData 
+      }
 
       // fetch categories
       const categoryIds: string[] = pdata.categoryIds || []
@@ -89,7 +108,26 @@ export const useGetProducts = (
           // related store
           const sref = doc(db, 'stores', pdata.storeId)
           const ssnap = await getDoc(sref)
-          const store = { id: sref.id, ...(ssnap.data() as any) }
+          const storeData = ssnap.exists() ? ssnap.data() : {}
+          const store = { 
+            id: sref.id, 
+            name: 'Unknown Store',
+            userId: '',
+            isDeleted: false,
+            createdAt: '',
+            updatedAt: '',
+            user: {
+              id: '',
+              name: '',
+              email: '',
+              role: 'user' as const,
+              createdAt: '',
+              updatedAt: '',
+              phoneNumber: null,
+              lastSignInAt: ''
+            },
+            ...storeData 
+          }
 
           // categories
           const categoryIds: string[] = pdata.categoryIds || []

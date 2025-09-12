@@ -26,6 +26,9 @@ function CardProduct({
   onUpdateQty
 }: Props) {
   const { name, price, store, imageUrl } = product
+  
+  // Safeguard against undefined store
+  const safeStore = store || { name: 'Unknown Store' }
   const [cartState, setCartState] = useState<CartState>('default')
 
   const cartQty = useMemo(() => qty, [qty])
@@ -52,9 +55,9 @@ function CardProduct({
         />
 
         <Stack align="left" p={6}>
-          <Link href={`/s/${store.name}`}>
+          <Link href={`/s/${safeStore.name}`}>
             <Text color="gray.500" fontSize="sm" textTransform="uppercase">
-              {store.name}
+              {safeStore.name}
             </Text>
           </Link>
           <Text fontSize="md" fontFamily="body" noOfLines={1}>

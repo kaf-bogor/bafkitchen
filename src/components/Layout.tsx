@@ -52,14 +52,19 @@ export default function Layout({
             ref={sidebarRef}
             display={{ base: isOpen ? 'flex' : 'none', md: 'flex' }}
           >
-            <motion.div
-              initial={{ x: '-100%' }} // Start hidden to the left
-              animate={{ x: 0 }} // Slide to the right when isOpen is true
-              exit={{ x: '-100%' }} // Slide back to the left when isOpen becomes false
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }} // Customize the animation
-            >
+            <Box display={{ base: 'none', md: 'block' }}>
               {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
-            </motion.div>
+            </Box>
+            <Box display={{ base: 'block', md: 'none' }}>
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: isOpen ? 0 : '-100%' }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              >
+                {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
+              </motion.div>
+            </Box>
           </Box>
         </Stack>
         <Box as="main" w="full" minH="90vh" bg={bgColor}>

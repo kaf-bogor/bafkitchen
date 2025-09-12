@@ -77,13 +77,36 @@ export default function HomeDashboard() {
   } = useOrders(dateStart, dateEnd)
 
   const formatDataForChart = (orders: IOrder.IOrder[]) => {
-    return orders.map((order: any) => ({
-      x: format(new Date(order.createdAt), 'dd MMMM yyyy HH:mm'),
-      y: order.productOrders.reduce(
-        (total: number, po: any) => total + po.quantity * po.product.price,
-        0
-      )
-    }))
+    return orders
+      .filter((order: any) => order.createdAt && order.productOrders) // Filter out invalid orders
+      .map((order: any) => {
+        try {
+          // Safely parse the date
+          const date = new Date(order.createdAt);
+          if (isNaN(date.getTime())) {
+            // If date is invalid, use current date as fallback
+            return {
+              x: format(new Date(), 'dd MMMM yyyy HH:mm'),
+              y: 0
+            };
+          }
+          
+          return {
+            x: format(date, 'dd MMMM yyyy HH:mm'),
+            y: order.productOrders.reduce(
+              (total: number, po: any) => total + (po.quantity || 0) * (po.product?.price || 0),
+              0
+            )
+          };
+        } catch (error) {
+          console.error('Error formatting order for chart:', error, order);
+          // Return fallback data for problematic orders
+          return {
+            x: format(new Date(), 'dd MMMM yyyy HH:mm'),
+            y: 0
+          };
+        }
+      });
   }
 
   useEffect(() => {

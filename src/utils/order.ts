@@ -133,11 +133,23 @@ export const generateReports = (orders: IOrder.IOrder[]) => {
     const uniqueBuyers = new Set();
 
     orders.forEach(order => {
+        // Safety check: ensure productOrders exists and is an array
+        if (!order.productOrders || !Array.isArray(order.productOrders)) {
+            console.warn('Order missing productOrders:', order.id);
+            return; // Skip this order
+        }
+
         // Loop through each product in the order
         order.productOrders.forEach(productOrder => {
-            const price = productOrder.product.price;
-            const basePrice = productOrder.product.priceBase;
-            const quantity = productOrder.quantity;
+            // Safety checks for productOrder and product data
+            if (!productOrder || !productOrder.product) {
+                console.warn('Invalid product order data:', productOrder);
+                return; // Skip this product order
+            }
+
+            const price = productOrder.product.price || 0;
+            const basePrice = productOrder.product.priceBase || 0;
+            const quantity = productOrder.quantity || 0;
 
             // 1. Calculate order total
             totalOrderValue += price * quantity;
@@ -147,11 +159,13 @@ export const generateReports = (orders: IOrder.IOrder[]) => {
 
             // 3. Track total product quantity and unique products
             totalProductQuantity += quantity;
-            uniqueProducts.add(productOrder.productId);
+            uniqueProducts.add(productOrder.productId || productOrder.product.id);
         });
 
         // 4. Track unique buyers
-        uniqueBuyers.add(order.customerId);
+        if (order.customerId) {
+            uniqueBuyers.add(order.customerId);
+        }
     });
 
     return {

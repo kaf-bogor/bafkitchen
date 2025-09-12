@@ -14,7 +14,15 @@ const fetchOrders = async (dateStart: string, dateEnd: string) => {
     orderBy('createdAt', 'desc')
   );
   const qsnap = await getDocs(qref);
-  return qsnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as unknown as IOrder.IOrder[];
+  return qsnap.docs.map((d) => {
+    const data = d.data() as any;
+    return {
+      id: d.id,
+      ...data,
+      createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
+    };
+  }) as unknown as IOrder.IOrder[];
 };
 
 
