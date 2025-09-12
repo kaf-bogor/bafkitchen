@@ -1,5 +1,3 @@
-import React from 'react'
-
 import { initializeApp } from 'firebase/app'
 import {
   getAuth,
@@ -27,14 +25,14 @@ export const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const storage = getStorage(app)
-export const db = getFirestore(app)
+export const db = getFirestore(app, 'bafkitchen-db')
 
 export const handleGoogleLogin = async ({
   onError,
   onSuccess
 }: {
   // eslint-disable-next-line no-unused-vars
-  onError: React.Dispatch<React.SetStateAction<string | null>>
+  onError: (error: string | null) => void
   // eslint-disable-next-line no-unused-vars
   onSuccess: (user: User) => void
 }) => {
