@@ -32,9 +32,26 @@ export default function Home() {
     data: schedules,
     isFetching,
     error
-  } = getSchedules(weekStart, weekEnd)
+  } = getSchedules(weekStart, weekEnd, true) // Always enabled on homepage
 
-  const cart = useStore(cartStore, (state) => state, 'app')
+  // Debug: Log schedule data
+  useEffect(() => {
+    if (schedules && process.env.NODE_ENV === 'development') {
+      console.log('Homepage schedules data:', {
+        total: schedules.length,
+        weekStart: weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
+        schedules: schedules.map(s => ({
+          id: s.id,
+          date: s.date,
+          productCount: s.productSchedules?.length || 0,
+          productIds: s.productSchedules?.map(ps => ps.productId) || []
+        }))
+      });
+    }
+  }, [schedules, weekStart, weekEnd]);
+
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
 
   const handleAddQty = useCallback(
     (product: IProduct.IProductResponse) => {
@@ -84,7 +101,22 @@ export default function Home() {
   }
 
   const isDateScheduled = (date: Date, schedules: ISchedule.ISchedule[]) => {
-    return schedules.some((schedule) => isSameDay(schedule.date, date))
+    const hasSchedule = schedules.some((schedule) => isSameDay(new Date(schedule.date), date))
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isDateScheduled check:', {
+        checkingDate: date.toDateString(),
+        hasSchedule,
+        matchingSchedules: schedules.filter(s => isSameDay(new Date(s.date), date)).map(s => ({
+          scheduleId: s.id,
+          scheduleDate: s.date,
+          productCount: s.productSchedules?.length || 0
+        }))
+      });
+    }
+    
+    return hasSchedule
   }
 
   return (

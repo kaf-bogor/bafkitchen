@@ -27,7 +27,7 @@ interface NavbarProps {
 }
 
 export function Navbar(props: NavbarProps) {
-  const cart = useStore(cartStore, (state) => state, props.storeName)
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()

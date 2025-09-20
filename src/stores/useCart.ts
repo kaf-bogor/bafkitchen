@@ -9,7 +9,7 @@ export interface CartState {
 }
 
 export interface CartActions {
-  addProduct: (product: IProduct) => void
+  addProduct: (product: IProduct | IProductCart) => void
   removeProduct: (productId: string) => void
   reduceQuantity: (productId: string) => void
   getTotalQuantity: (productId?: string) => number
@@ -33,7 +33,10 @@ export const cartStore = create<CartState & CartActions>()(
             )
           }
         }
-        return { products: [...state.products, { ...product, quantity: 1 }] }
+        const newProduct = 'quantity' in product 
+          ? product as IProductCart
+          : { ...product as IProduct, quantity: 1 }
+        return { products: [...state.products, newProduct] }
       }),
 
       removeProduct: (productId) => set((state) => ({
@@ -70,7 +73,7 @@ export const cartStore = create<CartState & CartActions>()(
       }))
     }),
     {
-      name: 'cart'
+      name: 'cart-bafkitchen'
     }
   )
 )

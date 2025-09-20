@@ -43,26 +43,40 @@ export default function OrdererInput({
         <FormErrorMessage>{errors?.phoneNumber}</FormErrorMessage>
       </FormControl>
 
-      <FormControl isInvalid={!!errors?.email} mb={5}>
-        <FormLabel>Email</FormLabel>
+      <FormControl isInvalid={!!errors?.namaSantri} mb={5}>
+        <FormLabel>Nama Santri:</FormLabel>
         <Input
-          name="email"
-          defaultValue={order.email}
-          placeholder="Email"
+          name="namaSantri"
+          defaultValue={order.namaSantri}
+          placeholder="Nama Santri"
           onChange={onChange}
-          type="email"
+          type="text"
         />
-        <FormErrorMessage>{errors?.email}</FormErrorMessage>
+        <FormErrorMessage>{errors?.namaSantri}</FormErrorMessage>
       </FormControl>
 
-      <FormControl isInvalid={!!errors?.email} mb={5}>
-        <FormLabel>Alamat Lengkap/Pengiriman:</FormLabel>
-        <Textarea
-          name="address"
-          defaultValue={order.address}
-          placeholder="Alamat Lengkap/Pengiriman"
+      <FormControl isInvalid={!!errors?.kelas} mb={5}>
+        <FormLabel>Kelas:</FormLabel>
+        <Input
+          name="kelas"
+          defaultValue={order.kelas}
+          placeholder="Kelas"
           onChange={onChange}
+          type="text"
         />
+        <FormErrorMessage>{errors?.kelas}</FormErrorMessage>
+      </FormControl>
+
+      <FormControl isInvalid={!!errors?.notes} mb={5}>
+        <FormLabel>Catatan (Opsional):</FormLabel>
+        <Textarea
+          name="notes"
+          defaultValue={order.notes}
+          placeholder="Tambahkan catatan khusus untuk pesanan..."
+          onChange={onChange}
+          rows={3}
+        />
+        <FormErrorMessage>{errors?.notes}</FormErrorMessage>
       </FormControl>
     </>
   )

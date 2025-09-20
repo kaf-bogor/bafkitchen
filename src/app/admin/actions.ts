@@ -26,8 +26,22 @@ const fetchOrders = async (dateStart: string, dateEnd: string) => {
 };
 
 
-export const useOrders = (dateStart: string, dateEnd: string): UseQueryResult<IOrder.IOrder[], Error> =>
+export const useOrders = (
+  dateStart: string, 
+  dateEnd: string, 
+  enabled: boolean = true
+): UseQueryResult<IOrder.IOrder[], Error> =>
   useQuery<IOrder.IOrder[], Error>({
     queryKey: ['orders', dateStart, dateEnd],
-    queryFn: async () => await fetchOrders(dateStart, dateEnd)
+    queryFn: async () => await fetchOrders(dateStart, dateEnd),
+    enabled: enabled, // Only run query when explicitly enabled
+    retry: (failureCount, error: any) => {
+      // Don't retry if it's a permission error
+      if (error?.code === 'permission-denied') {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    refetchOnWindowFocus: false // Don't refetch on window focus
   })

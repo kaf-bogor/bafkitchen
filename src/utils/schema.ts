@@ -15,8 +15,14 @@ export const orderInputForm = z.object({
     .refine((value) => value.startsWith('+62') || value.startsWith('08'), {
       message: 'Nomor telepon harus diawali dengan +62 atau 08'
     }),
-  email: z.string({ required_error: 'Harus diisi' }).email(),
-  address: z.string().optional()
+  namaSantri: z
+    .string({ required_error: 'Nama santri harus diisi' })
+    .min(2, 'Nama santri terlalu pendek')
+    .max(50, 'Nama santri terlalu panjang'),
+  kelas: z
+    .string({ required_error: 'Kelas harus diisi' })
+    .min(1, 'Kelas harus diisi'),
+  notes: z.string().optional()
 })
 
 export const adminProductForm = z.object({
@@ -29,9 +35,7 @@ export const adminProductForm = z.object({
     .nullable()
     .optional(),
   storeId: z.string({ required_error: 'Toko diperlukan' }),
-  categoryIds: z
-    .array(z.string())
-    .min(1, 'Setidaknya satu kategori diperlukan'),
+  categoryIds: z.array(z.string()).optional(),
   description: z.string().optional()
 })
 

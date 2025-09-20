@@ -46,7 +46,7 @@ const NavLink = (props: navLinkProps) => {
 }
 
 export default function Navbar({ storeName }: Props) {
-  const cart = useStore(cartStore, (state) => state, 'app')
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { user } = useAuth()
 

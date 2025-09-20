@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react'
 
+import { AddIcon } from '@chakra-ui/icons'
 import {
   Button,
   Flex,
@@ -14,14 +15,17 @@ import {
   Textarea,
   VStack,
   FormErrorMessage,
-  FormHelperText
+  FormHelperText,
+  HStack,
+  IconButton,
+  useToast
 } from '@chakra-ui/react'
 import { Select as MultiSelect, MultiValue } from 'chakra-react-select'
 import { useFormik } from 'formik'
 import { NumericFormat, NumberFormatValues } from 'react-number-format'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
-import { getCategories } from '@/app/admin/categories/actions'
+import { getCategories, createCategories } from '@/app/admin/categories/actions'
 import { getStores } from '@/app/admin/stores/actions'
 import {
   IEditProductRequest,
@@ -30,6 +34,8 @@ import {
   ICreateProductRequest
 } from '@/interfaces/product'
 import { schema } from '@/utils'
+
+import CategoryFormModal from './CategoryModal'
 
 export default function ProductForm({
   onCreate,
@@ -40,9 +46,13 @@ export default function ProductForm({
   const [categoryOptions, setCategoryOptions] = useState<ICategoryInput[]>([])
   const [selectedCategories, setSelectedCategories] = useState<
     ICategoryInput[]
-  >(product.categories.map(({ name, id }) => ({ label: name, value: id })))
+  >(product.categories?.map(({ name, id }) => ({ label: name, value: id })) || [])
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  
+  const toast = useToast()
+  const createCategoryMutation = createCategories()
 
-  const { data: dataCategories } = getCategories()
+  const { data: dataCategories, refetch: refetchCategories } = getCategories()
   const { data: stores } = getStores()
 
   const {
@@ -56,7 +66,7 @@ export default function ProductForm({
   } = useFormik({
     initialValues: {
       ...product,
-      categoryIds: product.categories.map(({ id }) => id)
+      categoryIds: product.categories?.map(({ id }) => id) || []
     },
     validationSchema: toFormikValidationSchema(schema.adminProductForm),
     onSubmit: (values) => {
@@ -79,20 +89,57 @@ export default function ProductForm({
     }
   }, [dataCategories, values])
 
+  const handleCreateCategory = async (categoryData: any) => {
+    return async () => {
+      try {
+        const newCategory = await createCategoryMutation.mutateAsync({
+          name: categoryData.name,
+          storeId: categoryData.storeId
+        })
+        
+        toast({
+          title: 'Category created successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true
+        })
+        
+        // Refetch categories to update the options
+        await refetchCategories()
+        
+        // Add the new category to the selected categories
+        const newOption = { label: newCategory.name, value: newCategory.id }
+        setSelectedCategories(prev => [...prev, newOption])
+        setFieldValue('categoryIds', [...(values.categoryIds || []), newCategory.id])
+        
+        setIsCategoryModalOpen(false)
+      } catch (error) {
+        toast({
+          title: 'Failed to create category',
+          description: (error as Error).message,
+          status: 'error',
+          duration: 5000,
+          isClosable: true
+        })
+      }
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit}>
-      <VStack gap={3}>
-        <FormControl isInvalid={!!errors.name && touched.name}>
-          <FormLabel>Name</FormLabel>
-          <Input
-            name="name"
-            value={values.name}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="Product Name"
-          />
-          <FormErrorMessage>{errors.name}</FormErrorMessage>
-        </FormControl>
+    <>
+      <form onSubmit={handleSubmit}>
+        <VStack gap={3}>
+          <FormControl isInvalid={!!errors.name && touched.name}>
+            <FormLabel>Name</FormLabel>
+            <Input
+              name="name"
+              value={values.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Product Name"
+            />
+            <FormErrorMessage>{errors.name}</FormErrorMessage>
+          </FormControl>
 
         <FormControl isInvalid={!!errors.price && touched.price}>
           <FormLabel>Harga dasar</FormLabel>
@@ -164,10 +211,22 @@ export default function ProductForm({
         </FormControl>
 
         <FormControl isInvalid={!!errors.categoryIds && touched.categoryIds}>
-          <FormLabel>Categories</FormLabel>
+          <HStack justify="space-between" align="end">
+            <FormLabel>Categories (Optional)</FormLabel>
+            {values.storeId && (
+              <IconButton
+                aria-label="Create new category"
+                icon={<AddIcon />}
+                size="sm"
+                colorScheme="green"
+                variant="outline"
+                onClick={() => setIsCategoryModalOpen(true)}
+              />
+            )}
+          </HStack>
           <MultiSelect
             isMulti
-            placeholder="Pilih Categories"
+            placeholder="Pilih Categories (Optional)"
             value={selectedCategories}
             options={categoryOptions}
             onChange={(newValue: MultiValue<ICategoryInput>) => {
@@ -179,6 +238,12 @@ export default function ProductForm({
             }}
             isDisabled={!values.storeId}
           />
+          <FormHelperText>
+            {!values.storeId 
+              ? "Select a vendor first to enable categories"
+              : "Categories are optional. Click the + button to create a new category."
+            }
+          </FormHelperText>
           <FormErrorMessage>{errors.categoryIds}</FormErrorMessage>
         </FormControl>
 
@@ -228,7 +293,17 @@ export default function ProductForm({
           </Button>
         </FormControl>
       </VStack>
-    </form>
+      </form>
+      
+      <CategoryFormModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSubmit={handleCreateCategory}
+        stores={stores || []}
+        title="Create New Category"
+        data={{ name: '', id: '', storeId: values.storeId }}
+      />
+    </>
   )
 }
 

@@ -18,11 +18,17 @@ export interface IProductOrder {
     imageUrl: string
     priceBase: number
     price: number
+    storeId?: string
+    store?: {
+      id: string
+      name: string
+    }
   }
 }
 
 export interface IOrder {
   id: string
+  orderNumber?: string // Human-readable order number like BAF-20240912-12345
   total: number
   createdAt: string
   updatedAt: string
@@ -32,6 +38,7 @@ export interface IOrder {
   store: {
     name: string
   }
+  vendors?: IStore[] // List of all vendors/stores available at checkout time
   status: string
 }
 
@@ -47,8 +54,23 @@ export interface IUpdateOrderStatusApiRequest {
 export interface IOrdererInputForm {
   name: string
   phoneNumber: string
-  email: string
-  address: string
+  namaSantri: string
+  kelas: string
+  notes: string
+}
+
+export interface IOrderActivity {
+  id: string
+  orderId: string
+  userId: string
+  userEmail: string
+  userName: string
+  action: string
+  fromStatus?: string
+  toStatus?: string
+  notes?: string
+  timestamp: string
+  createdAt: string
 }
 
 export interface IProductOrderResponse {
@@ -73,4 +95,5 @@ export interface IProductOrderResponse {
     email: string
     address: string
   }
+  activities?: IOrderActivity[]
 }

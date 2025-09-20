@@ -21,9 +21,10 @@ import { db } from '@/utils/firebase'
 
 
 // Fungsi untuk mengambil data schedules menggunakan React Query
-export const getSchedules = (start?: Date, end?: Date): UseQueryResult<ISchedule.ISchedule[], Error> =>
+export const getSchedules = (start?: Date, end?: Date, enabled: boolean = true): UseQueryResult<ISchedule.ISchedule[], Error> =>
   useQuery<ISchedule.ISchedule[], Error>({
     queryKey: ['schedules', start, end], // Ensure the query key is unique for different dates
+    enabled: enabled, // Only run when enabled
     queryFn: async () => {
       let schedulesQuery;
       
@@ -39,17 +40,32 @@ export const getSchedules = (start?: Date, end?: Date): UseQueryResult<ISchedule
       }
 
       const schedulesSnap = await getDocs(schedulesQuery)
-      const rawSchedules = schedulesSnap.docs.map((d) => ({ 
-        id: d.id, 
-        ...d.data(),
-        date: d.data().date?.toDate?.()?.toISOString() || d.data().date
-      }))
+      const rawSchedules = schedulesSnap.docs.map((d) => {
+        const data = d.data() as any;
+        return {
+          id: d.id, 
+          ...data,
+          date: data.date?.toDate?.()?.toISOString() || data.date
+        };
+      })
 
       // Group schedules by date and fetch product details
       const schedulesByDate = new Map<string, any[]>()
       
       for (const schedule of rawSchedules) {
         const dateKey = new Date(schedule.date).toDateString()
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Schedule grouping debug:', {
+            scheduleId: schedule.id,
+            originalDate: schedule.date,
+            parsedDate: new Date(schedule.date),
+            dateKey: dateKey,
+            productId: schedule.productId
+          });
+        }
+        
         if (!schedulesByDate.has(dateKey)) {
           schedulesByDate.set(dateKey, [])
         }
@@ -89,7 +105,15 @@ export const getSchedules = (start?: Date, end?: Date): UseQueryResult<ISchedule
       }
 
       return transformedSchedules
-    }
+    },
+    retry: (failureCount, error: any) => {
+      if (error?.code === 'permission-denied') {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
 // Fungsi untuk membuat jadwal baru menggunakan useMutation

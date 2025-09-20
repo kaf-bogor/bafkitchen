@@ -15,5 +15,23 @@ export const getScheduleForDay = (
   day: Date,
   schedules: ISchedule.ISchedule[]
 ) => {
-  return schedules.filter((schedule) => isSameDay(new Date(schedule.date), day))
+  const filtered = schedules.filter((schedule) => {
+    const scheduleDate = new Date(schedule.date);
+    const result = isSameDay(scheduleDate, day);
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Schedule filtering debug:', {
+        dayString: day.toDateString(),
+        scheduleId: schedule.id,
+        scheduleDateString: scheduleDate.toDateString(),
+        scheduleDate: schedule.date,
+        isSame: result
+      });
+    }
+    
+    return result;
+  });
+  
+  return filtered;
 }

@@ -13,7 +13,7 @@ import {
   Select
 } from '@chakra-ui/react'
 
-import { mapOrderStatusToColor } from '@/constants/order'
+import { mapOrderStatusToMessage, orderStatusFlow, EOrderStatus } from '@/constants/order'
 import { IUpdateOrderStatusRequest } from '@/interfaces/order'
 
 export interface IListOfProductModalProps {
@@ -26,8 +26,19 @@ export interface IListOfProductModalProps {
 }
 
 export default function UpdateStatusModal(props: IListOfProductModalProps) {
-  const { isOpen, onClose, statuses, orderRequest, onSubmit } = props
+  const { isOpen, onClose, orderRequest, onSubmit } = props
   const [status, setStatus] = useState(orderRequest.status)
+  
+  // Get available statuses based on current status
+  const getAvailableStatuses = (currentStatus: string) => {
+    const currentIndex = orderStatusFlow.indexOf(currentStatus as EOrderStatus)
+    if (currentIndex === -1) return orderStatusFlow
+    
+    // Allow moving to next status or staying at current status
+    return orderStatusFlow.slice(currentIndex)
+  }
+  
+  const availableStatuses = getAvailableStatuses(orderRequest.status)
 
   useEffect(() => {
     setStatus(orderRequest.status)
@@ -48,16 +59,14 @@ export default function UpdateStatusModal(props: IListOfProductModalProps) {
               <FormLabel>Status</FormLabel>
               <Select
                 placeholder="Select Status"
-                name="storeId"
+                name="status"
                 value={status}
                 onChange={handleChange}
-                bg={mapOrderStatusToColor[status]}
-                color={status === 'PENDING' ? 'black' : 'white'}
               >
-                {statuses.map((status) => {
+                {availableStatuses.map((statusOption) => {
                   return (
-                    <option key={status} value={status}>
-                      {status}
+                    <option key={statusOption} value={statusOption}>
+                      {mapOrderStatusToMessage[statusOption] || statusOption}
                     </option>
                   )
                 })}

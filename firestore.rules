@@ -41,5 +41,17 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    // Invoices: admins have full access, vendors can read their own invoices
+    match /invoices/{invoiceId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.vendorId == request.auth.uid);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Vendors: similar to stores but dedicated collection for vendor management
+    match /vendors/{vendorId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

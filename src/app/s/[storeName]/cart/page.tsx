@@ -42,7 +42,7 @@ export default function CartPage({ params }: Props) {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef(null)
-  const cart = useStore(cartStore, (state) => state, 'app')
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
   const items = (cart.getProducts && cart.getProducts()) || []
   const totalCartPrice = cart.getTotalPrice && cart.getTotalPrice()
 
@@ -86,8 +86,9 @@ export default function CartPage({ params }: Props) {
     initialValues: {
       name: '',
       phoneNumber: '',
-      email: '',
-      address: ''
+      namaSantri: '',
+      kelas: '',
+      notes: ''
     },
     validateOnChange: true,
     validationSchema: toFormikValidationSchema(schema.orderInputForm),

@@ -17,6 +17,7 @@ import {
 import { format, startOfDay, endOfDay } from 'date-fns'
 import { Line } from 'react-chartjs-2'
 
+import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components'
 import CardStats from '@/components/admin/CardStats'
 import { IOrder } from '@/interfaces'
@@ -64,6 +65,7 @@ const options = {
 }
 
 export default function HomeDashboard() {
+  const { user } = useAuth()
   const [dateStart, setDateStart] = useState(
     startOfDay(new Date()).toISOString()
   )
@@ -74,7 +76,7 @@ export default function HomeDashboard() {
     isFetching,
     error,
     refetch
-  } = useOrders(dateStart, dateEnd)
+  } = useOrders(dateStart, dateEnd, !!user)
 
   const formatDataForChart = (orders: IOrder.IOrder[]) => {
     return orders

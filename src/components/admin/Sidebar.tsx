@@ -28,7 +28,8 @@ import {
   AiOutlineShoppingCart,
   AiOutlineTags,
   AiOutlineCalendar,
-  AiOutlineUser
+  AiOutlineUser,
+  AiOutlineFileText
 } from 'react-icons/ai'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
@@ -80,6 +81,12 @@ const Sidebar = ({ ...rest }: Props) => {
     },
     {
       id: 7,
+      text: 'Invoice',
+      path: '/admin/invoices',
+      icon: AiOutlineFileText
+    },
+    {
+      id: 8,
       text: 'Logout',
       onClick: onOpen,
       icon: AiOutlineLogout

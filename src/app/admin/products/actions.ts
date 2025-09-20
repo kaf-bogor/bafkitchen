@@ -36,13 +36,10 @@ export const useGetProduct = (
       if (!psnap.exists()) throw new Error('Product not found')
       const pdata = psnap.data() as any
 
-      // fetch related store
-      const sref = doc(db, 'stores', pdata.storeId)
-      const ssnap = await getDoc(sref)
-      const storeData = ssnap.exists() ? ssnap.data() : {}
+      // For now, just use a default store to avoid complexity
       const store = { 
-        id: sref.id, 
-        name: 'Unknown Store',
+        id: pdata.storeId || 'baf-kitchen',
+        name: 'Baf Kitchen',
         userId: '',
         isDeleted: false,
         createdAt: '',
@@ -56,8 +53,7 @@ export const useGetProduct = (
           updatedAt: '',
           phoneNumber: null,
           lastSignInAt: ''
-        },
-        ...storeData 
+        }
       }
 
       // fetch categories
@@ -105,13 +101,10 @@ export const useGetProducts = (
         qsnap.docs.map(async (d) => {
           const pdata = d.data() as any
 
-          // related store
-          const sref = doc(db, 'stores', pdata.storeId)
-          const ssnap = await getDoc(sref)
-          const storeData = ssnap.exists() ? ssnap.data() : {}
+          // For now, just use a default store to avoid complexity
           const store = { 
-            id: sref.id, 
-            name: 'Unknown Store',
+            id: pdata.storeId || 'baf-kitchen',
+            name: 'Baf Kitchen',
             userId: '',
             isDeleted: false,
             createdAt: '',
@@ -125,8 +118,7 @@ export const useGetProducts = (
               updatedAt: '',
               phoneNumber: null,
               lastSignInAt: ''
-            },
-            ...storeData 
+            }
           }
 
           // categories

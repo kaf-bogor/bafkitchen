@@ -22,7 +22,7 @@ export default function Stores({ params }: { params: { storeName: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  const cart = useStore(cartStore, (state) => state, params.storeName)
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
   const categoryIds = searchParams.get('categories')?.split(',')
   const [categoryOptions, setCategoryOptions] = useState<
     IProduct.ICategoryInput[]

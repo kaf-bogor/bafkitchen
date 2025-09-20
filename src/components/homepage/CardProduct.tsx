@@ -28,7 +28,7 @@ function CardProduct({
   const { name, price, store, imageUrl } = product
   
   // Safeguard against undefined store
-  const safeStore = store || { name: 'Unknown Store' }
+  const safeStore = store || { name: 'Baf Kitchen' }
   const [cartState, setCartState] = useState<CartState>('default')
 
   const cartQty = useMemo(() => qty, [qty])

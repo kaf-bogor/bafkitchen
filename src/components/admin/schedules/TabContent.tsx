@@ -50,7 +50,7 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
         prev.map((schedule) => ({
           ...schedule,
           productSchedules: schedule.productSchedules.filter(
-            ({ productId }) => productId !== deletedProductSchedule.productId
+            ({ scheduleId }) => scheduleId !== deletedProductSchedule.scheduleId
           )
         }))
       )
@@ -82,11 +82,11 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
                 .flatMap((schedule) =>
                   schedule.productSchedules.map((productSchedule) => (
                     <CardProduct
-                      key={`${schedule.id}-${productSchedule.scheduleId}`}
+                      key={`${productSchedule.scheduleId}-${productSchedule.productId}`}
                       product={productSchedule.product}
                       editable={false}
                       onDelete={() =>
-                        handleDelete(productSchedule.product.id, schedule.id)
+                        handleDelete(productSchedule.productId, productSchedule.scheduleId)
                       }
                       isDeleting={isDeleting}
                     />

@@ -12,21 +12,26 @@ import {
   TabPanels,
   Tabs
 } from '@chakra-ui/react'
-import { addWeeks, differenceInDays, startOfWeek, subWeeks } from 'date-fns'
+import { addWeeks, differenceInDays, startOfWeek, subWeeks, endOfWeek } from 'date-fns'
 
 import { getSchedules } from '@/app/admin/schedules/actions'
+import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components'
 import TabContent from '@/components/admin/schedules/TabContent'
 import { date } from '@/utils'
 
 export default function Store() {
+  const { user } = useAuth()
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   )
 
   const [selectedDay, setSelectedDay] = useState(new Date())
 
-  const { data: schedules, isFetching, error } = getSchedules()
+  // Get schedules for current week and check if user is authenticated
+  const weekStart = startOfWeek(currentWeekStart, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 })
+  const { data: schedules, isFetching, error } = getSchedules(weekStart, weekEnd, !!user)
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/admin' },

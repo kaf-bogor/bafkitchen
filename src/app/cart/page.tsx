@@ -12,9 +12,7 @@ import {
   Heading,
   Image,
   Stack,
-  StackDivider,
   Text,
-  SimpleGrid,
   useToast,
   VStack,
   useDisclosure,
@@ -23,34 +21,40 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogOverlay
+  AlertDialogOverlay,
+  Badge,
+  HStack,
+  IconButton,
+  Container,
+  Center
 } from '@chakra-ui/react'
 import { useFormik } from 'formik'
-import { FaTrash } from 'react-icons/fa6'
+import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
+import Link from 'next/link'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
 import OrdererInput from '@/app/s/[storeName]/cart/components/OrdererInput'
 import { useStore } from '@/app/s/[storeName]/useStore'
 import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components/homepage'
-import NumberInput from '@/components/NumberInput'
 import { IProduct, IOrder } from '@/interfaces'
 import { cartStore } from '@/stores/useCart'
 import { currency, schema, order } from '@/utils'
 
 import { useCreateOrders } from './actions'
 
-export default function CartPage({ params }: Props) {
+export default function CartPage() {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef(null)
   const { user } = useAuth()
-  const cart = useStore(cartStore, (state) => state, 'app')
+  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
   const items = (cart.getProducts && cart.getProducts()) || []
   const totalCartPrice = cart.getTotalPrice && cart.getTotalPrice()
 
   const { mutate: createOrder, isPending } = useCreateOrders({
     onSuccess(orderData) {
+      console.log('✅ Order creation successful:', orderData)
       cart.clearCart()
 
       const encodedText = order.generateOrderText({
@@ -73,10 +77,11 @@ export default function CartPage({ params }: Props) {
       })
     },
     onError(error) {
+      console.error('❌ Order creation failed:', error)
       let errorMessage =
         error.message || 'Gagal membuat pesanan. Silahkan coba lagi.'
 
-      if ((error as any).response.data.error.includes('out of stock')) {
+      if ((error as any).response?.data?.error?.includes('out of stock')) {
         errorMessage = (error as any).response.data.error
       }
 
@@ -102,14 +107,19 @@ export default function CartPage({ params }: Props) {
     initialValues: {
       name: user?.displayName || '',
       phoneNumber: user?.phoneNumber || '',
-      email: user?.email || '',
-      address: ''
+      namaSantri: '',
+      kelas: '',
+      notes: ''
     },
     validateOnChange: true,
     validationSchema: toFormikValidationSchema(schema.orderInputForm),
     onSubmit: async () => {
+      console.log('🎯 Form submitted with values:', values)
+      console.log('🛒 Cart items:', items)
+      console.log('💰 Total price:', totalCartPrice)
+      
       await createOrder({
-        storeName: params.storeName,
+        storeName: 'Baf Kitchen',
         items: items,
         totalPrice: totalCartPrice,
         orderer: values
@@ -142,8 +152,29 @@ export default function CartPage({ params }: Props) {
     onClose()
   }, [cart, onClose, toast])
 
+  // Show empty cart message if no items
+  if (!items.length) {
+    return (
+      <Layout>
+        <Container maxW="container.lg" py={8}>
+          <Center flexDirection="column" minH="400px">
+            <FaCartShopping size={80} color="gray" />
+            <Text fontSize="xl" color="gray.500" mt={4} mb={6}>
+              Keranjang Anda kosong
+            </Text>
+            <Link href="/">
+              <Button colorScheme="blue" size="lg">
+                Mulai Belanja
+              </Button>
+            </Link>
+          </Center>
+        </Container>
+      </Layout>
+    )
+  }
+
   return (
-    <Layout storeName={params.storeName}>
+    <Layout>
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -171,101 +202,171 @@ export default function CartPage({ params }: Props) {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      <SimpleGrid margin={3} spacing={4}>
-        <Card>
-          <CardHeader>
-            <Flex justify="space-between" align="center">
-              <Heading>Keranjang</Heading>
-              {!!items.length && (
-                <Button colorScheme="red" onClick={onOpen}>
-                  <FaTrash />
-                </Button>
-              )}
-            </Flex>
-          </CardHeader>
-          <Divider color="gray.300" />
-          <CardBody>
-            <Stack divider={<StackDivider />} spacing="4">
-              {items.map((product) => (
-                <Flex
-                  key={product.id}
-                  flex={1}
-                  w="full"
-                  justifyContent="space-between"
-                  direction={['column', 'row']}
-                  align="center"
-                >
-                  <Flex alignSelf={['start']}>
-                    <Box width="100px" height="100px" overflow="hidden" mr={3}>
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.description}
-                        objectFit="cover"
-                        boxSize="100%"
-                      />
-                    </Box>
-                    <Box>
-                      <Heading size="md">{product.name}</Heading>
-                      <Text>Price: {currency.toIDRFormat(product.price)}</Text>
-                      <Text>Quantity: {product.quantity}</Text>
-                    </Box>
-                  </Flex>
-
-                  <Box alignSelf={['end', 'center']}>
-                    <NumberInput
-                      quantity={product.quantity}
-                      productId={product.id}
-                      onAddQty={() => handleAddQty(product)}
-                      onRemoveQty={() => handleRemoveQty(product.id)}
-                    />
-                  </Box>
-                </Flex>
-              ))}
-            </Stack>
-          </CardBody>
-        </Card>
-
+      <Container maxW="container.xl" py={6}>
         <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <Heading>Data Pemesan</Heading>
-            </CardHeader>
-
-            <Divider color="gray.300" />
-            <CardBody>
-              <OrdererInput
-                order={values}
-                errors={errors}
-                onChange={(e) => setFieldValue(e.target.name, e.target.value)}
-              />
-            </CardBody>
-          </Card>
-          <Card>
-            <Divider color="gray.300" />
-            <VStack p={3}>
-              <Box alignSelf="center">
-                <Text fontSize="xx-large">
-                  Total: <b>{currency.toIDRFormat(totalCartPrice)}</b>
-                </Text>
-              </Box>
-              <Button
-                w="full"
-                py={6}
-                isDisabled={!dirty || !isValid || items.length < 1}
-                bgColor="blue.200"
-                type="submit"
-                isLoading={isSubmitting || isPending}
-              >
-                <Text fontSize="xx-large">Pesan</Text>
-              </Button>
+          <Stack spacing={6} direction={{ base: 'column', lg: 'row' }} align="start">
+            {/* Left Column - Form (5/8 width on desktop, full width on mobile) */}
+            <VStack spacing={6} flex={{ base: '1', lg: '5' }} w="full" align="stretch">
+              <Card>
+                <CardHeader>
+                  <Heading size={{ base: 'md', lg: 'lg' }}>Data Pemesan</Heading>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                  <OrdererInput
+                    order={values}
+                    errors={errors}
+                    onChange={(e) => setFieldValue(e.target.name, e.target.value)}
+                  />
+                </CardBody>
+              </Card>
             </VStack>
-          </Card>
+
+            {/* Right Column - Products & Checkout (3/8 width on desktop, full width on mobile) */}
+            <VStack spacing={6} flex={{ base: '1', lg: '3' }} w="full" align="stretch">
+              <Card>
+                <CardHeader pb={2}>
+                  <Flex justify="space-between" align="center">
+                    <HStack>
+                      <FaCartShopping color="blue" />
+                      <Heading size={{ base: 'sm', lg: 'md' }}>Keranjang Belanja</Heading>
+                      <Badge
+                        colorScheme="blue"
+                        variant="solid"
+                        borderRadius="full"
+                        px={2}
+                      >
+                        {items.length} item
+                      </Badge>
+                    </HStack>
+                    <IconButton
+                      aria-label="Clear cart"
+                      icon={<FaTrash />}
+                      colorScheme="red"
+                      variant="ghost"
+                      size="sm"
+                      onClick={onOpen}
+                    />
+                  </Flex>
+                </CardHeader>
+                <Divider />
+                <CardBody p={0}>
+                  <Stack spacing={0}>
+                    {items.map((product, index) => (
+                      <Box key={product.id}>
+                        <VStack p={4} spacing={3} align="stretch">
+                          <Flex gap={3} direction={{ base: 'row', sm: 'row' }} align="start">
+                            <Box
+                              width={{ base: '70px', lg: '60px' }}
+                              height={{ base: '70px', lg: '60px' }}
+                              overflow="hidden"
+                              borderRadius="md"
+                              flexShrink={0}
+                            >
+                              <Image
+                                src={product.imageUrl}
+                                alt={product.name}
+                                objectFit="cover"
+                                boxSize="100%"
+                              />
+                            </Box>
+                            <VStack align="start" flex={1} spacing={1} ml={3}>
+                              <Text fontWeight="semibold" fontSize={{ base: 'md', lg: 'sm' }} noOfLines={2}>
+                                {product.name}
+                              </Text>
+                              <Text color="green.600" fontWeight="bold" fontSize={{ base: 'md', lg: 'sm' }}>
+                                {currency.toIDRFormat(product.price)}
+                              </Text>
+                            </VStack>
+                          </Flex>
+                          
+                          <Flex justify="space-between" align="center" direction={{ base: 'row', sm: 'row' }}>
+                            <HStack spacing={2}>
+                              <IconButton
+                                aria-label="Decrease quantity"
+                                icon={<FaMinus />}
+                                size={{ base: 'sm', lg: 'xs' }}
+                                colorScheme="red"
+                                variant="ghost"
+                                onClick={() => handleRemoveQty(product.id)}
+                                isDisabled={product.quantity <= 1}
+                              />
+                              <Box
+                                minW={{ base: '40px', lg: '32px' }}
+                                textAlign="center"
+                                fontWeight="semibold"
+                                fontSize={{ base: 'md', lg: 'sm' }}
+                              >
+                                {product.quantity}
+                              </Box>
+                              <IconButton
+                                aria-label="Increase quantity"
+                                icon={<FaPlus />}
+                                size={{ base: 'sm', lg: 'xs' }}
+                                colorScheme="green"
+                                variant="ghost"
+                                onClick={() => handleAddQty(product)}
+                              />
+                            </HStack>
+                            <Text color="gray.600" fontSize={{ base: 'md', lg: 'sm' }} fontWeight="medium">
+                              {currency.toIDRFormat(product.price * product.quantity)}
+                            </Text>
+                          </Flex>
+                        </VStack>
+                        {index < items.length - 1 && <Divider />}
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Heading size={{ base: 'md', lg: 'md' }}>Ringkasan Pesanan</Heading>
+                </CardHeader>
+                <Divider />
+                <CardBody>
+                  <VStack spacing={4}>
+                    <HStack justify="space-between" w="full">
+                      <Text fontSize={{ base: 'md', lg: 'sm' }}>Total Item:</Text>
+                      <Text fontWeight="semibold" fontSize={{ base: 'md', lg: 'sm' }}>
+                        {items.reduce((acc, item) => acc + item.quantity, 0)} pcs
+                      </Text>
+                    </HStack>
+                    <HStack justify="space-between" w="full">
+                      <Text fontSize="lg" fontWeight="bold">
+                        Total Harga:
+                      </Text>
+                      <Text fontSize="lg" fontWeight="bold" color="green.600">
+                        {currency.toIDRFormat(totalCartPrice)}
+                      </Text>
+                    </HStack>
+                    <Divider />
+                    <Button
+                      w="full"
+                      size="lg"
+                      colorScheme="blue"
+                      type="submit"
+                      isDisabled={!dirty || !isValid || items.length < 1}
+                      isLoading={isSubmitting || isPending}
+                      loadingText="Memproses pesanan..."
+                    >
+                      <HStack spacing={2}>
+                        <FaCartShopping />
+                        <Text>Pesan Sekarang</Text>
+                      </HStack>
+                    </Button>
+                    <Text fontSize="xs" color="gray.500" textAlign="center">
+                      Dengan melakukan pemesanan, Anda menyetujui syarat dan
+                      ketentuan kami
+                    </Text>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </VStack>
+          </Stack>
         </form>
-      </SimpleGrid>
+      </Container>
     </Layout>
   )
-}
-
-type Props = {
-  params: { storeName: string }
 }
