@@ -119,7 +119,6 @@ export default function CartPage() {
       console.log('💰 Total price:', totalCartPrice)
       
       await createOrder({
-        storeName: 'Baf Kitchen',
         items: items,
         totalPrice: totalCartPrice,
         orderer: values

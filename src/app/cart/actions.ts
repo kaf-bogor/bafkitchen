@@ -121,12 +121,38 @@ export const useCreateOrders = (
             if (productDoc.exists()) {
               const productData = productDoc.data()
               storeId = productData.storeId || ''
+              console.log(`📦 Product ${item.name} has storeId: ${storeId}`)
               
               // Try to get store name from the vendors array we already fetched
               if (storeId && vendors.length > 0) {
                 const vendor = vendors.find(v => v.id === storeId)
                 if (vendor) {
                   storeName = vendor.name
+                  console.log(`✅ Found vendor from cached list: ${storeName}`)
+                }
+              }
+              
+              // If vendors array is empty or vendor not found, try to fetch directly from stores
+              if (storeName === 'Unknown Vendor' && storeId) {
+                try {
+                  console.log(`🔍 Fetching vendor directly from stores collection for storeId: ${storeId}`)
+                  const storeDoc = await getDoc(doc(db, 'stores', storeId))
+                  if (storeDoc.exists()) {
+                    const storeData = storeDoc.data()
+                    storeName = storeData.name || 'Unknown Vendor'
+                    console.log(`✅ Found vendor from direct fetch: ${storeName}`)
+                  } else {
+                    // Try vendors collection
+                    console.log(`🔍 Trying vendors collection for storeId: ${storeId}`)
+                    const vendorDoc = await getDoc(doc(db, 'vendors', storeId))
+                    if (vendorDoc.exists()) {
+                      const vendorData = vendorDoc.data()
+                      storeName = vendorData.name || 'Unknown Vendor'
+                      console.log(`✅ Found vendor from vendors collection: ${storeName}`)
+                    }
+                  }
+                } catch (fetchError) {
+                  console.warn(`Failed to fetch store/vendor details for ${storeId}:`, fetchError)
                 }
               }
             }
@@ -175,6 +201,15 @@ export const useCreateOrders = (
         },
         vendors: vendors || [] // Ensure vendors is never undefined
       }
+      
+      // Final validation before saving
+      console.log('🔍 Final payload validation:')
+      console.log('📊 Vendors array:', payload.vendors.map(v => ({ id: v.id, name: v.name })))
+      console.log('🛒 Product orders with vendor info:', payload.productOrders.map(po => ({
+        productName: po.product.name,
+        storeId: po.product.storeId,
+        storeName: po.product.store?.name
+      })))
       
       console.log('💾 Saving order payload to Firestore:', payload)
       

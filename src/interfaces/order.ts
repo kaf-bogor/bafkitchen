@@ -2,7 +2,6 @@ import { IProduct, IProductCart } from '@/interfaces/product'
 import { IStore } from '@/interfaces/store'
 
 export interface IOrderRequest {
-  storeName?: string
   orderer: IOrdererInputForm
   items: IProductCart[]
   totalPrice: number
