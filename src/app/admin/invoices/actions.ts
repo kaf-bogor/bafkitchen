@@ -58,7 +58,6 @@ export const useGetInvoices = (): UseQueryResult<IInvoice[], Error> => {
         queryClient.setQueryData(['invoices'], invoices)
       },
       (error) => {
-        console.error('Invoice real-time listener error:', error)
       }
     )
     
@@ -104,7 +103,6 @@ export const useGetInvoicesByVendor = (vendorId: string): UseQueryResult<IInvoic
         queryClient.setQueryData(['invoices', 'vendor', vendorId], invoices)
       },
       (error) => {
-        console.error('Vendor invoices real-time listener error:', error)
       }
     )
     
@@ -181,52 +179,27 @@ export const useGenerateInvoicesForOrder = () => {
           let vendorId = 'default-vendor'
           let vendorName = 'Unknown Vendor'
           
-          console.log('🔍 Processing product order:', {
-            productId: productOrder.product?.id,
-            productName: productOrder.product?.name,
-            storeId: productOrder.product?.storeId,
-            store: productOrder.product?.store
-          })
           
-          if (productOrder.product) {
-            // First try to get storeId from product (this should now work with our fix)
-            if (productOrder.product.storeId) {
-              vendorId = productOrder.product.storeId
-              console.log(`✅ Found storeId: ${vendorId}`)
-              
-              // Try to get vendor name from product's store object
-              if (productOrder.product.store?.name) {
-                vendorName = productOrder.product.store.name
-                console.log(`✅ Found vendor name from product.store: ${vendorName}`)
-              }
-              // Fallback: try to find vendor name from order.vendors array
-              else if (order.vendors && Array.isArray(order.vendors)) {
-                const vendor = order.vendors.find((v: any) => v.id === vendorId)
-                if (vendor && vendor.name) {
-                  vendorName = vendor.name
-                  console.log(`✅ Found vendor name from order.vendors: ${vendorName}`)
-                }
-              }
-            }
+          if (productOrder.product?.vendor) {
+            vendorId = productOrder.product.vendor.id
+            vendorName = productOrder.product.vendor.name
           }
           
-          // Additional fallback: try to get vendor from stores collection directly
+          // Additional fallback: try to get vendor from vendors collection directly
           if (vendorName === 'Unknown Vendor' && vendorId !== 'default-vendor') {
             try {
-              const storeDoc = await getDoc(doc(db, 'stores', vendorId))
-              if (storeDoc.exists()) {
-                const storeData = storeDoc.data()
-                if (storeData.name) {
-                  vendorName = storeData.name
-                  console.log(`✅ Found vendor name from stores collection: ${vendorName}`)
+              const vendorDoc = await getDoc(doc(db, 'vendors', vendorId))
+              if (vendorDoc.exists()) {
+                const vendorData = vendorDoc.data()
+                if (vendorData.name) {
+                  vendorName = vendorData.name
                 }
               }
             } catch (error) {
-              console.warn(`Could not fetch store ${vendorId}:`, error)
+              // Silent fallback
             }
           }
           
-          console.log(`📊 Final vendor assignment: ${vendorId} -> ${vendorName}`)
           
           if (!productsByVendor.has(vendorId)) {
             productsByVendor.set(vendorId, [])
@@ -240,11 +213,6 @@ export const useGenerateInvoicesForOrder = () => {
         }
       }
       
-      console.log('🏪 Products grouped by vendor:', Array.from(productsByVendor.keys()).map(vendorId => ({
-        vendorId,
-        productCount: productsByVendor.get(vendorId)?.length || 0,
-        vendorName: productsByVendor.get(vendorId)?.[0]?.vendorName
-      })))
       
       // Generate invoices for each vendor
       const invoices: IInvoice[] = []

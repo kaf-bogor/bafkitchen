@@ -1,5 +1,6 @@
-import { useQuery, useMutation, UseQueryResult, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+
+import { useQuery, useMutation, UseQueryResult, useQueryClient } from '@tanstack/react-query'
 import { 
   collection, 
   doc, 
@@ -28,6 +29,46 @@ const transformVendorData = (doc: any): IVendor => {
   } as IVendor
 }
 
+// Fetch all vendors (compatible with existing usage)
+// eslint-disable-next-line react-hooks/rules-of-hooks
+export const getVendors = (): UseQueryResult<IVendor[], Error> => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useQuery<IVendor[], Error>({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      try {
+        // Try with isActive filter first
+        let vendorsQuery = query(
+          collection(db, 'vendors'),
+          where('isActive', '==', true),
+          orderBy('createdAt', 'desc')
+        )
+        let vendorsSnap = await getDocs(vendorsQuery)
+
+        // If no active vendors found, try without the isActive filter
+        if (vendorsSnap.empty) {
+          console.log('No active vendors found, trying without isActive filter')
+          vendorsQuery = query(
+            collection(db, 'vendors'),
+            orderBy('createdAt', 'desc')
+          )
+          vendorsSnap = await getDocs(vendorsQuery)
+        }
+
+        return vendorsSnap.docs.map(transformVendorData)
+      } catch (error) {
+        console.error('Error fetching vendors:', error)
+        // Return empty array if vendors collection doesn't exist yet
+        return []
+      }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes - vendors don't change often
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000)
+  })
+}
+
 // Fetch all vendors with real-time updates
 export const useGetVendors = (): UseQueryResult<IVendor[], Error> => {
   const queryClient = useQueryClient()
@@ -46,7 +87,6 @@ export const useGetVendors = (): UseQueryResult<IVendor[], Error> => {
         queryClient.setQueryData(['vendors'], vendors)
       },
       (error) => {
-        console.error('Vendors real-time listener error:', error)
       }
     )
     
@@ -173,93 +213,3 @@ export const useDeleteVendor = () => {
   })
 }
 
-// Migration function to move data from stores to vendors
-export const useMigrateStoresToVendors = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<void, Error, void>({
-    mutationFn: async () => {
-      console.log('🔄 Starting migration from stores to vendors...')
-      
-      try {
-        // Check authentication first
-        const { getAuth } = await import('firebase/auth')
-        const auth = getAuth()
-        const user = auth.currentUser
-        
-        if (!user) {
-          throw new Error('You must be signed in to run migration')
-        }
-        
-        console.log('👤 Current user:', user.email)
-        
-        // Fetch all stores
-        console.log('📥 Fetching stores...')
-        const storesSnap = await getDocs(collection(db, 'stores'))
-        console.log(`📊 Found ${storesSnap.docs.length} stores`)
-        
-        if (storesSnap.empty) {
-          console.log('⚠️  No stores found to migrate')
-          return
-        }
-        
-        let migratedCount = 0
-        let skippedCount = 0
-        let errorCount = 0
-        
-        for (const storeDoc of storesSnap.docs) {
-          try {
-            const storeData = storeDoc.data()
-            console.log(`🏪 Processing store: "${storeData.name}" (ID: ${storeDoc.id})`)
-            
-            // Check if vendor already exists with same name
-            const existingVendorQuery = query(
-              collection(db, 'vendors'),
-              where('name', '==', storeData.name)
-            )
-            const existingVendorSnap = await getDocs(existingVendorQuery)
-            
-            if (existingVendorSnap.empty) {
-              // Create new vendor from store data
-              const vendorData = {
-                name: storeData.name || 'Unnamed Vendor',
-                email: storeData.user?.email || storeData.email || '',
-                userId: storeData.userId || '',
-                isActive: !storeData.isDeleted,
-                createdAt: storeData.createdAt || serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                // Keep original store ID as reference for mapping
-                originalStoreId: storeDoc.id
-              }
-              
-              console.log('📝 Creating vendor:', vendorData)
-              await addDoc(collection(db, 'vendors'), vendorData)
-              console.log(`✅ Migrated store "${storeData.name}" to vendors collection`)
-              migratedCount++
-            } else {
-              console.log(`⏭️  Vendor "${storeData.name}" already exists, skipping...`)
-              skippedCount++
-            }
-          } catch (storeError) {
-            console.error(`❌ Error processing store ${storeDoc.id}:`, storeError)
-            errorCount++
-          }
-        }
-        
-        console.log('🎉 Migration completed!')
-        console.log(`📊 Summary: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`)
-        
-        if (errorCount > 0) {
-          throw new Error(`Migration completed with ${errorCount} errors. Check console for details.`)
-        }
-        
-      } catch (error) {
-        console.error('❌ Migration failed:', error)
-        throw error
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendors'] })
-    }
-  })
-}

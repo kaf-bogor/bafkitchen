@@ -38,7 +38,11 @@ export default function VendorsPage() {
   ]
 
   return (
-    <Layout breadcrumbs={breadcrumbs} isFetching={isFetching} error={error as Error}>
+    <Layout
+      breadcrumbs={breadcrumbs}
+      isFetching={isFetching}
+      error={error as Error}
+    >
       <VStack spacing={6} align="stretch">
         <Card>
           <CardHeader>
@@ -60,7 +64,8 @@ export default function VendorsPage() {
                 <Box>
                   <Text fontWeight="bold">No vendors found</Text>
                   <Text fontSize="sm">
-                    Use the &ldquo;Migrate Data&rdquo; button to import vendor data from the stores collection.
+                    Use the &ldquo;Migrate Data&rdquo; button to import vendor
+                    data from the stores collection.
                   </Text>
                 </Box>
               </Alert>
@@ -89,12 +94,18 @@ export default function VendorsPage() {
                       </Td>
                       <Td>
                         <Text fontSize="sm">
-                          {format(new Date(vendor.createdAt), 'dd MMM yyyy', { locale: id })}
+                          {format(new Date(vendor.createdAt), 'dd MMM yyyy', {
+                            locale: id
+                          })}
                         </Text>
                       </Td>
                       <Td>
                         <Link href={`/dashboard?vendorId=${vendor.id}`}>
-                          <Button size="xs" colorScheme="blue" variant="outline">
+                          <Button
+                            size="xs"
+                            colorScheme="blue"
+                            variant="outline"
+                          >
                             View Dashboard
                           </Button>
                         </Link>
@@ -119,11 +130,11 @@ export default function VendorsPage() {
               </HStack>
               <HStack>
                 <Text fontWeight="bold">Active Vendors:</Text>
-                <Text>{vendors?.filter(v => v.isActive).length || 0}</Text>
+                <Text>{vendors?.filter((v) => v.isActive).length || 0}</Text>
               </HStack>
               <HStack>
                 <Text fontWeight="bold">Inactive Vendors:</Text>
-                <Text>{vendors?.filter(v => !v.isActive).length || 0}</Text>
+                <Text>{vendors?.filter((v) => !v.isActive).length || 0}</Text>
               </HStack>
             </VStack>
           </CardBody>

@@ -26,7 +26,7 @@ import { NumericFormat, NumberFormatValues } from 'react-number-format'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
 import { getCategories, createCategories } from '@/app/admin/categories/actions'
-import { getStores } from '@/app/admin/stores/actions'
+import { getVendors } from '@/app/admin/vendors/actions'
 import {
   IEditProductRequest,
   IProductResponse,
@@ -53,7 +53,7 @@ export default function ProductForm({
   const createCategoryMutation = createCategories()
 
   const { data: dataCategories, refetch: refetchCategories } = getCategories()
-  const { data: stores } = getStores()
+  const { data: vendors } = getVendors()
 
   const {
     values,
@@ -81,9 +81,9 @@ export default function ProductForm({
   })
 
   useEffect(() => {
-    if (dataCategories?.length && values.storeId) {
+    if (dataCategories?.length && values.vendor?.id) {
       const options: ICategoryInput[] = dataCategories
-        .filter((category) => category.storeId === values.storeId)
+        .filter((category) => category.vendorId === values.vendor.id)
         .map((category) => ({ label: category.name, value: category.id }))
       setCategoryOptions(options)
     }
@@ -94,7 +94,7 @@ export default function ProductForm({
       try {
         const newCategory = await createCategoryMutation.mutateAsync({
           name: categoryData.name,
-          storeId: categoryData.storeId
+          vendorId: categoryData.vendorId
         })
         
         toast({
@@ -191,29 +191,32 @@ export default function ProductForm({
           <FormErrorMessage>{errors.stock}</FormErrorMessage>
         </FormControl>
 
-        <FormControl isInvalid={!!errors.storeId && touched.storeId}>
+        <FormControl isInvalid={!!errors.vendor && touched.vendor}>
           <FormLabel>Vendor</FormLabel>
           <Select
-            name="storeId"
-            value={values.storeId}
-            onChange={handleChange}
+            name="vendor"
+            value={values.vendor?.id || ''}
+            onChange={(e) => {
+              const selectedVendor = vendors?.find(v => v.id === e.target.value)
+              setFieldValue('vendor', selectedVendor || { id: '', name: '' })
+            }}
             onBlur={handleBlur}
-            placeholder="Select Store"
+            placeholder="Select Vendor"
           >
-            {!!stores?.length &&
-              stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
+            {!!vendors?.length &&
+              vendors.map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>
+                  {vendor.name}
                 </option>
               ))}
           </Select>
-          <FormErrorMessage>{errors.storeId}</FormErrorMessage>
+          <FormErrorMessage>{errors.vendor?.id || errors.vendor?.name}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={!!errors.categoryIds && touched.categoryIds}>
           <HStack justify="space-between" align="end">
             <FormLabel>Categories (Optional)</FormLabel>
-            {values.storeId && (
+            {values.vendor?.id && (
               <IconButton
                 aria-label="Create new category"
                 icon={<AddIcon />}
@@ -236,10 +239,10 @@ export default function ProductForm({
                 newValue.map((item) => item.value)
               )
             }}
-            isDisabled={!values.storeId}
+            isDisabled={!values.vendor?.id}
           />
           <FormHelperText>
-            {!values.storeId 
+            {!values.vendor?.id
               ? "Select a vendor first to enable categories"
               : "Categories are optional. Click the + button to create a new category."
             }
@@ -286,7 +289,7 @@ export default function ProductForm({
             mr={3}
             type="submit"
             isLoading={isPending}
-            isDisabled={!values.storeId}
+            isDisabled={!values.vendor?.id}
             colorScheme="blue"
           >
             Save
@@ -299,9 +302,9 @@ export default function ProductForm({
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         onSubmit={handleCreateCategory}
-        stores={stores || []}
+        vendors={vendors || []}
         title="Create New Category"
-        data={{ name: '', id: '', storeId: values.storeId }}
+        data={{ name: '', id: '', vendorId: values.vendor?.id || '' }}
       />
     </>
   )

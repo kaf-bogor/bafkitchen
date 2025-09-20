@@ -24,12 +24,12 @@ export const getCategory = (
       const cdoc = await getDoc(doc(db, 'categories', categoryId))
       if (!cdoc.exists()) throw new Error('Category does not exist')
       const cdata = cdoc.data() as any
-      let store: any = null
-      if (cdata.storeId) {
-        const sdoc = await getDoc(doc(db, 'stores', cdata.storeId))
-        if (sdoc.exists()) store = { id: sdoc.id, ...sdoc.data() }
+      let vendor: any = null
+      if (cdata.vendorId) {
+        const vdoc = await getDoc(doc(db, 'vendors', cdata.vendorId))
+        if (vdoc.exists()) vendor = { id: vdoc.id, ...vdoc.data() }
       }
-      return { id: cdoc.id, ...cdata, store } as ICategory.ICategory
+      return { id: cdoc.id, ...cdata, vendor } as ICategory.ICategory
     }
   })
 
@@ -40,16 +40,16 @@ export const getCategories = (
     queryKey: ['categories'],
     queryFn: async () => {
       const categoriesQ = query(collection(db, 'categories'))
-      let storeFilterId: string | null = null
-      if (params?.storeName) {
-        const sQ = query(
-          collection(db, 'stores'),
-          where('name', '==', params.storeName),
-          where('isDeleted', '==', false)
+      let vendorFilterId: string | null = null
+      if (params?.vendorName) {
+        const vQ = query(
+          collection(db, 'vendors'),
+          where('name', '==', params.vendorName),
+          where('isActive', '==', true)
         )
-        const sSnap = await getDocs(sQ)
-        if (!sSnap.empty) {
-          storeFilterId = sSnap.docs[0].id
+        const vSnap = await getDocs(vQ)
+        if (!vSnap.empty) {
+          vendorFilterId = vSnap.docs[0].id
         } else {
           return []
         }
@@ -59,16 +59,16 @@ export const getCategories = (
       const categories: ICategory.ICategory[] = []
       for (const cd of cSnap.docs) {
         const c = { id: cd.id, ...(cd.data() as any) }
-        if (storeFilterId && c.storeId !== storeFilterId) continue
-        let store: any = null
-        if (c.storeId) {
-          const sdoc = await getDoc(doc(db, 'stores', c.storeId))
-          if (sdoc.exists()) {
-            const sdata = sdoc.data() as any
-            if (!sdata.isDeleted) store = { id: sdoc.id, ...sdata }
+        if (vendorFilterId && c.vendorId !== vendorFilterId) continue
+        let vendor: any = null
+        if (c.vendorId) {
+          const vdoc = await getDoc(doc(db, 'vendors', c.vendorId))
+          if (vdoc.exists()) {
+            const vdata = vdoc.data() as any
+            if (vdata.isActive) vendor = { id: vdoc.id, ...vdata }
           }
         }
-        categories.push({ ...(c as any), store } as ICategory.ICategory)
+        categories.push({ ...(c as any), vendor } as ICategory.ICategory)
       }
       return categories
     }
@@ -82,14 +82,14 @@ export const createCategories = () =>
   >({
     mutationKey: ['categories', 'create'],
     mutationFn: async (request: ICategory.ICreateCategoryRequest) => {
-      // Ensure store exists and not deleted
-      const sdoc = await getDoc(doc(db, 'stores', request.storeId))
-      if (!sdoc.exists() || (sdoc.data() as any)?.isDeleted) {
-        throw new Error('Store does not exist')
+      // Ensure vendor exists and is active
+      const vdoc = await getDoc(doc(db, 'vendors', request.vendorId))
+      if (!vdoc.exists() || !(vdoc.data() as any)?.isActive) {
+        throw new Error('Vendor does not exist or is inactive')
       }
       const categoryData = {
         name: request.name,
-        storeId: request.storeId,
+        vendorId: request.vendorId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -111,13 +111,13 @@ export const updateCategories = () =>
       if (!csnap.exists()) throw new Error('Category does not exist')
       await updateDoc(cref, {
         name: request.name,
-        storeId: request.storeId,
+        vendorId: request.vendorId,
         updatedAt: new Date().toISOString()
       })
-      return { id: request.id, name: request.name, storeId: request.storeId } as ICategory.ICategory
+      return { id: request.id, name: request.name, vendorId: request.vendorId } as ICategory.ICategory
     }
   })
 
 export interface IFetchCategoriesRequest {
-  storeName?: string
+  vendorName?: string
 }

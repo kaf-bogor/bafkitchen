@@ -1,23 +1,23 @@
-import { IStore } from '@/interfaces/store'
+import { IVendor } from '@/interfaces/vendor'
 
 export interface ICreateCategoryRequest {
   name: string
-  storeId: string
+  vendorId: string
 }
 
 export interface IUpdateCategoryRequest {
   id: string
   name: string
-  storeId: string
+  vendorId: string
 }
 
 export interface ICategory {
   id: string
   name: string
-  storeId: string
+  vendorId: string
   createdAt: string
   updatedAt: string
-  store?: IStore
+  vendor?: IVendor
 }
 
 

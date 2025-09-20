@@ -52,7 +52,7 @@ const Sidebar = ({ ...rest }: Props) => {
     {
       id: 2,
       text: 'Vendor',
-      path: '/admin/stores',
+      path: '/admin/vendors',
       icon: AiOutlineShop
     },
     {

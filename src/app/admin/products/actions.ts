@@ -36,9 +36,9 @@ export const useGetProduct = (
       if (!psnap.exists()) throw new Error('Product not found')
       const pdata = psnap.data() as any
 
-      // For now, just use a default store to avoid complexity
-      const store = { 
-        id: pdata.storeId || 'baf-kitchen',
+      // Use the vendor stored in the product, or create a default if missing
+      const vendor = pdata.vendor || { 
+        id: 'baf-kitchen',
         name: 'Baf Kitchen',
         userId: '',
         isDeleted: false,
@@ -74,10 +74,9 @@ export const useGetProduct = (
         stock: pdata.stock ?? 0,
         description: pdata.description ?? '',
         imageUrl: pdata.imageUrl ?? '',
-        storeId: pdata.storeId,
         createdAt: String(pdata.createdAt || ''),
         updatedAt: String(pdata.updatedAt || ''),
-        store,
+        vendor,
         categories
       }
       return result
@@ -101,9 +100,9 @@ export const useGetProducts = (
         qsnap.docs.map(async (d) => {
           const pdata = d.data() as any
 
-          // For now, just use a default store to avoid complexity
-          const store = { 
-            id: pdata.storeId || 'baf-kitchen',
+          // Use the vendor stored in the product, or create a default if missing
+          const vendor = pdata.vendor || { 
+            id: 'baf-kitchen',
             name: 'Baf Kitchen',
             userId: '',
             isDeleted: false,
@@ -139,10 +138,9 @@ export const useGetProducts = (
             stock: pdata.stock ?? 0,
             description: pdata.description ?? '',
             imageUrl: pdata.imageUrl ?? '',
-            storeId: pdata.storeId,
             createdAt: String(pdata.createdAt || ''),
             updatedAt: String(pdata.updatedAt || ''),
-            store,
+            vendor,
             categories
           } as IProductResponse
         })
@@ -190,12 +188,13 @@ export const useCreateProducts = (
         const upload = await uploadToFirebase(product.image)
         imageUrl = upload.downloadURL
       }
+
       const payload = {
         name: product.name,
         priceBase: product.priceBase,
         price: product.price,
         stock: product.stock ?? 0,
-        storeId: product.storeId,
+        vendor: product.vendor,
         categoryIds: product.categoryIds,
         description: product.description,
         imageUrl,
@@ -233,7 +232,7 @@ export const useUpdateProducts = (
         priceBase: product.priceBase,
         price: product.price,
         stock: product.stock ?? 0,
-        storeId: product.storeId,
+        vendor: product.vendor,
         categoryIds: product.categoryIds,
         description: product.description,
         imageUrl,

@@ -216,13 +216,8 @@ export default function OrderDetailsPage() {
                       // Get unique vendors from product orders
                       const uniqueVendors = new Map()
                       order.productOrders.forEach(po => {
-                        if (po.product?.store) {
-                          uniqueVendors.set(po.product.store.id, po.product.store.name)
-                        } else if (po.product?.storeId && order.vendors) {
-                          const vendor = order.vendors.find((v: any) => v.id === po.product.storeId)
-                          if (vendor) {
-                            uniqueVendors.set(vendor.id, vendor.name)
-                          }
+                        if (po.product?.vendor) {
+                          uniqueVendors.set(po.product.vendor.id, po.product.vendor.name)
                         }
                       })
 
@@ -266,15 +261,7 @@ export default function OrderDetailsPage() {
                   <Tbody>
                     {order.productOrders?.map((item, index) => {
                       // Get vendor info for this product
-                      let vendorName = 'Unknown Vendor'
-                      if (item.product?.store?.name) {
-                        vendorName = item.product.store.name
-                      } else if (item.product?.storeId && order.vendors) {
-                        const vendor = order.vendors.find((v: any) => v.id === item.product.storeId)
-                        if (vendor) {
-                          vendorName = vendor.name
-                        }
-                      }
+                      const vendorName = item.product?.vendor?.name || 'Unknown Vendor'
 
                       return (
                         <Tr key={index}>

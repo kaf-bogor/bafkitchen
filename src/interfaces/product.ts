@@ -6,7 +6,10 @@ export interface ICreateProductRequest {
   priceBase: number
   price: number
   stock: number | null
-  storeId: string
+  vendor: {
+    id: string
+    name: string
+  }
   categoryIds: string[]
   description: string
   image?: File 
@@ -25,10 +28,9 @@ export interface IProductResponse {
   description: string
   imageUrl: string
   image?: File
-  storeId: string
   createdAt: string
   updatedAt: string
-  store: IStore
+  vendor: IStore
   categories: ICategory[]
 }
 
@@ -42,7 +44,10 @@ export interface ICreateProductInput {
   priceBase: number
   price: number
   stock: number
-  storeId: string
+  vendor: {
+    id: string
+    name: string
+  }
   categories: ICategoryInput[]
   description: string
   image?: File | null
@@ -55,7 +60,7 @@ export type IProduct = {
   priceBase: number
   price: number
   stock: number
-  store: IStore
+  vendor: IStore
   categories: ICategory[]
   description: string
   imageUrl: string
@@ -68,7 +73,7 @@ export const IProduct = {
     priceBase: product.priceBase,
     price: product.price,
     stock: product.stock,
-    store: product.store,
+    vendor: product.vendor,
     categories: [],
     description: product.description,
     imageUrl: product.imageUrl
@@ -81,7 +86,10 @@ export interface IEditProductRequest {
   priceBase: number
   price: number
   stock: number | null
-  storeId: string
+  vendor: {
+    id: string
+    name: string
+  }
   categoryIds: string[]
   description: string
   image?: File

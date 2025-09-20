@@ -18,7 +18,7 @@ export function useUpdateCategory(
   const defaultCategoryInput = {
     id: '',
     name: '',
-    storeId: ''
+    vendorId: ''
   } as IUpdateCategoryRequest
 
   const [currentEditForm, setCurrentEditForm] = useState(defaultCategoryInput)
@@ -30,7 +30,7 @@ export function useUpdateCategory(
       if (!csnap.exists()) throw new Error('Category does not exist')
       await updateDoc(cref, {
         name: request.name,
-        storeId: request.storeId,
+        vendorId: request.vendorId,
         updatedAt: new Date().toISOString()
       })
       fetchCategories()

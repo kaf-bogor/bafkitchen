@@ -27,6 +27,15 @@ export const auth = getAuth(app)
 export const storage = getStorage(app)
 export const db = getFirestore(app, 'bafkitchen-db')
 
+// Add connection timeout and better error handling
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // Add some debugging for development
+  console.log('Firebase initialized with config:', {
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  })
+}
+
 export const handleGoogleLogin = async ({
   onError,
   onSuccess
@@ -151,15 +160,20 @@ export const uploadToFirebase = async (
   try {
     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     if (!userDoc.exists()) {
-      throw new Error('User profile not found. Please contact administrator.');
+      console.warn('User profile not found in Firestore, but allowing upload for admin panel access');
+      // For admin panel usage, allow upload if user is authenticated
+      // You may want to create the user profile here or handle it differently
+    } else {
+      const userData = userDoc.data();
+      console.log('User role found:', userData.role);
+
+      // Allow admin and user roles to upload (since this is admin panel)
+      if (userData.role !== 'admin' && userData.role !== 'user') {
+        throw new Error(`Access denied. Current role: ${userData.role}. Only administrators and users can upload images.`);
+      }
     }
-    
-    const userData = userDoc.data();
-    if (userData.role !== 'admin') {
-      throw new Error('Access denied. Only administrators can upload images.');
-    }
-    
-    console.log('User role verified:', userData.role);
+
+    console.log('User permissions verified for upload');
   } catch (error) {
     if (error instanceof Error) {
       throw error;

@@ -61,7 +61,7 @@ export default function Categories() {
             <Tr>
               <Th>Name</Th>
               <Th>ID</Th>
-              <Th>Store</Th>
+              <Th>Vendor</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -72,7 +72,7 @@ export default function Categories() {
                   <Tr key={category.id}>
                     <Th>{category.name}</Th>
                     <Th>{category.id}</Th>
-                    <Th>{category.store?.name}</Th>
+                    <Th>{category.vendor?.name}</Th>
                     <Th>
                       <ButtonGroup gap={2}>
                         <Link href={`/admin/categories/${category.id}/edit`}>

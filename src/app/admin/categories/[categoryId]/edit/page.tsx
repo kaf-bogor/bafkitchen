@@ -6,7 +6,7 @@ import { useToast } from '@chakra-ui/react'
 import { useRouter } from 'next/navigation'
 
 import { getCategory, updateCategories } from '@/app/admin/categories/actions'
-import { getStores } from '@/app/admin/stores/actions'
+import { useGetVendors } from '@/app/admin/vendors/actions'
 import { Layout } from '@/components'
 import Form from '@/components/admin/categories/Form'
 import { IUpdateCategoryRequest } from '@/interfaces/category'
@@ -18,7 +18,7 @@ export default function Edit({ params }: Props) {
   const [input, setInput] = useState<IUpdateCategoryRequest>({
     id: params.categoryId,
     name: '',
-    storeId: ''
+    vendorId: ''
   })
 
   const { mutate } = updateCategories()
@@ -34,16 +34,16 @@ export default function Edit({ params }: Props) {
       setInput((prev) => ({
         ...prev,
         name: category?.name,
-        storeId: category.storeId
+        vendorId: category.vendorId
       }))
     }
   }, [category])
 
   const {
-    data: stores,
-    isFetching: isFetchingStores,
-    error: errorStores
-  } = getStores()
+    data: vendors,
+    isFetching: isFetchingVendors,
+    error: errorVendors
+  } = useGetVendors()
 
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -84,18 +84,17 @@ export default function Edit({ params }: Props) {
     { label: 'Edit', path: `/admin/categories/${params.categoryId}/edit` }
   ]
 
-  console.log({ input })
   return (
     <Layout
       breadcrumbs={breadcrumbs}
-      isFetching={isFetchingStores || isFetchingCategory}
-      error={(errorStores || errorCategory) as Error}
+      isFetching={isFetchingVendors || isFetchingCategory}
+      error={(errorVendors || errorCategory) as Error}
     >
-      {!!stores?.length && !!category && (
+      {!!vendors?.length && !!category && (
         <Form
           onChange={onChange}
           category={input}
-          stores={stores}
+          vendors={vendors}
           onSubmit={() => onSubmit(input)}
         />
       )}

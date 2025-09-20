@@ -34,9 +34,13 @@ export const adminProductForm = z.object({
     .min(0, { message: 'Stok tidak bisa negatif' })
     .nullable()
     .optional(),
-  storeId: z.string({ required_error: 'Toko diperlukan' }),
+  vendor: z.object({
+    id: z.string({ required_error: 'Vendor ID diperlukan' }),
+    name: z.string({ required_error: 'Vendor name diperlukan' })
+  }),
   categoryIds: z.array(z.string()).optional(),
-  description: z.string().optional()
+  description: z.string().optional(),
+  image: z.any().optional()
 })
 
 export const adminUserForm = z.object({

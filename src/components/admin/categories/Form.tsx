@@ -2,11 +2,12 @@ import React from 'react'
 
 import { Button, FormControl, FormLabel, Input, Select } from '@chakra-ui/react'
 
-import { ICategory, IStore } from '@/interfaces'
+import { ICategory } from '@/interfaces'
+import { IVendor } from '@/interfaces/vendor'
 
 export default function Form({
   category,
-  stores,
+  vendors,
   onChange,
   isLoading = false,
   onSubmit
@@ -23,17 +24,17 @@ export default function Form({
         />
       </FormControl>
       <FormControl>
-        <FormLabel>Store</FormLabel>
+        <FormLabel>Vendor</FormLabel>
         <Select
-          placeholder="Select Store"
-          value={category.storeId}
+          placeholder="Select Vendor"
+          value={category.vendorId}
           onChange={onChange}
-          name="storeId"
+          name="vendorId"
         >
-          {stores.map((store) => {
+          {vendors.map((vendor) => {
             return (
-              <option key={store.id} value={store.id}>
-                {store.name}
+              <option key={vendor.id} value={vendor.id}>
+                {vendor.name}
               </option>
             )
           })}
@@ -46,7 +47,7 @@ export default function Form({
           isLoading={isLoading}
           colorScheme="blue"
           onClick={onSubmit}
-          isDisabled={!category.storeId && !category.name}
+          isDisabled={!category.vendorId && !category.name}
         >
           Simpan
         </Button>
@@ -60,7 +61,7 @@ type InputCategory =
   | ICategory.IUpdateCategoryRequest
 type Props = {
   category: InputCategory
-  stores: IStore.IStore[]
+  vendors: IVendor[]
   onChange: (
     // eslint-disable-next-line no-unused-vars
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

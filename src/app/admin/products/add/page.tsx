@@ -6,9 +6,9 @@ import { useToast } from '@chakra-ui/react'
 
 import { useCreateProducts } from '@/app/admin/products/actions'
 import { Layout, ProductForm } from '@/components'
-import { IStore } from '@/interfaces'
+import { IVendor } from '@/interfaces'
 
-export default function Edit() {
+export default function AddProduct() {
   const toast = useToast()
   const { mutate, isPending } = useCreateProducts({
     onSuccess() {
@@ -32,7 +32,7 @@ export default function Edit() {
   const breadcrumbs = [
     { label: 'dashboard', path: '/admin' },
     { label: 'produk', path: '/admin/products' },
-    { label: 'Tambah', path: '/admin/product' }
+    { label: 'Tambah', path: '/admin/products/add' }
   ]
 
   return (
@@ -42,7 +42,6 @@ export default function Edit() {
         onCreate={mutate}
         product={{
           id: '',
-          storeId: '',
           createdAt: '',
           updatedAt: '',
           name: '',
@@ -51,7 +50,7 @@ export default function Edit() {
           price: 0,
           priceBase: 0,
           stock: 0,
-          store: {} as IStore.IStore,
+          vendor: {} as IVendor.IVendor,
           categories: []
         }}
         title="Tambah Produk"

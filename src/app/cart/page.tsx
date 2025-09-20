@@ -29,8 +29,8 @@ import {
   Center
 } from '@chakra-ui/react'
 import { useFormik } from 'formik'
-import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
 import Link from 'next/link'
+import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
 import OrdererInput from '@/app/s/[storeName]/cart/components/OrdererInput'
@@ -117,7 +117,7 @@ export default function CartPage() {
       console.log('🎯 Form submitted with values:', values)
       console.log('🛒 Cart items:', items)
       console.log('💰 Total price:', totalCartPrice)
-      
+
       await createOrder({
         items: items,
         totalPrice: totalCartPrice,
@@ -203,32 +203,52 @@ export default function CartPage() {
 
       <Container maxW="container.xl" py={6}>
         <form onSubmit={handleSubmit}>
-          <Stack spacing={6} direction={{ base: 'column', lg: 'row' }} align="start">
+          <Stack
+            spacing={6}
+            direction={{ base: 'column', lg: 'row' }}
+            align="start"
+          >
             {/* Left Column - Form (5/8 width on desktop, full width on mobile) */}
-            <VStack spacing={6} flex={{ base: '1', lg: '5' }} w="full" align="stretch">
+            <VStack
+              spacing={6}
+              flex={{ base: '1', lg: '5' }}
+              w="full"
+              align="stretch"
+            >
               <Card>
                 <CardHeader>
-                  <Heading size={{ base: 'md', lg: 'lg' }}>Data Pemesan</Heading>
+                  <Heading size={{ base: 'md', lg: 'lg' }}>
+                    Data Pemesan
+                  </Heading>
                 </CardHeader>
                 <Divider />
                 <CardBody>
                   <OrdererInput
                     order={values}
                     errors={errors}
-                    onChange={(e) => setFieldValue(e.target.name, e.target.value)}
+                    onChange={(e) =>
+                      setFieldValue(e.target.name, e.target.value)
+                    }
                   />
                 </CardBody>
               </Card>
             </VStack>
 
             {/* Right Column - Products & Checkout (3/8 width on desktop, full width on mobile) */}
-            <VStack spacing={6} flex={{ base: '1', lg: '3' }} w="full" align="stretch">
+            <VStack
+              spacing={6}
+              flex={{ base: '1', lg: '3' }}
+              w="full"
+              align="stretch"
+            >
               <Card>
                 <CardHeader pb={2}>
                   <Flex justify="space-between" align="center">
                     <HStack>
                       <FaCartShopping color="blue" />
-                      <Heading size={{ base: 'sm', lg: 'md' }}>Keranjang Belanja</Heading>
+                      <Heading size={{ base: 'sm', lg: 'md' }}>
+                        Keranjang Belanja
+                      </Heading>
                       <Badge
                         colorScheme="blue"
                         variant="solid"
@@ -254,7 +274,11 @@ export default function CartPage() {
                     {items.map((product, index) => (
                       <Box key={product.id}>
                         <VStack p={4} spacing={3} align="stretch">
-                          <Flex gap={3} direction={{ base: 'row', sm: 'row' }} align="start">
+                          <Flex
+                            gap={3}
+                            direction={{ base: 'row', sm: 'row' }}
+                            align="start"
+                          >
                             <Box
                               width={{ base: '70px', lg: '60px' }}
                               height={{ base: '70px', lg: '60px' }}
@@ -270,16 +294,28 @@ export default function CartPage() {
                               />
                             </Box>
                             <VStack align="start" flex={1} spacing={1} ml={3}>
-                              <Text fontWeight="semibold" fontSize={{ base: 'md', lg: 'sm' }} noOfLines={2}>
+                              <Text
+                                fontWeight="semibold"
+                                fontSize={{ base: 'md', lg: 'sm' }}
+                                noOfLines={2}
+                              >
                                 {product.name}
                               </Text>
-                              <Text color="green.600" fontWeight="bold" fontSize={{ base: 'md', lg: 'sm' }}>
+                              <Text
+                                color="green.600"
+                                fontWeight="bold"
+                                fontSize={{ base: 'md', lg: 'sm' }}
+                              >
                                 {currency.toIDRFormat(product.price)}
                               </Text>
                             </VStack>
                           </Flex>
-                          
-                          <Flex justify="space-between" align="center" direction={{ base: 'row', sm: 'row' }}>
+
+                          <Flex
+                            justify="space-between"
+                            align="center"
+                            direction={{ base: 'row', sm: 'row' }}
+                          >
                             <HStack spacing={2}>
                               <IconButton
                                 aria-label="Decrease quantity"
@@ -307,8 +343,14 @@ export default function CartPage() {
                                 onClick={() => handleAddQty(product)}
                               />
                             </HStack>
-                            <Text color="gray.600" fontSize={{ base: 'md', lg: 'sm' }} fontWeight="medium">
-                              {currency.toIDRFormat(product.price * product.quantity)}
+                            <Text
+                              color="gray.600"
+                              fontSize={{ base: 'md', lg: 'sm' }}
+                              fontWeight="medium"
+                            >
+                              {currency.toIDRFormat(
+                                product.price * product.quantity
+                              )}
                             </Text>
                           </Flex>
                         </VStack>
@@ -321,15 +363,23 @@ export default function CartPage() {
 
               <Card>
                 <CardHeader>
-                  <Heading size={{ base: 'md', lg: 'md' }}>Ringkasan Pesanan</Heading>
+                  <Heading size={{ base: 'md', lg: 'md' }}>
+                    Ringkasan Pesanan
+                  </Heading>
                 </CardHeader>
                 <Divider />
                 <CardBody>
                   <VStack spacing={4}>
                     <HStack justify="space-between" w="full">
-                      <Text fontSize={{ base: 'md', lg: 'sm' }}>Total Item:</Text>
-                      <Text fontWeight="semibold" fontSize={{ base: 'md', lg: 'sm' }}>
-                        {items.reduce((acc, item) => acc + item.quantity, 0)} pcs
+                      <Text fontSize={{ base: 'md', lg: 'sm' }}>
+                        Total Item:
+                      </Text>
+                      <Text
+                        fontWeight="semibold"
+                        fontSize={{ base: 'md', lg: 'sm' }}
+                      >
+                        {items.reduce((acc, item) => acc + item.quantity, 0)}{' '}
+                        pcs
                       </Text>
                     </HStack>
                     <HStack justify="space-between" w="full">

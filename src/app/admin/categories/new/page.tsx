@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { createCategories } from '@/app/admin/categories/actions'
-import { getStores } from '@/app/admin/stores/actions'
+import { useGetVendors } from '@/app/admin/vendors/actions'
 import { Layout } from '@/components'
 import Form from '@/components/admin/categories/Form'
 import { ICreateCategoryRequest } from '@/interfaces/category'
@@ -16,15 +16,15 @@ export default function Create() {
   const toast = useToast()
   const router = useRouter()
   const {
-    data: stores,
-    isFetching: isFetchingStores,
-    error: errorStores
-  } = getStores()
+    data: vendors,
+    isFetching: isFetchingVendors,
+    error: errorVendors
+  } = useGetVendors()
   const { isPending, mutate } = createCategories()
 
   const [input, setInput] = useState<ICreateCategoryRequest>({
     name: '',
-    storeId: ''
+    vendorId: ''
   })
 
   const handleChange = (
@@ -53,7 +53,6 @@ export default function Create() {
         router.push('/admin/categories')
       },
       onError(error) {
-        console.log(error)
         toast({
           title: 'Gagal memperbaharui kategori',
           description: (error as Error).message,
@@ -68,8 +67,8 @@ export default function Create() {
   return (
     <Layout
       breadcrumbs={breadcrumbs}
-      isFetching={isFetchingStores}
-      error={errorStores as Error}
+      isFetching={isFetchingVendors}
+      error={errorVendors as Error}
       rightHeaderComponent={
         <Link href="/admin/categories/new">
           <Button colorScheme="blue" size="sm" onClick={() => {}}>
@@ -78,12 +77,12 @@ export default function Create() {
         </Link>
       }
     >
-      {!!stores?.length && (
+      {!!vendors?.length && (
         <Form
           onChange={handleChange}
           category={input}
           isLoading={isPending}
-          stores={stores}
+          vendors={vendors}
           onSubmit={() => onSubmit(input)}
         />
       )}

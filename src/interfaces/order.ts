@@ -17,8 +17,7 @@ export interface IProductOrder {
     imageUrl: string
     priceBase: number
     price: number
-    storeId?: string
-    store?: {
+    vendor?: {
       id: string
       name: string
     }
@@ -80,8 +79,6 @@ export interface IProductOrderResponse {
   updatedAt: Date
   customerId: string
   status: string
-  storeId: string
-  store: IStore
   productOrders: {
     id: string
     quantity: number

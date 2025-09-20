@@ -81,10 +81,10 @@ export default function CategoryFormModal(props: MyModalProps) {
                 onChange={handleChange}
                 name="storeId"
               >
-                {props.stores.map((store) => {
+                {props.vendors.map((vendor) => {
                   return (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
+                    <option key={vendor.id} value={vendor.id}>
+                      {vendor.name}
                     </option>
                   )
                 })}

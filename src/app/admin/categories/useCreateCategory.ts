@@ -12,13 +12,13 @@ export function useCreateCategory(
   const handleCreateNewCategory =
     (request: ICreateCategoryRequest) => async () => {
       try {
-        const sdoc = await getDoc(doc(db, 'stores', request.storeId))
-        if (!sdoc.exists() || (sdoc.data() as any)?.isDeleted) {
-          throw new Error('Store does not exist')
+        const vdoc = await getDoc(doc(db, 'vendors', request.vendorId))
+        if (!vdoc.exists() || !(vdoc.data() as any)?.isActive) {
+          throw new Error('Vendor does not exist or is not active')
         }
         const categoryData = {
           name: request.name,
-          storeId: request.storeId,
+          vendorId: request.vendorId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
