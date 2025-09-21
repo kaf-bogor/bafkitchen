@@ -240,17 +240,17 @@ export const downloadGoogleSheetsCSV = (
 // Open Google Sheets with instructions
 export const openGoogleSheetsImportInstructions = () => {
   const instructions = `
-To import your data into Google Sheets:
+Untuk mengimpor data Anda ke Google Sheets:
 
-1. Go to https://sheets.google.com
-2. Create a new spreadsheet or open an existing one
-3. Click on "File" > "Import"
-4. Choose "Upload" and select the CSV file you just downloaded
-5. Select "Replace current sheet" or "Insert new sheet(s)"
-6. Choose "Comma" as separator
-7. Click "Import data"
+1. Buka https://sheets.google.com
+2. Buat spreadsheet baru atau buka spreadsheet yang sudah ada
+3. Klik "File" > "Impor"
+4. Pilih "Unggah" dan pilih file CSV yang baru saja Anda unduh
+5. Pilih "Ganti sheet saat ini" atau "Sisipkan sheet baru"
+6. Pilih "Koma" sebagai pemisah
+7. Klik "Impor data"
 
-Your orders data will be imported with proper formatting and metadata!
+Data pesanan Anda akan diimpor dengan format dan metadata yang sesuai!
   `
   
   alert(instructions)
