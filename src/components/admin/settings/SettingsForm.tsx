@@ -10,7 +10,11 @@ import {
   VStack
 } from '@chakra-ui/react'
 
-import { ISettings, ICreateSettingsRequest, IUpdateSettingsRequest } from '@/interfaces/settings'
+import {
+  ISettings,
+  ICreateSettingsRequest,
+  IUpdateSettingsRequest
+} from '@/interfaces/settings'
 
 interface Props {
   settings?: ISettings | null
@@ -93,12 +97,13 @@ const SettingsForm: React.FC<Props> = ({
         </FormControl>
 
         <Button
+          w="200px"
           type="submit"
           colorScheme="blue"
           isLoading={isLoading}
-          loadingText={settings ? "Updating..." : "Creating..."}
+          loadingText={settings ? 'Updating...' : 'Creating...'}
         >
-          {settings ? "Update Settings" : "Create Settings"}
+          {settings ? 'Update Settings' : 'Create Settings'}
         </Button>
       </VStack>
     </Box>

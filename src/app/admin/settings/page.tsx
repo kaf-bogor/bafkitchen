@@ -15,18 +15,22 @@ import {
 
 import { Layout } from '@/components'
 import SettingsForm from '@/components/admin/settings/SettingsForm'
-import { ICreateSettingsRequest, IUpdateSettingsRequest } from '@/interfaces/settings'
-
 import {
-  useGetSettings,
-  useCreateSettings,
-  useUpdateSettings
-} from './actions'
+  ICreateSettingsRequest,
+  IUpdateSettingsRequest
+} from '@/interfaces/settings'
+
+import { useGetSettings, useCreateSettings, useUpdateSettings } from './actions'
 
 export default function SettingsPage() {
   const toast = useToast()
 
-  const { data: settings, loading: isFetching, error, refetch } = useGetSettings()
+  const {
+    data: settings,
+    loading: isFetching,
+    error,
+    refetch
+  } = useGetSettings()
   const { createSettings, loading: isCreating } = useCreateSettings()
   const { updateSettings, loading: isUpdating } = useUpdateSettings()
 
@@ -55,11 +59,11 @@ export default function SettingsPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
 
     // Clear error for this field when user starts typing
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors(prev => ({ ...prev, [name]: undefined }))
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
 
@@ -79,14 +83,17 @@ export default function SettingsPage() {
     if (!formData.app_domain.trim()) {
       errors.app_domain = 'App domain is required'
     } else if (!/^https?:\/\/.+/.test(formData.app_domain)) {
-      errors.app_domain = 'Please enter a valid URL (starting with http:// or https://)'
+      errors.app_domain =
+        'Please enter a valid URL (starting with http:// or https://)'
     }
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
 
-  const handleSubmit = async (data: ICreateSettingsRequest | IUpdateSettingsRequest) => {
+  const handleSubmit = async (
+    data: ICreateSettingsRequest | IUpdateSettingsRequest
+  ) => {
     if (!validateForm()) return
 
     try {
@@ -133,7 +140,7 @@ export default function SettingsPage() {
       isFetching={isFetching}
       error={error as Error}
     >
-      <Box maxW="600px" mx="auto">
+      <Box w="full">
         <Heading size="lg" mb={6}>
           Application Settings
         </Heading>
@@ -144,7 +151,8 @@ export default function SettingsPage() {
             <Box>
               <AlertTitle>No settings found!</AlertTitle>
               <AlertDescription>
-                Create your first settings configuration to manage app settings like admin phone number.
+                Create your first settings configuration to manage app settings
+                like admin phone number.
               </AlertDescription>
             </Box>
           </Alert>
@@ -164,7 +172,8 @@ export default function SettingsPage() {
         {settings && (
           <Box mt={6} p={4} bg="gray.50" borderRadius="md">
             <Text fontSize="sm" color="gray.600">
-              <strong>Last updated:</strong> {new Date(settings.updated_at).toLocaleString()}
+              <strong>Last updated:</strong>{' '}
+              {new Date(settings.updated_at).toLocaleString()}
             </Text>
           </Box>
         )}

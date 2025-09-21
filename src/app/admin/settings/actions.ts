@@ -58,7 +58,7 @@ export const useGetSettings = () => {
 
   useEffect(() => {
     fetchSettings()
-  }, [fetchSettings])
+  }, [])
 
   return { data, loading, error, refetch: fetchSettings }
 }
