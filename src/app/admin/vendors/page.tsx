@@ -30,7 +30,7 @@ import { Layout } from '@/components'
 import { useGetVendors } from './actions'
 
 export default function VendorsPage() {
-  const { data: vendors, isFetching, error } = useGetVendors()
+  const { data: vendors, loading: isFetching, error } = useGetVendors()
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/admin' },

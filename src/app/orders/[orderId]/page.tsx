@@ -32,7 +32,7 @@ export default function OrderDetailPage({
 }: {
   params: { orderId: string }
 }) {
-  const { data: order, isFetching, error } = useGetOrderDetail(params.orderId)
+  const { data: order, loading: isFetching, error } = useGetOrderDetail(params.orderId)
 
   return (
     <Layout isFetching={isFetching} error={error as Error}>

@@ -6,7 +6,7 @@ import { Button, useToast } from '@chakra-ui/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { createCategories } from '@/app/admin/categories/actions'
+import { useCreateCategories } from '@/app/admin/categories/actions'
 import { useGetVendors } from '@/app/admin/vendors/actions'
 import { Layout } from '@/components'
 import Form from '@/components/admin/categories/Form'
@@ -17,10 +17,10 @@ export default function Create() {
   const router = useRouter()
   const {
     data: vendors,
-    isFetching: isFetchingVendors,
+    loading: isFetchingVendors,
     error: errorVendors
   } = useGetVendors()
-  const { isPending, mutate } = createCategories()
+  const { createCategory, loading: isPending } = useCreateCategories()
 
   const [input, setInput] = useState<ICreateCategoryRequest>({
     name: '',
@@ -41,27 +41,25 @@ export default function Create() {
     { label: 'Kategori', path: '/admin/categories' }
   ]
 
-  const onSubmit = (input: ICreateCategoryRequest): void => {
-    mutate(input, {
-      onSuccess() {
-        toast({
-          title: 'Berhasil memperbaharui kategori',
-          status: 'success',
-          duration: 5000,
-          isClosable: true
-        })
-        router.push('/admin/categories')
-      },
-      onError(error) {
-        toast({
-          title: 'Gagal memperbaharui kategori',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true
-        })
-      }
-    })
+  const onSubmit = async (input: ICreateCategoryRequest): Promise<void> => {
+    try {
+      await createCategory(input)
+      toast({
+        title: 'Berhasil membuat kategori',
+        status: 'success',
+        duration: 5000,
+        isClosable: true
+      })
+      router.push('/admin/categories')
+    } catch (error) {
+      toast({
+        title: 'Gagal membuat kategori',
+        description: (error as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
   }
 
   return (

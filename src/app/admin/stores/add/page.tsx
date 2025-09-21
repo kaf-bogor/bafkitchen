@@ -13,27 +13,8 @@ import { IStore } from '@/interfaces'
 export default function AddStore({ params }: Props) {
   const toast = useToast()
   const router = useRouter()
-  const { mutate, isPending } = createStore({
-    onSuccess() {
-      toast({
-        title: 'Successfully updated store',
-        status: 'success',
-        duration: 5000,
-        isClosable: true
-      })
-      router.push('/admin/stores')
-    },
-    onError(error) {
-      toast({
-        title: 'Failed to update store',
-        description: (error as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true
-      })
-    }
-  })
-  const { data: store, isFetching, error } = getStore(params.id)
+  const { createStore: createStoreAction, loading: isPending } = createStore()
+  const { data: store, loading: isFetching, error } = getStore(params.id)
 
   const [input, setInput] = useState<IStore.ICreateStoreRequest>({
     name: '',
@@ -73,7 +54,26 @@ export default function AddStore({ params }: Props) {
     >
       <Form
         onChange={onChange}
-        onSubmit={() => mutate(input)}
+        onSubmit={async () => {
+          try {
+            await createStoreAction(input)
+            toast({
+              title: 'Successfully created store',
+              status: 'success',
+              duration: 5000,
+              isClosable: true
+            })
+            router.push('/admin/stores')
+          } catch (error) {
+            toast({
+              title: 'Failed to create store',
+              description: (error as Error).message,
+              status: 'error',
+              duration: 5000,
+              isClosable: true
+            })
+          }
+        }}
         isLoading={isPending}
         store={input}
       />

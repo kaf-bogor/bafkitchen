@@ -33,6 +33,7 @@ import Link from 'next/link'
 import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
+import { useGetSettings } from '@/app/admin/settings/actions'
 import OrdererInput from '@/app/s/[storeName]/cart/components/OrdererInput'
 import { useStore } from '@/app/s/[storeName]/useStore'
 import { useAuth } from '@/app/UserProvider'
@@ -52,48 +53,8 @@ export default function CartPage() {
   const items = (cart.getProducts && cart.getProducts()) || []
   const totalCartPrice = cart.getTotalPrice && cart.getTotalPrice()
 
-  const { mutate: createOrder, isPending } = useCreateOrders({
-    onSuccess(orderData) {
-      console.log('✅ Order creation successful:', orderData)
-      cart.clearCart()
-
-      const encodedText = order.generateOrderText({
-        items,
-        customer: values,
-        totalPrice: totalCartPrice,
-        orderId: orderData.id
-      })
-
-      window.open(
-        `https://wa.me/${process.env.NEXT_PUBLIC_ADMIN_PHONE_NUMBER}?text=${encodeURIComponent(encodedText)}`,
-        '_blank'
-      )
-      toast({
-        title: 'Berhasil',
-        description: 'Order berhasil dibuat',
-        status: 'success',
-        duration: 9000,
-        isClosable: true
-      })
-    },
-    onError(error) {
-      console.error('❌ Order creation failed:', error)
-      let errorMessage =
-        error.message || 'Gagal membuat pesanan. Silahkan coba lagi.'
-
-      if ((error as any).response?.data?.error?.includes('out of stock')) {
-        errorMessage = (error as any).response.data.error
-      }
-
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        status: 'error',
-        duration: 9000,
-        isClosable: true
-      })
-    }
-  })
+  const { createOrder: createOrderAction, loading: isPending } = useCreateOrders()
+  const { data: settings } = useGetSettings()
 
   const {
     dirty,
@@ -118,11 +79,52 @@ export default function CartPage() {
       console.log('🛒 Cart items:', items)
       console.log('💰 Total price:', totalCartPrice)
 
-      await createOrder({
-        items: items,
-        totalPrice: totalCartPrice,
-        orderer: values
-      })
+      try {
+        const orderData = await createOrderAction({
+          items: items,
+          totalPrice: totalCartPrice,
+          orderer: values
+        })
+
+        console.log('✅ Order creation successful:', orderData)
+        cart.clearCart()
+
+        const encodedText = order.generateOrderText({
+          items,
+          customer: values,
+          totalPrice: totalCartPrice,
+          orderId: orderData.id
+        })
+
+        const adminPhoneNumber = settings?.admin_phone_number || process.env.NEXT_PUBLIC_ADMIN_PHONE_NUMBER || '6281296081249'
+        window.open(
+          `https://wa.me/${adminPhoneNumber}?text=${encodeURIComponent(encodedText)}`,
+          '_blank'
+        )
+        toast({
+          title: 'Berhasil',
+          description: 'Order berhasil dibuat',
+          status: 'success',
+          duration: 9000,
+          isClosable: true
+        })
+      } catch (error) {
+        console.error('❌ Order creation failed:', error)
+        let errorMessage =
+          (error as Error).message || 'Gagal membuat pesanan. Silahkan coba lagi.'
+
+        if ((error as any).response?.data?.error?.includes('out of stock')) {
+          errorMessage = (error as any).response.data.error
+        }
+
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          status: 'error',
+          duration: 9000,
+          isClosable: true
+        })
+      }
     }
   })
 

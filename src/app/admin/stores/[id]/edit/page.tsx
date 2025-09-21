@@ -13,8 +13,8 @@ import { IStore } from '@/interfaces'
 export default function EditStore({ params }: Props) {
   const toast = useToast()
   const router = useRouter()
-  const { mutate } = updateStores()
-  const { data: store, isFetching, error } = getStore(params.id)
+  const { updateStore } = updateStores()
+  const { data: store, loading: isFetching, error } = getStore(params.id)
 
   const [input, setInput] = useState<IStore.IUpdateStoreRequest>({
     id: params.id,
@@ -41,27 +41,25 @@ export default function EditStore({ params }: Props) {
     })
   }
 
-  const onSubmit = (input: IStore.IUpdateStoreRequest): void => {
-    mutate(input, {
-      onSuccess() {
-        toast({
-          title: 'Successfully updated store',
-          status: 'success',
-          duration: 5000,
-          isClosable: true
-        })
-        router.push('/admin/stores')
-      },
-      onError(error) {
-        toast({
-          title: 'Failed to update store',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true
-        })
-      }
-    })
+  const onSubmit = async (input: IStore.IUpdateStoreRequest): Promise<void> => {
+    try {
+      await updateStore(input)
+      toast({
+        title: 'Successfully updated store',
+        status: 'success',
+        duration: 5000,
+        isClosable: true
+      })
+      router.push('/admin/stores')
+    } catch (error) {
+      toast({
+        title: 'Failed to update store',
+        description: (error as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
   }
 
   const breadcrumbs = [

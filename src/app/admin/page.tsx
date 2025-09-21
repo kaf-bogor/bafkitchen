@@ -73,7 +73,7 @@ export default function HomeDashboard() {
 
   const {
     data: orders,
-    isFetching,
+    loading: isFetching,
     error,
     refetch
   } = useOrders(dateStart, dateEnd, !!user)

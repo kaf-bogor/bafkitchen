@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import { useQuery, UseQueryResult, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
 import { collection, getDocs, onSnapshot, query, orderBy } from 'firebase/firestore'
 
 import { IOrder } from '@/interfaces'
@@ -18,53 +17,67 @@ const transformOrderData = (doc: any): IOrder.IOrder => {
   } as IOrder.IOrder
 }
 
-export const getOrders = (enabled: boolean = true): UseQueryResult<IOrder.IOrder[], Error> => {
-  const queryClient = useQueryClient()
-  
-  // Set up real-time listener
-  useEffect(() => {
+export const useGetOrders = (enabled: boolean = true) => {
+  const [data, setData] = useState<IOrder.IOrder[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchOrders = useCallback(async () => {
     if (!enabled) return
-    
-    const ordersQuery = query(
-      collection(db, 'orders'),
-      orderBy('createdAt', 'desc')
-    )
-    
-    const unsubscribe = onSnapshot(
-      ordersQuery,
-      (querySnapshot) => {
-        const orders: IOrder.IOrder[] = querySnapshot.docs.map(transformOrderData)
-        queryClient.setQueryData(['order'], orders)
-      },
-      (error) => {
-        console.error('Orders real-time listener error:', error)
-      }
-    )
-    
-    return () => {
-      unsubscribe()
-    }
-  }, [queryClient, enabled])
-  
-  return useQuery<IOrder.IOrder[], Error>({
-    queryKey: ['order'],
-    queryFn: async () => {
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const ordersQuery = query(
         collection(db, 'orders'),
         orderBy('createdAt', 'desc')
       )
       const qsnap = await getDocs(ordersQuery)
-      return qsnap.docs.map(transformOrderData)
-    },
-    enabled: enabled,
-    retry: (failureCount, error: any) => {
-      if (error?.code === 'permission-denied') {
-        return false;
+      const orders = qsnap.docs.map(transformOrderData)
+      setData(orders)
+    } catch (err: any) {
+      if (err?.code === 'permission-denied') {
+        setError(new Error('Permission denied to access orders'))
+      } else {
+        setError(err as Error)
       }
-      return failureCount < 3;
-    },
-    staleTime: Infinity, // Keep data fresh since we have real-time updates
-    refetchOnWindowFocus: false // Disable refetch on focus since we have real-time updates
-  })
+    } finally {
+      setLoading(false)
+    }
+  }, [enabled])
+
+  useEffect(() => {
+    fetchOrders()
+
+    if (!enabled) return
+
+    // Set up real-time listener
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      orderBy('createdAt', 'desc')
+    )
+
+    const unsubscribe = onSnapshot(
+      ordersQuery,
+      (querySnapshot) => {
+        const orders: IOrder.IOrder[] = querySnapshot.docs.map(transformOrderData)
+        setData(orders)
+      },
+      (err) => {
+        console.error('Orders real-time listener error:', err)
+        setError(err as Error)
+      }
+    )
+
+    return () => {
+      unsubscribe()
+    }
+  }, [fetchOrders, enabled])
+
+  return { data, loading, error, refetch: fetchOrders }
 }
+
+// Alias for backward compatibility
+export const getOrders = useGetOrders
 

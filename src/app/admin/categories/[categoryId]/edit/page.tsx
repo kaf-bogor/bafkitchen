@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react'
 import { useToast } from '@chakra-ui/react'
 import { useRouter } from 'next/navigation'
 
-import { getCategory, updateCategories } from '@/app/admin/categories/actions'
+import { useGetCategory, useUpdateCategories } from '@/app/admin/categories/actions'
 import { useGetVendors } from '@/app/admin/vendors/actions'
 import { Layout } from '@/components'
 import Form from '@/components/admin/categories/Form'
@@ -21,13 +21,13 @@ export default function Edit({ params }: Props) {
     vendorId: ''
   })
 
-  const { mutate } = updateCategories()
+  const { updateCategory } = useUpdateCategories()
 
   const {
     data: category,
-    isFetching: isFetchingCategory,
+    loading: isFetchingCategory,
     error: errorCategory
-  } = getCategory(params.categoryId)
+  } = useGetCategory(params.categoryId)
 
   useEffect(() => {
     if (category) {
@@ -41,7 +41,7 @@ export default function Edit({ params }: Props) {
 
   const {
     data: vendors,
-    isFetching: isFetchingVendors,
+    loading: isFetchingVendors,
     error: errorVendors
   } = useGetVendors()
 
@@ -54,28 +54,26 @@ export default function Edit({ params }: Props) {
     })
   }
 
-  const onSubmit = (input: IUpdateCategoryRequest): void => {
-    mutate(input, {
-      onSuccess() {
-        toast({
-          title: 'Berhasil memperbaharui kategori',
-          status: 'success',
-          duration: 5000,
-          isClosable: true
-        })
-        router.push('/admin/categories')
-      },
-      onError(error) {
-        console.log(error)
-        toast({
-          title: 'Gagal memperbaharui kategori',
-          description: (error as Error).message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true
-        })
-      }
-    })
+  const onSubmit = async (input: IUpdateCategoryRequest): Promise<void> => {
+    try {
+      await updateCategory(input)
+      toast({
+        title: 'Berhasil memperbaharui kategori',
+        status: 'success',
+        duration: 5000,
+        isClosable: true
+      })
+      router.push('/admin/categories')
+    } catch (error) {
+      console.log(error)
+      toast({
+        title: 'Gagal memperbaharui kategori',
+        description: (error as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
   }
 
   const breadcrumbs = [

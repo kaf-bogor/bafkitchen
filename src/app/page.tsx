@@ -30,7 +30,7 @@ export default function Home() {
 
   const {
     data: schedules,
-    isFetching,
+    loading: isFetching,
     error
   } = getSchedules(weekStart, weekEnd, true) // Always enabled on homepage
 

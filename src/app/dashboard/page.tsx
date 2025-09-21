@@ -54,7 +54,7 @@ export default function VendorDashboard() {
   const { data: vendorsFromCollection } = useGetVendors()
   
   // Get invoices for selected vendor
-  const { data: vendorInvoices, isFetching, error } = useGetInvoicesByVendor(selectedVendorId)
+  const { data: vendorInvoices, loading: isFetching, error } = useGetInvoicesByVendor(selectedVendorId)
 
   const breadcrumbs = [{ label: 'Vendor Dashboard', path: '/dashboard' }]
 

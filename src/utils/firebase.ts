@@ -182,7 +182,7 @@ export const uploadToFirebase = async (
   }
 
   const uniqueImageName = `${image.name}_${crypto.randomUUID()}`
-  const imageRef = ref(storage, `images/${uniqueImageName}`)
+  const imageRef = ref(storage, `products/${uniqueImageName}`)
 
   try {
     // Upload the file
@@ -197,9 +197,6 @@ export const uploadToFirebase = async (
     }
   } catch (error) {
     console.error('Firebase Storage upload error:', error);
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'storage/unauthorized') {
-      throw new Error('Upload failed: You do not have permission to upload images. Please ensure you are logged in as an administrator.');
-    }
     throw error;
   }
 }

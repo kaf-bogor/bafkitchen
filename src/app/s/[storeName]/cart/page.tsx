@@ -46,33 +46,7 @@ export default function CartPage({ params }: Props) {
   const items = (cart.getProducts && cart.getProducts()) || []
   const totalCartPrice = cart.getTotalPrice && cart.getTotalPrice()
 
-  const { mutate: createOrder } = useCreateOrders({
-    onSuccess() {
-      cart.clearCart()
-      toast({
-        title: 'Berhasil',
-        description: 'Order berhasil dibuat',
-        status: 'success',
-        duration: 9000,
-        isClosable: true
-      })
-    },
-    onError(error) {
-      let errorMessage = 'Gagal membuat pesanan. Silahkan coba lagi.'
-
-      if ((error as any).response.data.error.includes('out of stock')) {
-        errorMessage = (error as any).response.data.error
-      }
-
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        status: 'error',
-        duration: 9000,
-        isClosable: true
-      })
-    }
-  })
+  const { createOrder: createOrderAction } = useCreateOrders()
 
   const {
     dirty,
@@ -93,12 +67,36 @@ export default function CartPage({ params }: Props) {
     validateOnChange: true,
     validationSchema: toFormikValidationSchema(schema.orderInputForm),
     onSubmit: async () => {
-      await createOrder({
-        storeName: params.storeName,
-        items: items,
-        totalPrice: totalCartPrice,
-        orderer: values
-      })
+      try {
+        await createOrderAction({
+          items: items,
+          totalPrice: totalCartPrice,
+          orderer: values
+        })
+
+        cart.clearCart()
+        toast({
+          title: 'Berhasil',
+          description: 'Order berhasil dibuat',
+          status: 'success',
+          duration: 9000,
+          isClosable: true
+        })
+      } catch (error) {
+        let errorMessage = 'Gagal membuat pesanan. Silahkan coba lagi.'
+
+        if ((error as any).response?.data?.error?.includes('out of stock')) {
+          errorMessage = (error as any).response.data.error
+        }
+
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          status: 'error',
+          duration: 9000,
+          isClosable: true
+        })
+      }
     }
   })
 

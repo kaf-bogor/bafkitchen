@@ -29,7 +29,8 @@ import {
   AiOutlineTags,
   AiOutlineCalendar,
   AiOutlineUser,
-  AiOutlineFileText
+  AiOutlineFileText,
+  AiOutlineSetting
 } from 'react-icons/ai'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
@@ -41,6 +42,7 @@ const Sidebar = ({ ...rest }: Props) => {
   const router = useRouter()
 
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const hoverBg = useColorModeValue('gray.100', 'gray.700')
 
   const listItems: SidebarMenuItem[] = [
     {
@@ -87,6 +89,12 @@ const Sidebar = ({ ...rest }: Props) => {
     },
     {
       id: 8,
+      text: 'Settings',
+      path: '/admin/settings',
+      icon: AiOutlineSetting
+    },
+    {
+      id: 9,
       text: 'Logout',
       onClick: onOpen,
       icon: AiOutlineLogout
@@ -141,8 +149,7 @@ const Sidebar = ({ ...rest }: Props) => {
                 pl="2.5"
                 cursor="pointer"
                 backgroundColor={pathname === path ? 'gray.200' : ''}
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+                _hover={{ bg: hoverBg }}
                 rounded="md"
               >
                 <ListIcon boxSize={5} as={icon} />

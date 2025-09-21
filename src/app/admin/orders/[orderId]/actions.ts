@@ -1,11 +1,12 @@
-import { useQuery, useMutation, UseQueryResult, useQueryClient } from '@tanstack/react-query'
-import { 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  collection, 
-  addDoc, 
-  serverTimestamp 
+import { useState, useEffect, useCallback } from 'react'
+
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore'
 
 import { EOrderStatus } from '@/constants/order'
@@ -246,46 +247,89 @@ const updateOrderStatus = async ({ orderId, status, notes, userId, userEmail, us
 }
 
 // Hooks
-export const useGetOrder = (orderId: string, enabled: boolean = true): UseQueryResult<IOrderType, Error> =>
-  useQuery<IOrderType, Error>({
-    queryKey: ['order', orderId],
-    queryFn: () => fetchOrder(orderId),
-    enabled: enabled && !!orderId,
-    retry: (failureCount, error: any) => {
-      if (error?.code === 'permission-denied') {
-        return false
-      }
-      return failureCount < 3
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnWindowFocus: false
-  })
+export const useGetOrder = (orderId: string, enabled: boolean = true) => {
+  const [data, setData] = useState<IOrderType | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-export const useGetOrderActivities = (orderId: string, enabled: boolean = true): UseQueryResult<IOrderActivity[], Error> =>
-  useQuery<IOrderActivity[], Error>({
-    queryKey: ['orderActivities', orderId],
-    queryFn: () => fetchOrderActivities(orderId),
-    enabled: enabled && !!orderId,
-    retry: (failureCount, error: any) => {
-      if (error?.code === 'permission-denied') {
-        return false
+  const fetchOrderData = useCallback(async () => {
+    if (!enabled || !orderId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const order = await fetchOrder(orderId)
+      setData(order)
+    } catch (err: any) {
+      if (err?.code === 'permission-denied') {
+        setError(new Error('Permission denied to access order'))
+      } else {
+        setError(err as Error)
       }
-      return failureCount < 3
-    },
-    staleTime: 1 * 60 * 1000, // 1 minute
-    refetchOnWindowFocus: false
-  })
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId, enabled])
+
+  useEffect(() => {
+    fetchOrderData()
+  }, [fetchOrderData])
+
+  return { data, loading, error, refetch: fetchOrderData }
+}
+
+export const useGetOrderActivities = (orderId: string, enabled: boolean = true) => {
+  const [data, setData] = useState<IOrderActivity[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchActivitiesData = useCallback(async () => {
+    if (!enabled || !orderId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const activities = await fetchOrderActivities(orderId)
+      setData(activities)
+    } catch (err: any) {
+      if (err?.code === 'permission-denied') {
+        setError(new Error('Permission denied to access order activities'))
+      } else {
+        setError(err as Error)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId, enabled])
+
+  useEffect(() => {
+    fetchActivitiesData()
+  }, [fetchActivitiesData])
+
+  return { data, loading, error, refetch: fetchActivitiesData }
+}
 
 export const useUpdateOrderStatus = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<any, Error, UpdateOrderStatusRequest>({
-    mutationFn: updateOrderStatus,
-    onSuccess: (data, variables) => {
-      // Invalidate and refetch order data (which now includes activities)
-      queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] })
-      queryClient.invalidateQueries({ queryKey: ['orderActivities', variables.orderId] })
-      console.log('🔄 Invalidated queries for order:', variables.orderId)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateOrderStatusMutation = async (request: UpdateOrderStatusRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const result = await updateOrderStatus(request)
+      console.log('🔄 Order status updated for order:', request.orderId)
+      return result
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
+
+  return { updateOrderStatus: updateOrderStatusMutation, loading, error }
 }

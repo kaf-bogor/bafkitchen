@@ -35,8 +35,8 @@ import { useGetInvoices, useUpdateInvoiceStatus } from './actions'
 export default function InvoicesPage() {
   const toast = useToast()
   
-  const { data: invoices, isFetching, error } = useGetInvoices()
-  const updateInvoiceStatusMutation = useUpdateInvoiceStatus()
+  const { data: invoices, loading: isFetching, error } = useGetInvoices()
+  const { updateInvoiceStatus, loading: isUpdating } = useUpdateInvoiceStatus()
   
   // Filter states
   const [statusFilter, setStatusFilter] = useState('')
@@ -122,7 +122,7 @@ export default function InvoicesPage() {
 
   const handleStatusUpdate = async (invoiceId: string, newStatus: EInvoiceStatus) => {
     try {
-      await updateInvoiceStatusMutation.mutateAsync({
+      await updateInvoiceStatus({
         invoiceId,
         status: newStatus,
         settledDate: newStatus === EInvoiceStatus.SETTLED ? new Date().toISOString() : undefined
@@ -331,7 +331,7 @@ export default function InvoicesPage() {
                         size="xs"
                         colorScheme="green"
                         onClick={() => handleStatusUpdate(invoice.id, EInvoiceStatus.SETTLED)}
-                        isLoading={updateInvoiceStatusMutation.isPending}
+                        isLoading={isUpdating}
                       >
                         Mark Settled
                       </Button>

@@ -28,21 +28,18 @@ export default function Stores({ params }: { params: { storeName: string } }) {
     IProduct.ICategoryInput[]
   >([])
   const [query] = useState<string>('')
-  const { data: products, isFetching, error } = useGetProducts({ q: query })
+  const { data: products, loading: isFetching, error } = useGetProducts({ q: query })
 
   const storeName = decodeURI(params.storeName)
 
   const { validateCurrentPage } = useProductList(toast, router, storeName)
 
-  const { data: categories } = getCategories({
-    ...params,
-    storeName
-  })
+  const { data: categories } = getCategories()
 
   useEffect(() => {
     if (categories?.length) {
       const options: IProduct.ICategoryInput[] = categories
-        .filter((category) => category.store?.name === storeName)
+        .filter((category) => category.vendor?.name === storeName)
         .map((category) => ({ label: category.name, value: category.id }))
       setCategoryOptions(options)
     }

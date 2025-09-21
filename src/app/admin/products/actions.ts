@@ -1,9 +1,5 @@
-import {
-  useQuery,
-  useMutation,
-  UseMutationOptions,
-  UseQueryResult
-} from '@tanstack/react-query'
+import { useState, useEffect, useCallback } from 'react'
+
 import {
   collection,
   doc,
@@ -17,7 +13,6 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 
-import { IProduct } from '@/interfaces'
 import {
   IProductResponse,
   IEditProductRequest,
@@ -25,19 +20,25 @@ import {
 } from '@/interfaces/product'
 import { db, uploadToFirebase } from '@/utils/firebase'
 
-export const useGetProduct = (
-  productId: String
-): UseQueryResult<IProductResponse, Error> =>
-  useQuery<IProductResponse, Error>({
-    queryKey: ['product', productId],
-    queryFn: async () => {
-      const pref = doc(db, 'products', String(productId))
+export const useGetProduct = (productId: string) => {
+  const [data, setData] = useState<IProductResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchProduct = useCallback(async () => {
+    if (!productId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const pref = doc(db, 'products', productId)
       const psnap = await getDoc(pref)
       if (!psnap.exists()) throw new Error('Product not found')
       const pdata = psnap.data() as any
 
       // Use the vendor stored in the product, or create a default if missing
-      const vendor = pdata.vendor || { 
+      const vendor = pdata.vendor || {
         id: 'baf-kitchen',
         name: 'Baf Kitchen',
         userId: '',
@@ -79,16 +80,31 @@ export const useGetProduct = (
         vendor,
         categories
       }
-      return result
+      setData(result)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [productId])
 
-export const useGetProducts = (
-  params?: IFetchProductRequest
-): UseQueryResult<IProductResponse[], Error> =>
-  useQuery<IProductResponse[], Error>({
-    queryKey: ['products', params],
-    queryFn: async () => {
+  useEffect(() => {
+    fetchProduct()
+  }, [fetchProduct])
+
+  return { data, loading, error, refetch: fetchProduct }
+}
+
+export const useGetProducts = (params?: IFetchProductRequest) => {
+  const [data, setData] = useState<IProductResponse[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const col = collection(db, 'products')
       let qref = query(col)
       if (params?.categoryIds && params.categoryIds.length > 0) {
@@ -101,7 +117,7 @@ export const useGetProducts = (
           const pdata = d.data() as any
 
           // Use the vendor stored in the product, or create a default if missing
-          const vendor = pdata.vendor || { 
+          const vendor = pdata.vendor || {
             id: 'baf-kitchen',
             name: 'Baf Kitchen',
             userId: '',
@@ -147,42 +163,63 @@ export const useGetProducts = (
       )
 
       // client-side q filter
+      let filteredResults = results
       if (params?.q) {
         const q = params.q.toLowerCase()
-        return results.filter(
+        filteredResults = results.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.description || '').toLowerCase().includes(q)
         )
       }
 
-      return results
+      setData(filteredResults)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [params])
 
-export const useDeleteProducts = (id: string) =>
-  useMutation({
-    mutationKey: ['products', 'delete'],
-    mutationFn: async () => {
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
+
+  return { data, loading, error, refetch: fetchProducts }
+}
+
+export const useDeleteProducts = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const deleteProduct = async (id: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const pref = doc(db, 'products', id)
       await deleteDoc(pref)
       return { id }
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
 
-export const useCreateProducts = (
-  options?: Omit<
-    UseMutationOptions<
-      IProduct.IProduct,
-      Error,
-      IProduct.ICreateProductRequest
-    >,
-    'mutationFn'
-  >
-) =>
-  useMutation({
-    mutationKey: ['products', 'create'],
-    mutationFn: async (product: ICreateProductRequest) => {
+  return { deleteProduct, loading, error }
+}
+
+export const useCreateProducts = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createProduct = async (product: ICreateProductRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       let imageUrl = ''
       if (product.image) {
         const upload = await uploadToFirebase(product.image)
@@ -204,19 +241,26 @@ export const useCreateProducts = (
       const res = await addDoc(collection(db, 'products'), payload)
       const snap = await getDoc(res)
       return { id: res.id, ...(snap.data() as any) } as any
-    },
-    ...options
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
-export const useUpdateProducts = (
-  options?: Omit<
-    UseMutationOptions<IProduct.IProduct, Error, IProduct.IEditProductRequest>,
-    'mutationFn'
-  >
-) =>
-  useMutation<Awaited<IProduct.IProduct>, Error, IProduct.IEditProductRequest>({
-    mutationKey: ['products', 'update'],
-    mutationFn: async (product: IEditProductRequest) => {
+  return { createProduct, loading, error }
+}
+
+export const useUpdateProducts = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateProduct = async (product: IEditProductRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const pref = doc(db, 'products', product.id)
       const psnap = await getDoc(pref)
       if (!psnap.exists()) throw new Error('Product not found')
@@ -240,11 +284,16 @@ export const useUpdateProducts = (
       })
       const updated = await getDoc(pref)
       return { id: pref.id, ...(updated.data() as any) } as any
-    },
-    ...options
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
-// createFormData removed; using Firestore + Storage directly
+  return { updateProduct, loading, error }
+}
 
 export interface IFetchProductRequest {
   categoryIds?: string[]

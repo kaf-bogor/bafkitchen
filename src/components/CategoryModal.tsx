@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react'
 
 import { ICreateCategoryRequest } from '@/interfaces/category'
-import { IStore } from '@/interfaces/store'
+import { IVendor } from '@/interfaces/vendor'
 
 export interface MyModalProps {
   isOpen: boolean
@@ -26,9 +26,9 @@ export interface MyModalProps {
   data?: {
     name: string
     id: string
-    storeId: string
+    vendorId: string
   }
-  stores: IStore[]
+  vendors: IVendor[]
   title: string
 }
 
@@ -37,15 +37,15 @@ export default function CategoryFormModal(props: MyModalProps) {
 
   const [input, setInput] = useState({
     name: '',
-    storeId: ''
+    vendorId: ''
   } as ICreateCategoryRequest)
 
   useEffect(() => {
     setInput({
       name: data?.name || '',
-      storeId: data?.storeId || ''
+      vendorId: data?.vendorId || ''
     })
-  }, [data?.name, data?.storeId])
+  }, [data?.name, data?.vendorId])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -74,12 +74,12 @@ export default function CategoryFormModal(props: MyModalProps) {
               />
             </FormControl>
             <FormControl>
-              <FormLabel>Store</FormLabel>
+              <FormLabel>Vendor</FormLabel>
               <Select
-                placeholder="Select Store"
-                value={input.storeId}
+                placeholder="Select Vendor"
+                value={input.vendorId}
                 onChange={handleChange}
-                name="storeId"
+                name="vendorId"
               >
                 {props.vendors.map((vendor) => {
                   return (
@@ -94,7 +94,7 @@ export default function CategoryFormModal(props: MyModalProps) {
 
           <ModalFooter>
             <Button
-              isDisabled={!input.storeId}
+              isDisabled={!input.vendorId}
               colorScheme="blue"
               mr={3}
               onClick={onSubmit(input)}

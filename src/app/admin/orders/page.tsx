@@ -44,7 +44,7 @@ import { downloadGoogleSheetsCSV, openGoogleSheetsImportInstructions } from '@/u
 
 export default function Home() {
   const { user } = useAuth()
-  const { data: orders, isFetching, error } = getOrders(!!user)
+  const { data: orders, loading: isFetching, error } = getOrders(!!user)
   const { data: stores } = getStores()
 
   // Filter states
@@ -212,27 +212,11 @@ export default function Home() {
 
   // Export handlers
   const handleExportCSV = () => {
-    const dateRange = dateFilter !== 'all' ? 
-      dateFilter === 'custom' && customDateStart && customDateEnd ? 
-        `${customDateStart} to ${customDateEnd}` :
-        `Last ${dateFilter}`
-      : undefined
-
-    exportOrdersToCSV(filteredAndSortedOrders, {
-      filename: `Orders_Summary_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
-    })
+    exportOrdersToCSV(filteredAndSortedOrders, `Orders_Summary_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
   }
 
   const handleExportDetailedCSV = () => {
-    const dateRange = dateFilter !== 'all' ? 
-      dateFilter === 'custom' && customDateStart && customDateEnd ? 
-        `${customDateStart} to ${customDateEnd}` :
-        `Last ${dateFilter}`
-      : undefined
-
-    exportDetailedOrdersToCSV(filteredAndSortedOrders, {
-      filename: `Orders_Detailed_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
-    })
+    exportDetailedOrdersToCSV(filteredAndSortedOrders, `Orders_Detailed_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
   }
 
   const handleExportGoogleSheets = () => {

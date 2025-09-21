@@ -41,8 +41,8 @@ export default function InvoiceDetailsPage() {
   const { invoiceId } = useParams()
   const toast = useToast()
 
-  const { data: invoice, isFetching, error } = useGetInvoice(invoiceId as string)
-  const updateInvoiceStatusMutation = useUpdateInvoiceStatus()
+  const { data: invoice, loading: isFetching, error } = useGetInvoice(invoiceId as string)
+  const { updateInvoiceStatus, loading: isUpdating } = useUpdateInvoiceStatus()
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/admin' },
@@ -54,7 +54,7 @@ export default function InvoiceDetailsPage() {
     if (!invoice) return
 
     try {
-      await updateInvoiceStatusMutation.mutateAsync({
+      await updateInvoiceStatus({
         invoiceId: invoice.id,
         status: newStatus,
         settledDate: newStatus === EInvoiceStatus.SETTLED ? new Date().toISOString() : undefined
@@ -168,7 +168,7 @@ export default function InvoiceDetailsPage() {
                     colorScheme="green"
                     size="sm"
                     onClick={() => handleStatusUpdate(EInvoiceStatus.SETTLED)}
-                    isLoading={updateInvoiceStatusMutation.isPending}
+                    isLoading={isUpdating}
                   >
                     Mark as Settled
                   </Button>
@@ -365,7 +365,7 @@ export default function InvoiceDetailsPage() {
                       w="full"
                       colorScheme="green"
                       onClick={() => handleStatusUpdate(EInvoiceStatus.SETTLED)}
-                      isLoading={updateInvoiceStatusMutation.isPending}
+                      isLoading={isUpdating}
                     >
                       Mark as Settled
                     </Button>

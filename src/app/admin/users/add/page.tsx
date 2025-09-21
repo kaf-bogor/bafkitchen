@@ -14,26 +14,7 @@ const AddUserPage: React.FC = () => {
   const router = useRouter()
   const toast = useToast()
 
-  const { mutate: createUser, isPending } = useCreateUser({
-    onSuccess: () => {
-      toast({
-        title: 'User created successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true
-      })
-      router.push('/admin/users') // Redirect to users list page
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error creating user',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-        isClosable: true
-      })
-    }
-  })
+  const { createUser: createUserAction, loading: isPending } = useCreateUser()
 
   const initialValues = {
     id: '',
@@ -45,8 +26,25 @@ const AddUserPage: React.FC = () => {
     createdAt: new Date()
   }
 
-  const handleSubmit = (values: ICreateUserRequest) => {
-    createUser(values)
+  const handleSubmit = async (values: ICreateUserRequest) => {
+    try {
+      await createUserAction(values)
+      toast({
+        title: 'User created successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      router.push('/admin/users')
+    } catch (error) {
+      toast({
+        title: 'Error creating user',
+        description: (error as Error).message,
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      })
+    }
   }
 
   return (

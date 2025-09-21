@@ -1,5 +1,5 @@
 import { ICategory } from '@/interfaces/category'
-import { IStore } from '@/interfaces/store'
+import { IVendor } from '@/interfaces/vendor'
 
 export interface ICreateProductRequest {
   name: string
@@ -30,7 +30,7 @@ export interface IProductResponse {
   image?: File
   createdAt: string
   updatedAt: string
-  vendor: IStore
+  vendor: IVendor
   categories: ICategory[]
 }
 
@@ -60,7 +60,7 @@ export type IProduct = {
   priceBase: number
   price: number
   stock: number
-  vendor: IStore
+  vendor: IVendor
   categories: ICategory[]
   description: string
   imageUrl: string

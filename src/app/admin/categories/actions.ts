@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import { useQuery, useMutation, UseQueryResult } from '@tanstack/react-query'
+import { useState, useEffect, useCallback } from 'react'
+
 import {
   addDoc,
   collection,
@@ -14,13 +14,18 @@ import {
 import { ICategory } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
+export const useGetCategory = (categoryId: string) => {
+  const [data, setData] = useState<ICategory.ICategory | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
-export const getCategory = (
-  categoryId: string
-): UseQueryResult<ICategory.ICategory, Error> =>
-  useQuery<ICategory.ICategory, Error>({
-    queryKey: ['categories', categoryId],
-    queryFn: async () => {
+  const fetchCategory = useCallback(async () => {
+    if (!categoryId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const cdoc = await getDoc(doc(db, 'categories', categoryId))
       if (!cdoc.exists()) throw new Error('Category does not exist')
       const cdata = cdoc.data() as any
@@ -29,16 +34,31 @@ export const getCategory = (
         const vdoc = await getDoc(doc(db, 'vendors', cdata.vendorId))
         if (vdoc.exists()) vendor = { id: vdoc.id, ...vdoc.data() }
       }
-      return { id: cdoc.id, ...cdata, vendor } as ICategory.ICategory
+      setData({ id: cdoc.id, ...cdata, vendor } as ICategory.ICategory)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [categoryId])
 
-export const getCategories = (
-  params?: IFetchCategoriesRequest
-): UseQueryResult<ICategory.ICategory[], Error> =>
-  useQuery<ICategory.ICategory[], Error>({
-    queryKey: ['categories'],
-    queryFn: async () => {
+  useEffect(() => {
+    fetchCategory()
+  }, [fetchCategory])
+
+  return { data, loading, error, refetch: fetchCategory }
+}
+
+export const useGetCategories = (params?: IFetchCategoriesRequest) => {
+  const [data, setData] = useState<ICategory.ICategory[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const categoriesQ = query(collection(db, 'categories'))
       let vendorFilterId: string | null = null
       if (params?.vendorName) {
@@ -51,7 +71,8 @@ export const getCategories = (
         if (!vSnap.empty) {
           vendorFilterId = vSnap.docs[0].id
         } else {
-          return []
+          setData([])
+          return
         }
       }
 
@@ -70,18 +91,30 @@ export const getCategories = (
         }
         categories.push({ ...(c as any), vendor } as ICategory.ICategory)
       }
-      return categories
+      setData(categories)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [params])
 
-export const createCategories = () =>
-  useMutation<
-    Awaited<ICategory.ICategory>,
-    Error,
-    ICategory.ICreateCategoryRequest
-  >({
-    mutationKey: ['categories', 'create'],
-    mutationFn: async (request: ICategory.ICreateCategoryRequest) => {
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  return { data, loading, error, refetch: fetchCategories }
+}
+
+export const useCreateCategories = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createCategory = async (request: ICategory.ICreateCategoryRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       // Ensure vendor exists and is active
       const vdoc = await getDoc(doc(db, 'vendors', request.vendorId))
       if (!vdoc.exists() || !(vdoc.data() as any)?.isActive) {
@@ -95,17 +128,26 @@ export const createCategories = () =>
       }
       const ref = await addDoc(collection(db, 'categories'), categoryData)
       return { id: ref.id, ...categoryData } as ICategory.ICategory
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
 
-export const updateCategories = () =>
-  useMutation<
-    Awaited<ICategory.ICategory>,
-    Error,
-    ICategory.IUpdateCategoryRequest
-  >({
-    mutationKey: ['categories', 'update'],
-    mutationFn: async (request: ICategory.IUpdateCategoryRequest) => {
+  return { createCategory, loading, error }
+}
+
+export const useUpdateCategories = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateCategory = async (request: ICategory.IUpdateCategoryRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const cref = doc(db, 'categories', request.id)
       const csnap = await getDoc(cref)
       if (!csnap.exists()) throw new Error('Category does not exist')
@@ -115,9 +157,23 @@ export const updateCategories = () =>
         updatedAt: new Date().toISOString()
       })
       return { id: request.id, name: request.name, vendorId: request.vendorId } as ICategory.ICategory
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
+
+  return { updateCategory, loading, error }
+}
 
 export interface IFetchCategoriesRequest {
   vendorName?: string
 }
+
+// Aliases for backward compatibility
+export const getCategory = useGetCategory
+export const getCategories = useGetCategories
+export const createCategories = useCreateCategories
+export const updateCategories = useUpdateCategories

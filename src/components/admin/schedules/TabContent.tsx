@@ -29,40 +29,29 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
 
   const {
     data: products,
-    isFetching: isProductsFetching,
+    loading: isProductsFetching,
     error: productsError
   } = useGetProducts()
 
-  const { mutate: createSchedule, isPending: isCreating } = postSchedules({
-    onSuccess: (schedule) => {
-      successToast({ message: 'Menu berhasil ditambahkan ke jadwal' })
-      setListSchedules((prev) => [...prev, schedule])
-      onClose()
-    },
-    onError: () => {
-      errorToast({ message: 'Gagal menambahkan menu ke jadwal' })
-    }
-  })
+  const { createSchedule, loading: isCreating } = postSchedules()
 
-  const { mutate: removeSchedule, isPending: isDeleting } = deleteSchedule({
-    onSuccess: ({ deletedProductSchedule }) => {
+  const { deleteSchedule: removeSchedule, loading: isDeleting } = deleteSchedule()
+
+  const handleDelete = async (productId: string, scheduleId: string) => {
+    try {
+      const result = await removeSchedule({ productId, scheduleId })
       setListSchedules((prev) =>
         prev.map((schedule) => ({
           ...schedule,
           productSchedules: schedule.productSchedules.filter(
-            ({ scheduleId }) => scheduleId !== deletedProductSchedule.scheduleId
+            ({ scheduleId }) => scheduleId !== result.deletedProductSchedule.scheduleId
           )
         }))
       )
       successToast({ message: 'Menu berhasil dihapus dari jadwal' })
-    },
-    onError: () => {
+    } catch (error) {
       errorToast({ message: 'Menu gagal dihapus dari jadwal' })
     }
-  })
-
-  const handleDelete = (productId: string, scheduleId: string) => {
-    removeSchedule({ productId, scheduleId })
   }
 
   return (
@@ -117,11 +106,19 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
           setSelectedProductId('')
         }}
         onChange={(productId) => setSelectedProductId(productId)}
-        onSubmit={() => {
-          createSchedule({
-            productId: selectedProductId,
-            date: format(selectedDay, 'yyyy-MM-dd')
-          })
+        onSubmit={async () => {
+          try {
+            const schedule = await createSchedule({
+              productId: selectedProductId,
+              date: format(selectedDay, 'yyyy-MM-dd')
+            })
+            successToast({ message: 'Menu berhasil ditambahkan ke jadwal' })
+            setListSchedules((prev) => [...prev, schedule])
+            onClose()
+            setSelectedProductId('')
+          } catch (error) {
+            errorToast({ message: 'Gagal menambahkan menu ke jadwal' })
+          }
         }}
         isLoading={isCreating}
         isDisabled={!selectedProductId}

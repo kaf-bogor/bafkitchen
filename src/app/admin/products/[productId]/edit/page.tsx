@@ -10,14 +10,17 @@ import { Layout, ProductForm } from '@/components'
 export default function Edit({ params }: Props) {
   const {
     data: product,
-    isFetching,
+    loading: isFetching,
     error,
     refetch
   } = useGetProduct(params.productId)
 
   const toast = useToast()
-  const { mutate: updateProduct, isPending } = useUpdateProducts({
-    onSuccess() {
+  const { updateProduct, loading } = useUpdateProducts()
+
+  const handleUpdateProduct = async (productData: any) => {
+    try {
+      await updateProduct(productData)
       toast({
         title: 'Berhasil',
         description: 'produk berhasil diupdate',
@@ -25,8 +28,7 @@ export default function Edit({ params }: Props) {
         isClosable: true
       })
       refetch()
-    },
-    onError() {
+    } catch (error) {
       toast({
         title: 'Gagal',
         description: 'produk gagal diupdate',
@@ -34,7 +36,7 @@ export default function Edit({ params }: Props) {
         isClosable: true
       })
     }
-  })
+  }
 
   const breadcrumbs = [
     { label: 'dashboard', path: '/admin' },
@@ -50,10 +52,10 @@ export default function Edit({ params }: Props) {
     >
       {product && (
         <ProductForm
-          isPending={isPending}
+          isPending={loading}
           product={product}
-          onUpdate={updateProduct}
-          title="Tambah Produk"
+          onUpdate={handleUpdateProduct}
+          title="Edit Produk"
         />
       )}
     </Layout>

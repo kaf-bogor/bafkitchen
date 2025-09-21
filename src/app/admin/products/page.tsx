@@ -21,7 +21,7 @@ import { CardProduct, Layout } from '@/components'
 export default function ProductPage() {
   const [query, setQuery] = useState('')
 
-  const { data: products, isFetching, error } = useGetProducts({ q: query })
+  const { data: products, loading: isFetching, error } = useGetProducts({ q: query })
 
   const sortProducts = (a: any, b: any) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1

@@ -1,26 +1,29 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import {
-  useQuery,
+import { useState, useEffect, useCallback } from 'react'
 
-  UseQueryResult
-} from '@tanstack/react-query'
 import { doc, getDoc } from 'firebase/firestore'
 
 import { IOrder } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
 
-export const useGetOrderDetail = (orderId?: string): UseQueryResult<IOrder.IProductOrderResponse, Error> =>
-  useQuery<IOrder.IProductOrderResponse, Error>({
-    queryKey: ['orders', orderId],
-    queryFn: async () => {
-      if (!orderId) throw new Error('Order id is required')
+export const useGetOrderDetail = (orderId?: string) => {
+  const [data, setData] = useState<IOrder.IProductOrderResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchOrderDetail = useCallback(async () => {
+    if (!orderId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const oref = doc(db, 'orders', orderId)
       const snap = await getDoc(oref)
       if (!snap.exists()) throw new Error('Order not found')
       const o = snap.data() as any
       // Best-effort mapping to IProductOrderResponse
-      return {
+      const orderDetail = {
         id: snap.id,
         number: o.number ?? 0,
         total: o.total ?? 0,
@@ -43,8 +46,20 @@ export const useGetOrderDetail = (orderId?: string): UseQueryResult<IOrder.IProd
           address: o.customer?.address ?? ''
         }
       } as IOrder.IProductOrderResponse
-    },
-    enabled: !!orderId
-  })
+
+      setData(orderDetail)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId])
+
+  useEffect(() => {
+    fetchOrderDetail()
+  }, [fetchOrderDetail])
+
+  return { data, loading, error, refetch: fetchOrderDetail }
+}
 
 

@@ -20,7 +20,7 @@ import { getStores } from '@/app/admin/stores/actions'
 import { Layout } from '@/components'
 
 export default function Store() {
-  const { data: stores, isFetching, error } = getStores()
+  const { data: stores, loading: isFetching, error } = getStores()
 
   const sortByCreatedAt = (a: any, b: any) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1

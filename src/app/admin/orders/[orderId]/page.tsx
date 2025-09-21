@@ -44,9 +44,9 @@ export default function OrderDetailsPage() {
   const { user } = useAuth()
   const toast = useToast()
 
-  const { data: order, isFetching, error, refetch } = useGetOrder(orderId as string, !!user)
+  const { data: order, loading: isFetching, error, refetch } = useGetOrder(orderId as string, !!user)
   const { data: activities, refetch: refetchActivities } = useGetOrderActivities(orderId as string, !!user)
-  const updateOrderStatusMutation = useUpdateOrderStatus()
+  const { updateOrderStatus } = useUpdateOrderStatus()
 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
@@ -58,7 +58,7 @@ export default function OrderDetailsPage() {
 
     setIsUpdatingStatus(true)
     try {
-      await updateOrderStatusMutation.mutateAsync({
+      await updateOrderStatus({
         orderId: order.id,
         status: nextStatus,
         userId: user.uid,

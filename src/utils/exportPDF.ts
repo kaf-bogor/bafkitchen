@@ -1,6 +1,6 @@
-import jsPDF from 'jspdf'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import jsPDF from 'jspdf'
 
 import { IInvoice } from '@/interfaces/invoice'
 import { currency } from '@/utils'

@@ -3,6 +3,7 @@
 import React from 'react'
 
 import { useToast } from '@chakra-ui/react'
+import { useRouter } from 'next/navigation'
 
 import { useCreateProducts } from '@/app/admin/products/actions'
 import { Layout, ProductForm } from '@/components'
@@ -10,24 +11,28 @@ import { IVendor } from '@/interfaces'
 
 export default function AddProduct() {
   const toast = useToast()
-  const { mutate, isPending } = useCreateProducts({
-    onSuccess() {
+  const router = useRouter()
+  const { createProduct, loading } = useCreateProducts()
+
+  const handleCreateProduct = async (productData: any) => {
+    try {
+      await createProduct(productData)
       toast({
         title: 'Berhasil',
         description: 'produk berhasil dibuat',
         status: 'success',
         isClosable: true
       })
-    },
-    onError(error) {
+      router.push('/admin/products')
+    } catch (error) {
       toast({
         title: 'Gagal',
-        description: `produk gagal dibuat\n ${error.message}`,
+        description: `produk gagal dibuat\n ${(error as Error).message}`,
         status: 'error',
         isClosable: true
       })
     }
-  })
+  }
 
   const breadcrumbs = [
     { label: 'dashboard', path: '/admin' },
@@ -38,8 +43,8 @@ export default function AddProduct() {
   return (
     <Layout breadcrumbs={breadcrumbs}>
       <ProductForm
-        isPending={isPending}
-        onCreate={mutate}
+        isPending={loading}
+        onCreate={handleCreateProduct}
         product={{
           id: '',
           createdAt: '',

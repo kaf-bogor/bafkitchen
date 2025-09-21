@@ -1,14 +1,6 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 import { CreateToastFnReturn } from '@chakra-ui/react'
-import {
-  useQuery,
-  useMutation,
-  MutateOptions,
-  UseQueryResult,
-  UseMutationResult
-} from '@tanstack/react-query'
 import {
   addDoc,
   collection,
@@ -22,10 +14,16 @@ import {
 import { IStore } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
-export const getStores = (): UseQueryResult<IStore.IStore[], Error> =>
-  useQuery<IStore.IStore[], Error>({
-    queryKey: ['stores'],
-    queryFn: async () => {
+export const useGetStores = () => {
+  const [data, setData] = useState<IStore.IStore[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchStores = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const qsnap = await getDocs(collection(db, 'stores'))
       const stores: IStore.IStore[] = qsnap.docs.map((d) => {
         const s = d.data() as any
@@ -48,11 +46,22 @@ export const getStores = (): UseQueryResult<IStore.IStore[], Error> =>
           }
         }
       })
-      return stores
+      setData(stores)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }, [])
 
-export function useGetStore(toast: CreateToastFnReturn) {
+  useEffect(() => {
+    fetchStores()
+  }, [fetchStores])
+
+  return { data, loading, error, refetch: fetchStores }
+}
+
+export function useGetStoresWithToast(toast: CreateToastFnReturn) {
   const [stores, setStores] = useState([] as any[])
 
   const fetchStores = async () => {
@@ -77,31 +86,50 @@ export function useGetStore(toast: CreateToastFnReturn) {
   }
 }
 
-export const updateStores = () =>
-  useMutation<Awaited<IStore.IStore>, Error, IStore.IUpdateStoreRequest>({
-    mutationKey: ['api', 'stores', 'edit'],
-    mutationFn: async (request: IStore.IUpdateStoreRequest) => {
+export const useUpdateStores = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateStore = async (request: IStore.IUpdateStoreRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const sref = doc(db, 'stores', request.id)
       await updateDoc(sref, {
         name: request.name,
         updatedAt: serverTimestamp()
       })
       const snap = await getDoc(sref)
-      return { id: sref.id, ...(snap.data() as any) } as any
+      return { id: sref.id, ...(snap.data() as any) } as IStore.IStore
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
 
-export const getStore = (
-  storeId: string
-): UseQueryResult<IStore.IStore, Error> => {
-  return useQuery<IStore.IStore, Error>({
-    queryKey: ['store', storeId],
-    queryFn: async () => {
+  return { updateStore, loading, error }
+}
+
+export const useGetStore = (storeId: string) => {
+  const [data, setData] = useState<IStore.IStore | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchStore = useCallback(async () => {
+    if (!storeId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const sref = doc(db, 'stores', storeId)
       const snap = await getDoc(sref)
       if (!snap.exists()) throw new Error('Store not found')
       const s = snap.data() as any
-      return {
+      const store = {
         id: sref.id,
         name: s.name,
         userId: s.userId,
@@ -119,23 +147,30 @@ export const getStore = (
           lastSignInAt: ''
         }
       } as IStore.IStore
-    },
-    enabled: !!storeId // Only run the query if storeId is provided
-  })
+      setData(store)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [storeId])
+
+  useEffect(() => {
+    fetchStore()
+  }, [fetchStore])
+
+  return { data, loading, error, refetch: fetchStore }
 }
 
-export const createStore = (options: MutateOptions<
-  IStore.IStore,
-  Error,
-  IStore.ICreateStoreRequest
->): UseMutationResult<
-  IStore.IStore,
-  Error,
-  IStore.ICreateStoreRequest
-> =>
-  useMutation<IStore.IStore, Error, IStore.ICreateStoreRequest>({
-    mutationKey: ['api', 'stores', 'create'],
-    mutationFn: async (request: IStore.ICreateStoreRequest) => {
+export const useCreateStore = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createStore = async (request: IStore.ICreateStoreRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const payload = {
         name: request.name,
         email: request.email,
@@ -145,6 +180,20 @@ export const createStore = (options: MutateOptions<
       }
       const res = await addDoc(collection(db, 'stores'), payload)
       const snap = await getDoc(res)
-      return { id: res.id, ...(snap.data() as any) } as any
-    }, ...options
-  })
+      return { id: res.id, ...(snap.data() as any) } as IStore.IStore
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { createStore, loading, error }
+}
+
+// Aliases for backward compatibility
+export const getStores = useGetStores
+export const getStore = useGetStore
+export const createStore = useCreateStore
+export const updateStores = useUpdateStores

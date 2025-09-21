@@ -6,7 +6,8 @@ service cloud.firestore {
     }
     function isAdmin() {
       return isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        exists(/databases/bafkitchen-db/documents/users/$(request.auth.uid)) &&
+        get(/databases/bafkitchen-db/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Public reads for catalog

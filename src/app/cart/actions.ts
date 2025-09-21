@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import { useMutation, UseMutationOptions } from '@tanstack/react-query'
+import { useState } from 'react'
+
 import { addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore'
 
 import { IStore } from '@/interfaces'
@@ -7,12 +7,15 @@ import { IOrder as IOrderType, IOrderRequest } from '@/interfaces/order'
 import { db } from '@/utils/firebase'
 import { generateOrderId } from '@/utils/orderIdGenerator'
 
-export const useCreateOrders = (
-  options?: Omit<UseMutationOptions<IOrderType, Error, IOrderRequest>, 'mutationFn'>
-) =>
-  useMutation<IOrderType, Error, IOrderRequest>({
-    mutationKey: ['orders', 'create'],
-    mutationFn: async (orderRequest: IOrderRequest) => {
+export const useCreateOrders = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createOrder = async (orderRequest: IOrderRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       // Check authentication status
       const { getAuth } = await import('firebase/auth')
       const auth = getAuth()
@@ -175,31 +178,34 @@ export const useCreateOrders = (
         throw new Error(`Undefined fields found: ${undefinedFields.join(', ')}`)
       }
       
-      try {
-        const res = await addDoc(collection(db, 'orders'), payload)
-        
-        return {
-          id: res.id,
-          orderNumber,
-          total: orderRequest.totalPrice || 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          customerId: '',
-          customer: {
-            name: orderRequest.orderer.name || '',
-            phoneNumber: orderRequest.orderer.phoneNumber || '',
-            namaSantri: orderRequest.orderer.namaSantri || '',
-            kelas: orderRequest.orderer.kelas || '',
-            notes: orderRequest.orderer.notes || ''
-          },
-          productOrders,
-          store: { name: 'Baf Kitchen' },
-          vendors: vendors || [],
-          status: 'Payment Pending'
-        } as IOrderType
-      } catch (error) {
-        throw error
-      }
-    },
-    ...options
-  })
+      const res = await addDoc(collection(db, 'orders'), payload)
+
+      return {
+        id: res.id,
+        orderNumber,
+        total: orderRequest.totalPrice || 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        customerId: '',
+        customer: {
+          name: orderRequest.orderer.name || '',
+          phoneNumber: orderRequest.orderer.phoneNumber || '',
+          namaSantri: orderRequest.orderer.namaSantri || '',
+          kelas: orderRequest.orderer.kelas || '',
+          notes: orderRequest.orderer.notes || ''
+        },
+        productOrders,
+        store: { name: 'Baf Kitchen' },
+        vendors: vendors || [],
+        status: 'Payment Pending'
+      } as IOrderType
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { createOrder, loading, error }
+}

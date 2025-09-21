@@ -22,7 +22,7 @@ export default function CardProduct({
   onDelete,
   isDeleting
 }: Props) {
-  const { id, name, price, store, imageUrl } = product
+  const { id, name, price, imageUrl } = product
   return (
     <Box
       role="group"
@@ -44,7 +44,7 @@ export default function CardProduct({
 
       <Stack align="left" p={6}>
         <Text color="gray.500" fontSize="sm" textTransform="uppercase">
-          {store?.name || product.storeId}
+          {product.vendor?.name || 'No Vendor'}
         </Text>
         <Text fontSize="md" fontFamily="body">
           {name}

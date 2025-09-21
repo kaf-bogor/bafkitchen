@@ -1,14 +1,14 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isSignedIn() { 
-      return request.auth != null; 
+    function isSignedIn() {
+      return request.auth != null;
     }
-    
+
     function isAdmin() {
-      return isSignedIn() && 
-        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() &&
+        firestore.exists(/databases/bafkitchen-db/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/bafkitchen-db/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Public read for all files

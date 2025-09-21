@@ -44,7 +44,7 @@ export default function ModalMenu({
               {products &&
                 products.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.store.name} - {product.name}
+                    {product.vendor.name} - {product.name}
                   </option>
                 ))}
             </Select>

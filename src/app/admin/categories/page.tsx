@@ -15,16 +15,16 @@ import {
 } from '@chakra-ui/react'
 import Link from 'next/link'
 
-import { getCategories } from '@/app/admin/categories/actions'
+import { useGetCategories } from '@/app/admin/categories/actions'
 import { Layout } from '@/components'
 import { ICategory } from '@/interfaces/category'
 
 export default function Categories() {
   const {
     data: categories,
-    isFetching: isFetchingCategories,
+    loading: isFetchingCategories,
     error: errorCategories
-  } = getCategories()
+  } = useGetCategories()
 
   const sortCategories = (a: ICategory, b: ICategory) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1

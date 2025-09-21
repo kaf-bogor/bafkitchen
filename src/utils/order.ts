@@ -24,12 +24,12 @@ export const generateOrderText = ({
     })
     .join(' ')}` +
     `\n\nTotal : *${toIDRFormat(totalPrice)}*` +
-    `\n\n*Pengiriman* : ${customer.address}\n` +
+    `\n\n*Pengiriman* : Kelas ${customer.kelas}\n` +
     '--------------------------------' +
     '\n*Nama :*' +
     `\n${customer.name} ( ${customer.phoneNumber} )` +
-    '\n\n*Alamat :*' +
-    `\n${customer.address}` +
+    '\n\n*Kelas :*' +
+    `\n${customer.kelas}` +
     '\n--------------------------------' +
     `\nHalaman order: ${process.env.NEXT_PUBLIC_APP_DOMAIN}/orders/${orderId}`
 
@@ -107,7 +107,7 @@ export const generateOrderHtmlEmail = ({
           <h2>Informasi Pelanggan</h2>
           <p><strong>Nama:</strong> ${customer.name}</p>
           <p><strong>Telepon:</strong> ${customer.phoneNumber}</p>
-          <p><strong>Alamat:</strong> ${customer.address}</p>
+          <p><strong>Kelas:</strong> ${customer.kelas}</p>
         </div>
 
         <p>Anda dapat melihat detail pesanan Anda di:</p>

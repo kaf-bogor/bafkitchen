@@ -1,31 +1,25 @@
-/* 
-  File ini berisi React custom hooks untuk mengambil data toko menggunakan Axios dan React Query untuk pengambilan dan penyimpanan data.
-  - Fungsi getSchedules menggunakan useQuery dari @tanstack/react-query untuk mendapatkan daftar toko dan mengembalikan hasil query.
-  - Endpoint pengambilan data sudah diubah menjadi 'api/schedules' sesuai instruksi.
-*/
 
-/* eslint-disable react-hooks/rules-of-hooks */
-// Menonaktifkan aturan eslint untuk menghilangkan peringatan terkait penggunaan react-hooks
+import { useState, useEffect, useCallback } from 'react'
 
-import {
-  useQuery,
-  useMutation,
-  UseQueryResult,
-  MutateOptions,
-  useQueryClient
-} from '@tanstack/react-query'
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, query, where, orderBy, getDoc } from 'firebase/firestore'
 
 import { ISchedule, IProduct } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
 
-// Fungsi untuk mengambil data schedules menggunakan React Query
-export const getSchedules = (start?: Date, end?: Date, enabled: boolean = true): UseQueryResult<ISchedule.ISchedule[], Error> =>
-  useQuery<ISchedule.ISchedule[], Error>({
-    queryKey: ['schedules', start, end], // Ensure the query key is unique for different dates
-    enabled: enabled, // Only run when enabled
-    queryFn: async () => {
+// Fungsi untuk mengambil data schedules
+export const useGetSchedules = (start?: Date, end?: Date, enabled: boolean = true) => {
+  const [data, setData] = useState<ISchedule.ISchedule[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchSchedules = useCallback(async () => {
+    if (!enabled) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       let schedulesQuery;
       
       if (!start || !end) {
@@ -104,35 +98,35 @@ export const getSchedules = (start?: Date, end?: Date, enabled: boolean = true):
         }
       }
 
-      return transformedSchedules
-    },
-    retry: (failureCount, error: any) => {
-      if (error?.code === 'permission-denied') {
-        return false;
+      setData(transformedSchedules)
+    } catch (err: any) {
+      if (err?.code === 'permission-denied') {
+        setError(new Error('Permission denied to access schedules'))
+      } else {
+        setError(err as Error)
       }
-      return failureCount < 3;
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false
-  });
+    } finally {
+      setLoading(false)
+    }
+  }, [start, end, enabled])
 
-// Fungsi untuk membuat jadwal baru menggunakan useMutation
-export const postSchedules = (
-  options: MutateOptions<
-    ISchedule.ISchedule,
-    Error,
-    ISchedule.ICreateScheduleRequest
-  >
-) => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<
-    ISchedule.ISchedule,
-    Error,
-    ISchedule.ICreateScheduleRequest
-  >({
-    mutationKey: ['schedules', 'create'],
-    mutationFn: async (params: ISchedule.ICreateScheduleRequest) => {
+  useEffect(() => {
+    fetchSchedules()
+  }, [fetchSchedules])
+
+  return { data, loading, error, refetch: fetchSchedules }
+}
+
+// Fungsi untuk membuat jadwal baru
+export const usePostSchedules = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createSchedule = async (params: ISchedule.ICreateScheduleRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const payload = {
         productId: params.productId,
         date: Timestamp.fromDate(new Date(params.date)),
@@ -164,40 +158,42 @@ export const postSchedules = (
       }
 
       return newSchedule
-    },
-    onSuccess: () => {
-      // Invalidate and refetch schedules
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-    },
-    ...options
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { createSchedule, loading, error }
 }
 
-// Fungsi untuk menghapus jadwal berdasarkan productId dan scheduleId menggunakan useMutation
-export const deleteSchedule = (
-  options: MutateOptions<
-    ISchedule.IDeleteScheduleResponse,
-    Error,
-    ISchedule.IDeleteScheduleRequest
-  >
-) => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<
-    ISchedule.IDeleteScheduleResponse,
-    Error,
-    ISchedule.IDeleteScheduleRequest
-  >({
-    mutationKey: ['schedules', 'delete'],
-    mutationFn: async (params: ISchedule.IDeleteScheduleRequest) => {
+// Fungsi untuk menghapus jadwal berdasarkan productId dan scheduleId
+export const useDeleteSchedule = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const deleteSchedule = async (params: ISchedule.IDeleteScheduleRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       // Assume scheduleId is the document id to delete
       await deleteDoc(doc(db, 'schedules', params.scheduleId))
       return { message: 'deleted', deletedProductSchedule: { id: params.scheduleId, productId: params.productId, scheduleId: params.scheduleId } }
-    },
-    onSuccess: () => {
-      // Invalidate and refetch schedules
-      queryClient.invalidateQueries({ queryKey: ['schedules'] })
-    },
-    ...options
-  })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { deleteSchedule, loading, error }
 }
+
+// Aliases for backward compatibility
+export const getSchedules = useGetSchedules
+export const postSchedules = usePostSchedules
+export const deleteSchedule = useDeleteSchedule

@@ -31,7 +31,7 @@ export default function Store() {
   // Get schedules for current week and check if user is authenticated
   const weekStart = startOfWeek(currentWeekStart, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 })
-  const { data: schedules, isFetching, error } = getSchedules(weekStart, weekEnd, !!user)
+  const { data: schedules, loading: isFetching, error } = getSchedules(weekStart, weekEnd, !!user)
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/admin' },

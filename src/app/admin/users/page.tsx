@@ -21,7 +21,7 @@ import { useGetUsers } from '@/app/admin/users/actions'
 import { Layout } from '@/components'
 
 export default function User() {
-  const { data: users, isFetching, error } = useGetUsers()
+  const { data: users, loading: isFetching, error } = useGetUsers()
 
   const sortByCreatedAt = (a: any, b: any) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1

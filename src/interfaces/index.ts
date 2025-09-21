@@ -5,3 +5,4 @@ export * as IProduct from "./product";
 export * as IStore from "./store";
 export * as IUser from "./user";
 export * as IVendor from "./vendor";
+export * as ISettings from "./settings";

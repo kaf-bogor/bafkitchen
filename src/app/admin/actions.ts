@@ -1,4 +1,5 @@
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+
 import { Timestamp, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 import { IOrder } from '@/interfaces';
@@ -27,21 +28,37 @@ const fetchOrders = async (dateStart: string, dateEnd: string) => {
 
 
 export const useOrders = (
-  dateStart: string, 
-  dateEnd: string, 
+  dateStart: string,
+  dateEnd: string,
   enabled: boolean = true
-): UseQueryResult<IOrder.IOrder[], Error> =>
-  useQuery<IOrder.IOrder[], Error>({
-    queryKey: ['orders', dateStart, dateEnd],
-    queryFn: async () => await fetchOrders(dateStart, dateEnd),
-    enabled: enabled, // Only run query when explicitly enabled
-    retry: (failureCount, error: any) => {
-      // Don't retry if it's a permission error
-      if (error?.code === 'permission-denied') {
-        return false;
+) => {
+  const [data, setData] = useState<IOrder.IOrder[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchOrdersData = useCallback(async () => {
+    if (!enabled) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const orders = await fetchOrders(dateStart, dateEnd)
+      setData(orders)
+    } catch (err: any) {
+      if (err?.code === 'permission-denied') {
+        setError(new Error('Permission denied to access orders'))
+      } else {
+        setError(err as Error)
       }
-      return failureCount < 3;
-    },
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    refetchOnWindowFocus: false // Don't refetch on window focus
-  })
+    } finally {
+      setLoading(false)
+    }
+  }, [dateStart, dateEnd, enabled])
+
+  useEffect(() => {
+    fetchOrdersData()
+  }, [fetchOrdersData])
+
+  return { data, loading, error, refetch: fetchOrdersData }
+}

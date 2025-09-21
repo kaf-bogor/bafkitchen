@@ -1,5 +1,5 @@
-import { useQuery, useMutation, UseQueryResult, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
 import {
   collection,
   doc,
@@ -41,124 +41,172 @@ const transformInvoiceData = (doc: any): IInvoice => {
 }
 
 // Custom hook for real-time invoice updates
-export const useGetInvoices = (): UseQueryResult<IInvoice[], Error> => {
-  const queryClient = useQueryClient()
-  
-  // Set up real-time listener
-  useEffect(() => {
-    const invoicesQuery = query(
-      collection(db, 'invoices'),
-      orderBy('createdAt', 'desc')
-    )
-    
-    const unsubscribe = onSnapshot(
-      invoicesQuery,
-      (querySnapshot) => {
-        const invoices: IInvoice[] = querySnapshot.docs.map(transformInvoiceData)
-        queryClient.setQueryData(['invoices'], invoices)
-      },
-      (error) => {
-      }
-    )
-    
-    return () => {
-      unsubscribe()
-    }
-  }, [queryClient])
-  
-  return useQuery<IInvoice[], Error>({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      // Initial fetch
+export const useGetInvoices = () => {
+  const [data, setData] = useState<IInvoice[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchInvoices = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const invoicesQuery = query(
         collection(db, 'invoices'),
         orderBy('createdAt', 'desc')
       )
       const invoicesSnap = await getDocs(invoicesQuery)
-      return invoicesSnap.docs.map(transformInvoiceData)
-    },
-    staleTime: Infinity, // Keep data fresh since we have real-time updates
-    refetchOnWindowFocus: false // Disable refetch on focus since we have real-time updates
-  })
-}
+      const invoices = invoicesSnap.docs.map(transformInvoiceData)
+      setData(invoices)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-// Fetch invoices by vendor with real-time updates
-export const useGetInvoicesByVendor = (vendorId: string): UseQueryResult<IInvoice[], Error> => {
-  const queryClient = useQueryClient()
-  
-  // Set up real-time listener for vendor invoices
   useEffect(() => {
-    if (!vendorId) return
-    
+    fetchInvoices()
+
+    // Set up real-time listener
     const invoicesQuery = query(
       collection(db, 'invoices'),
-      where('vendorId', '==', vendorId),
       orderBy('createdAt', 'desc')
     )
-    
+
     const unsubscribe = onSnapshot(
       invoicesQuery,
       (querySnapshot) => {
         const invoices: IInvoice[] = querySnapshot.docs.map(transformInvoiceData)
-        queryClient.setQueryData(['invoices', 'vendor', vendorId], invoices)
+        setData(invoices)
       },
-      (error) => {
+      (err) => {
+        setError(err as Error)
       }
     )
-    
+
     return () => {
       unsubscribe()
     }
-  }, [queryClient, vendorId])
-  
-  return useQuery<IInvoice[], Error>({
-    queryKey: ['invoices', 'vendor', vendorId],
-    queryFn: async () => {
+  }, [fetchInvoices])
+
+  return { data, loading, error, refetch: fetchInvoices }
+}
+
+// Fetch invoices by vendor with real-time updates
+export const useGetInvoicesByVendor = (vendorId: string) => {
+  const [data, setData] = useState<IInvoice[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchInvoicesByVendor = useCallback(async () => {
+    if (!vendorId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const invoicesQuery = query(
         collection(db, 'invoices'),
         where('vendorId', '==', vendorId),
         orderBy('createdAt', 'desc')
       )
       const invoicesSnap = await getDocs(invoicesQuery)
-      return invoicesSnap.docs.map(transformInvoiceData)
-    },
-    enabled: !!vendorId,
-    staleTime: Infinity, // Keep data fresh since we have real-time updates
-    refetchOnWindowFocus: false // Disable refetch on focus since we have real-time updates
-  })
+      const invoices = invoicesSnap.docs.map(transformInvoiceData)
+      setData(invoices)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [vendorId])
+
+  useEffect(() => {
+    fetchInvoicesByVendor()
+
+    if (!vendorId) return
+
+    // Set up real-time listener for vendor invoices
+    const invoicesQuery = query(
+      collection(db, 'invoices'),
+      where('vendorId', '==', vendorId),
+      orderBy('createdAt', 'desc')
+    )
+
+    const unsubscribe = onSnapshot(
+      invoicesQuery,
+      (querySnapshot) => {
+        const invoices: IInvoice[] = querySnapshot.docs.map(transformInvoiceData)
+        setData(invoices)
+      },
+      (err) => {
+        setError(err as Error)
+      }
+    )
+
+    return () => {
+      unsubscribe()
+    }
+  }, [fetchInvoicesByVendor, vendorId])
+
+  return { data, loading, error, refetch: fetchInvoicesByVendor }
 }
 
 // Fetch single invoice
-export const useGetInvoice = (invoiceId: string): UseQueryResult<IInvoice, Error> =>
-  useQuery<IInvoice, Error>({
-    queryKey: ['invoice', invoiceId],
-    queryFn: async () => {
+export const useGetInvoice = (invoiceId: string) => {
+  const [data, setData] = useState<IInvoice | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchInvoice = useCallback(async () => {
+    if (!invoiceId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
       const invoiceDoc = await getDoc(doc(db, 'invoices', invoiceId))
-      
+
       if (!invoiceDoc.exists()) {
         throw new Error('Invoice not found')
       }
-      
-      const data = invoiceDoc.data()
-      return {
+
+      const invoiceData = invoiceDoc.data()
+      const invoice = {
         id: invoiceDoc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString(),
-        issuedDate: data.issuedDate?.toDate?.()?.toISOString() || data.issuedDate || new Date().toISOString(),
-        dueDate: data.dueDate?.toDate?.()?.toISOString() || data.dueDate || new Date().toISOString(),
-        settledDate: data.settledDate?.toDate?.()?.toISOString() || data.settledDate
+        ...invoiceData,
+        createdAt: invoiceData.createdAt?.toDate?.()?.toISOString() || invoiceData.createdAt || new Date().toISOString(),
+        updatedAt: invoiceData.updatedAt?.toDate?.()?.toISOString() || invoiceData.updatedAt || new Date().toISOString(),
+        issuedDate: invoiceData.issuedDate?.toDate?.()?.toISOString() || invoiceData.issuedDate || new Date().toISOString(),
+        dueDate: invoiceData.dueDate?.toDate?.()?.toISOString() || invoiceData.dueDate || new Date().toISOString(),
+        settledDate: invoiceData.settledDate?.toDate?.()?.toISOString() || invoiceData.settledDate
       } as IInvoice
-    },
-    enabled: !!invoiceId
-  })
+
+      setData(invoice)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [invoiceId])
+
+  useEffect(() => {
+    fetchInvoice()
+  }, [fetchInvoice])
+
+  return { data, loading, error, refetch: fetchInvoice }
+}
 
 // Generate invoices for an order
 export const useGenerateInvoicesForOrder = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<IInvoice[], Error, string>({
-    mutationFn: async (orderId: string) => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const generateInvoicesForOrder = async (orderId: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       // Fetch the order
       const orderDoc = await getDoc(doc(db, 'orders', orderId))
       if (!orderDoc.exists()) {
@@ -271,35 +319,43 @@ export const useGenerateInvoicesForOrder = () => {
       }
       
       return invoices
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
+
+  return { generateInvoicesForOrder, loading, error }
 }
 
 // Update invoice status
 export const useUpdateInvoiceStatus = () => {
-  const queryClient = useQueryClient()
-  
-  return useMutation<IInvoice, Error, IUpdateInvoiceStatusRequest>({
-    mutationFn: async (request: IUpdateInvoiceStatusRequest) => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateInvoiceStatus = async (request: IUpdateInvoiceStatusRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
       const invoiceRef = doc(db, 'invoices', request.invoiceId)
       const updateData: any = {
         status: request.status,
         updatedAt: serverTimestamp()
       }
-      
+
       if (request.status === EInvoiceStatus.SETTLED && request.settledDate) {
         updateData.settledDate = new Date(request.settledDate)
       }
-      
+
       await updateDoc(invoiceRef, updateData)
-      
+
       // Fetch and return updated invoice
       const updatedDoc = await getDoc(invoiceRef)
       const data = updatedDoc.data()
-      
+
       return {
         id: updatedDoc.id,
         ...data,
@@ -309,11 +365,13 @@ export const useUpdateInvoiceStatus = () => {
         dueDate: data?.dueDate?.toDate?.()?.toISOString() || data?.dueDate || new Date().toISOString(),
         settledDate: data?.settledDate?.toDate?.()?.toISOString() || data?.settledDate
       } as IInvoice
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      queryClient.invalidateQueries({ queryKey: ['invoice', data.id] })
-      queryClient.invalidateQueries({ queryKey: ['invoices', 'vendor', data.vendorId] })
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
     }
-  })
+  }
+
+  return { updateInvoiceStatus, loading, error }
 }
