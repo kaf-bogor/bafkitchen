@@ -1,27 +1,42 @@
+import { useState, useEffect } from 'react'
 
-import { useState, useEffect, useCallback } from 'react'
-
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, query, where, orderBy, getDoc } from 'firebase/firestore'
+import {
+  Timestamp,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  getDoc,
+  updateDoc
+} from 'firebase/firestore'
 
 import { ISchedule, IProduct } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
-
 // Fungsi untuk mengambil data schedules
-export const useGetSchedules = (start?: Date, end?: Date, enabled: boolean = true) => {
+export const useGetSchedules = (
+  start?: Date,
+  end?: Date,
+  enabled: boolean = true
+) => {
   const [data, setData] = useState<ISchedule.ISchedule[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchSchedules = useCallback(async () => {
+  const fetchSchedules = async () => {
     if (!enabled) return
 
     setLoading(true)
     setError(null)
 
     try {
-      let schedulesQuery;
-      
+      let schedulesQuery
+
       if (!start || !end) {
         schedulesQuery = collection(db, 'schedules')
       } else {
@@ -34,71 +49,22 @@ export const useGetSchedules = (start?: Date, end?: Date, enabled: boolean = tru
       }
 
       const schedulesSnap = await getDocs(schedulesQuery)
-      const rawSchedules = schedulesSnap.docs.map((d) => {
-        const data = d.data() as any;
+      const schedules = schedulesSnap.docs.map((d) => {
+        const data = d.data() as any
         return {
-          id: d.id, 
-          ...data,
-          date: data.date?.toDate?.()?.toISOString() || data.date
-        };
-      })
-
-      // Group schedules by date and fetch product details
-      const schedulesByDate = new Map<string, any[]>()
-      
-      for (const schedule of rawSchedules) {
-        const dateKey = new Date(schedule.date).toDateString()
-        
-        // Debug logging
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Schedule grouping debug:', {
-            scheduleId: schedule.id,
-            originalDate: schedule.date,
-            parsedDate: new Date(schedule.date),
-            dateKey: dateKey,
-            productId: schedule.productId
-          });
+          id: d.id,
+          date: data.date?.toDate?.()?.toISOString() || data.date,
+          createdAt:
+            data.createdAt?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
+          updatedAt:
+            data.updatedAt?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
+          products: data.products || []
         }
-        
-        if (!schedulesByDate.has(dateKey)) {
-          schedulesByDate.set(dateKey, [])
-        }
-        schedulesByDate.get(dateKey)!.push(schedule)
-      }
+      }) as ISchedule.ISchedule[]
 
-      const transformedSchedules: ISchedule.ISchedule[] = []
-
-      for (const [, schedules] of Array.from(schedulesByDate.entries())) {
-        const productSchedules = []
-        
-        for (const schedule of schedules) {
-          try {
-            const productDoc = await getDoc(doc(db, 'products', schedule.productId))
-            if (productDoc.exists()) {
-              const productData = { id: productDoc.id, ...productDoc.data() } as IProduct.IProductResponse
-              productSchedules.push({
-                productId: schedule.productId,
-                scheduleId: schedule.id,
-                product: productData
-              })
-            }
-          } catch (error) {
-            console.error(`Error fetching product ${schedule.productId}:`, error)
-          }
-        }
-
-        if (productSchedules.length > 0) {
-          transformedSchedules.push({
-            id: schedules[0].id, // Use first schedule's ID as group ID
-            date: schedules[0].date,
-            createdAt: schedules[0].createdAt,
-            updatedAt: schedules[0].updatedAt,
-            productSchedules
-          })
-        }
-      }
-
-      setData(transformedSchedules)
+      setData(schedules)
     } catch (err: any) {
       if (err?.code === 'permission-denied') {
         setError(new Error('Permission denied to access schedules'))
@@ -108,11 +74,12 @@ export const useGetSchedules = (start?: Date, end?: Date, enabled: boolean = tru
     } finally {
       setLoading(false)
     }
-  }, [start, end, enabled])
+  }
 
   useEffect(() => {
     fetchSchedules()
-  }, [fetchSchedules])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return { data, loading, error, refetch: fetchSchedules }
 }
@@ -127,37 +94,84 @@ export const usePostSchedules = () => {
     setError(null)
 
     try {
-      const payload = {
-        productId: params.productId,
-        date: Timestamp.fromDate(new Date(params.date)),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-      const res = await addDoc(collection(db, 'schedules'), payload)
-      
-      // Fetch the product data to return properly structured response
+      // First, fetch the product data
       const productDoc = await getDoc(doc(db, 'products', params.productId))
-      const productData = productDoc.exists() 
-        ? { id: productDoc.id, ...productDoc.data() } as IProduct.IProductResponse
+      const productData = productDoc.exists()
+        ? ({
+            id: productDoc.id,
+            ...productDoc.data()
+          } as IProduct.IProductResponse)
         : null
 
       if (!productData) {
         throw new Error('Product not found')
       }
 
-      const newSchedule: ISchedule.ISchedule = {
-        id: res.id,
-        date: new Date(params.date).toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        productSchedules: [{
-          productId: params.productId,
-          scheduleId: res.id,
-          product: productData
-        }]
-      }
+      const targetDate = new Date(params.date)
+      const dateStart = new Date(targetDate)
+      dateStart.setHours(0, 0, 0, 0)
+      const dateEnd = new Date(targetDate)
+      dateEnd.setHours(23, 59, 59, 999)
 
-      return newSchedule
+      // Check if a schedule already exists for this date
+      const existingScheduleQuery = query(
+        collection(db, 'schedules'),
+        where('date', '>=', Timestamp.fromDate(dateStart)),
+        where('date', '<=', Timestamp.fromDate(dateEnd))
+      )
+
+      const existingSchedules = await getDocs(existingScheduleQuery)
+
+      if (!existingSchedules.empty) {
+        // Schedule exists for this date, update it with the new product
+        const existingSchedule = existingSchedules.docs[0]
+        const scheduleData = existingSchedule.data()
+
+        // Get existing products for this schedule
+        const existingProducts = scheduleData.products || []
+
+        // Check if product is already in this schedule
+        if (existingProducts.find((p: any) => p.id === params.productId)) {
+          throw new Error('Product is already scheduled for this date')
+        }
+
+        // Add new product to existing products array
+        const updatedProducts = [...existingProducts, productData]
+
+        // Update the existing schedule
+        await updateDoc(doc(db, 'schedules', existingSchedule.id), {
+          products: updatedProducts,
+          updatedAt: serverTimestamp()
+        })
+
+        return {
+          id: existingSchedule.id,
+          date: new Date(params.date).toISOString(),
+          createdAt:
+            scheduleData.createdAt?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          products: updatedProducts
+        } as ISchedule.ISchedule
+      } else {
+        // Create new schedule for this date
+        const payload = {
+          date: Timestamp.fromDate(targetDate),
+          products: [productData],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }
+
+        const res = await addDoc(collection(db, 'schedules'), payload)
+
+        return {
+          id: res.id,
+          date: new Date(params.date).toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          products: [productData]
+        } as ISchedule.ISchedule
+      }
     } catch (err) {
       setError(err as Error)
       throw err
@@ -179,9 +193,40 @@ export const useDeleteSchedule = () => {
     setError(null)
 
     try {
-      // Assume scheduleId is the document id to delete
-      await deleteDoc(doc(db, 'schedules', params.scheduleId))
-      return { message: 'deleted', deletedProductSchedule: { id: params.scheduleId, productId: params.productId, scheduleId: params.scheduleId } }
+      // Get the schedule document
+      const scheduleDoc = await getDoc(doc(db, 'schedules', params.scheduleId))
+
+      if (!scheduleDoc.exists()) {
+        throw new Error('Schedule not found')
+      }
+
+      const scheduleData = scheduleDoc.data()
+      const currentProducts = scheduleData.products || []
+
+      // Remove the specific product from the products array
+      const updatedProducts = currentProducts.filter(
+        (product: any) => product.id !== params.productId
+      )
+
+      if (updatedProducts.length === 0) {
+        // If no products left, delete the entire schedule
+        await deleteDoc(doc(db, 'schedules', params.scheduleId))
+      } else {
+        // Update the schedule with remaining products
+        await updateDoc(doc(db, 'schedules', params.scheduleId), {
+          products: updatedProducts,
+          updatedAt: serverTimestamp()
+        })
+      }
+
+      return {
+        message: 'deleted',
+        deletedProductSchedule: {
+          id: params.scheduleId,
+          productId: params.productId,
+          scheduleId: params.scheduleId
+        }
+      }
     } catch (err) {
       setError(err as Error)
       throw err

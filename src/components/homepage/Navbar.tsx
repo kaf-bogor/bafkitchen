@@ -19,9 +19,8 @@ import {
 import Link from 'next/link'
 import { FaCartShopping } from 'react-icons/fa6'
 
-import { useStore } from '@/app/s/[storeName]/useStore'
 import { useAuth } from '@/app/UserProvider'
-import { cartStore } from '@/stores/useCart'
+import { useCart } from '@/hooks/useCart'
 
 interface navLinkProps {
   children: React.ReactNode
@@ -45,8 +44,8 @@ const NavLink = (props: navLinkProps) => {
   )
 }
 
-export default function Navbar({ storeName }: Props) {
-  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
+export default function Navbar() {
+  const cart = useCart()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { user } = useAuth()
 
@@ -77,15 +76,9 @@ export default function Navbar({ storeName }: Props) {
           onClick={isOpen ? onClose : onOpen}
         />
         <HStack spacing={8} alignItems={'center'}>
-          {storeName ? (
-            <Link href={`/s/${storeName}`}>
-              <Box>{storeName}</Box>
-            </Link>
-          ) : (
-            <Link href={`/`}>
+          <Link href={`/`}>
               <Image src="/logo.png" alt="BAF Kitchen" height="56px" />
             </Link>
-          )}
         </HStack>
         <Flex alignItems={'center'}>
           <Flex display={{ base: 'none', md: 'flex' }} mr={2}>
@@ -135,4 +128,3 @@ export default function Navbar({ storeName }: Props) {
   )
 }
 
-type Props = { storeName?: string }

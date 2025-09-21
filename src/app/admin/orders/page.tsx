@@ -28,8 +28,6 @@ import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
 
-import { getOrders } from '@/app/admin/orders/actions'
-import { getStores } from '@/app/admin/stores/actions'
 import { useAuth } from '@/app/UserProvider'
 import Layout from '@/components/Layout'
 import {
@@ -39,13 +37,18 @@ import {
 import { IProductOrder } from '@/interfaces/order'
 import { currency } from '@/utils'
 import { exportOrdersToCSV, exportDetailedOrdersToCSV } from '@/utils/exportCSV'
-import { downloadGoogleSheetsCSV, openGoogleSheetsImportInstructions } from '@/utils/exportGoogleSheets'
+import {
+  downloadGoogleSheetsCSV,
+  openGoogleSheetsImportInstructions
+} from '@/utils/exportGoogleSheets'
 
+import { getOrders } from './actions'
+import { useGetVendors } from '../vendors/actions'
 
 export default function Home() {
   const { user } = useAuth()
   const { data: orders, loading: isFetching, error } = getOrders(!!user)
-  const { data: stores } = getStores()
+  const { data: vendorsData } = useGetVendors()
 
   // Filter states
   const [dateFilter, setDateFilter] = useState('all')
@@ -57,7 +60,6 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 50
-
 
   const getTotalQuantity = (items: IProductOrder[] = []) => {
     if (!items || !Array.isArray(items)) return 0
@@ -121,12 +123,10 @@ export default function Home() {
       filtered = filtered.filter((order) => {
         // Check if vendorFilter matches any vendor in the order.vendors array
         if (order.vendors && order.vendors.length > 0) {
-          return order.vendors.some(vendor => 
+          return order.vendors.some((vendor) =>
             vendor.name?.toLowerCase().includes(vendorFilter.toLowerCase())
           )
         }
-        // Fallback to store name for older orders
-        return order.store?.name?.toLowerCase().includes(vendorFilter.toLowerCase())
       })
     }
 
@@ -176,9 +176,9 @@ export default function Home() {
 
   // Get vendors from Firestore and products from orders
   const vendors = useMemo(() => {
-    if (!stores?.length) return []
-    return stores.filter(store => !store.isDeleted).map(store => store.name)
-  }, [stores])
+    if (!vendorsData?.length) return []
+    return vendorsData.filter((vendor) => vendor.isActive).map((vendor) => vendor.name)
+  }, [vendorsData])
 
   const uniqueProducts = useMemo(() => {
     if (!orders?.length) return []
@@ -192,7 +192,6 @@ export default function Home() {
     })
     return Array.from(products)
   }, [orders])
-
 
   // Sort handlers
   const handleSort = (column: string) => {
@@ -212,19 +211,26 @@ export default function Home() {
 
   // Export handlers
   const handleExportCSV = () => {
-    exportOrdersToCSV(filteredAndSortedOrders, `Orders_Summary_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
+    exportOrdersToCSV(
+      filteredAndSortedOrders,
+      `Orders_Summary_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
+    )
   }
 
   const handleExportDetailedCSV = () => {
-    exportDetailedOrdersToCSV(filteredAndSortedOrders, `Orders_Detailed_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
+    exportDetailedOrdersToCSV(
+      filteredAndSortedOrders,
+      `Orders_Detailed_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
+    )
   }
 
   const handleExportGoogleSheets = () => {
-    const dateRange = dateFilter !== 'all' ? 
-      dateFilter === 'custom' && customDateStart && customDateEnd ? 
-        `${customDateStart} to ${customDateEnd}` :
-        `Last ${dateFilter}`
-      : undefined
+    const dateRange =
+      dateFilter !== 'all'
+        ? dateFilter === 'custom' && customDateStart && customDateEnd
+          ? `${customDateStart} to ${customDateEnd}`
+          : `Last ${dateFilter}`
+        : undefined
 
     downloadGoogleSheetsCSV(filteredAndSortedOrders, {
       includeProductDetails: false,
@@ -232,18 +238,19 @@ export default function Home() {
       dateRange,
       filename: `GoogleSheets_Orders_Summary_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
     })
-    
+
     setTimeout(() => {
       openGoogleSheetsImportInstructions()
     }, 1000)
   }
 
   const handleExportDetailedGoogleSheets = () => {
-    const dateRange = dateFilter !== 'all' ? 
-      dateFilter === 'custom' && customDateStart && customDateEnd ? 
-        `${customDateStart} to ${customDateEnd}` :
-        `Last ${dateFilter}`
-      : undefined
+    const dateRange =
+      dateFilter !== 'all'
+        ? dateFilter === 'custom' && customDateStart && customDateEnd
+          ? `${customDateStart} to ${customDateEnd}`
+          : `Last ${dateFilter}`
+        : undefined
 
     downloadGoogleSheetsCSV(filteredAndSortedOrders, {
       includeProductDetails: true,
@@ -251,7 +258,7 @@ export default function Home() {
       dateRange,
       filename: `GoogleSheets_Orders_Detailed_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
     })
-    
+
     setTimeout(() => {
       openGoogleSheetsImportInstructions()
     }, 1000)
@@ -268,7 +275,6 @@ export default function Home() {
       isFetching={isFetching}
       error={error as Error}
     >
-
       {/* Filters and Controls */}
       <VStack spacing={4} mb={6} align="stretch">
         <Flex justify="space-between" align="center">
@@ -277,16 +283,15 @@ export default function Home() {
           </Text>
           <HStack spacing={2}>
             <ButtonGroup size="sm" isAttached variant="outline">
-              <Button onClick={handleExportCSV}>
-                📄 CSV Summary
-              </Button>
-              <Button onClick={handleExportDetailedCSV}>
-                📊 CSV Detailed
-              </Button>
+              <Button onClick={handleExportCSV}>📄 CSV Summary</Button>
+              <Button onClick={handleExportDetailedCSV}>📊 CSV Detailed</Button>
               <Button onClick={handleExportGoogleSheets} colorScheme="green">
                 📗 Sheets Summary
               </Button>
-              <Button onClick={handleExportDetailedGoogleSheets} colorScheme="green">
+              <Button
+                onClick={handleExportDetailedGoogleSheets}
+                colorScheme="green"
+              >
                 📈 Sheets Detailed
               </Button>
             </ButtonGroup>
@@ -346,7 +351,7 @@ export default function Home() {
         <Box p={4} bg="gray.50" borderRadius="md" mb={4}>
           <FormControl maxW="300px">
             <FormLabel fontSize="sm" fontWeight="medium" color="blue.600">
-Vendor Name
+              Vendor Name
             </FormLabel>
             <Select
               placeholder="All Vendors"
@@ -401,8 +406,8 @@ Vendor Name
         <Thead>
           <Tr>
             <Th>Order ID</Th>
-            <Th 
-              cursor="pointer" 
+            <Th
+              cursor="pointer"
               _hover={{ bg: 'gray.50' }}
               onClick={() => handleSort('date')}
             >
@@ -415,8 +420,8 @@ Vendor Name
             <Th>Customer Name</Th>
             <Th>Customer Phone</Th>
             <Th>Total Quantity</Th>
-            <Th 
-              cursor="pointer" 
+            <Th
+              cursor="pointer"
               _hover={{ bg: 'gray.50' }}
               onClick={() => handleSort('total')}
             >
@@ -445,10 +450,9 @@ Vendor Name
                   </Text>
                 </Th>
                 <Th>
-                  {order.vendors && order.vendors.length > 0 
-                    ? order.vendors.map(vendor => vendor.name).join(', ')
-                    : order.store?.name || 'Unknown Vendor'
-                  }
+                  {order.vendors && order.vendors.length > 0
+                    ? order.vendors.map((vendor) => vendor.name).join(', ')
+                    : 'Unknown Vendor'}
                 </Th>
                 <Th>{order.customer?.name || 'Unknown Customer'}</Th>
                 <Th>{order.customer?.phoneNumber || 'N/A'}</Th>

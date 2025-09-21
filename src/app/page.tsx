@@ -15,18 +15,20 @@ import { id } from 'date-fns/locale'
 
 import { useGetProducts } from '@/app/admin/products/actions'
 import { getSchedules } from '@/app/admin/schedules/actions'
-import { useStore } from '@/app/s/[storeName]/useStore'
 import { CardProduct, Layout } from '@/components/homepage'
 import TabContent from '@/components/homepage/TabContent'
+import { useCart } from '@/hooks/useCart'
 import { IProduct, ISchedule } from '@/interfaces'
-import { cartStore } from '@/stores/useCart'
 
 export default function Home() {
   const [query, setQuery] = useState<string>('')
   const [, setSelectedDate] = useState(new Date())
 
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 })
+  const weekStart = useMemo(
+    () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+    []
+  )
+  const weekEnd = useMemo(() => endOfWeek(new Date(), { weekStartsOn: 1 }), [])
 
   const {
     data: schedules,
@@ -41,17 +43,17 @@ export default function Home() {
         total: schedules.length,
         weekStart: weekStart.toISOString(),
         weekEnd: weekEnd.toISOString(),
-        schedules: schedules.map(s => ({
+        schedules: schedules.map((s) => ({
           id: s.id,
           date: s.date,
-          productCount: s.productSchedules?.length || 0,
-          productIds: s.productSchedules?.map(ps => ps.productId) || []
+          productCount: s.products?.length || 0,
+          productIds: s.products?.map((p) => p.id) || []
         }))
-      });
+      })
     }
-  }, [schedules, weekStart, weekEnd]);
+  }, [schedules, weekStart, weekEnd])
 
-  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
+  const cart = useCart()
 
   const handleAddQty = useCallback(
     (product: IProduct.IProductResponse) => {
@@ -95,29 +97,32 @@ export default function Home() {
     setSelectedDate(weekDates[index])
   }
 
-  const getDefaultIndex = () => {
+  const defaultIndex = useMemo(() => {
     const today = new Date()
     return weekDates.findIndex((date) => isSameDay(date, today))
-  }
+  }, [weekDates])
 
-  const isDateScheduled = (date: Date, schedules: ISchedule.ISchedule[]) => {
-    const hasSchedule = schedules.some((schedule) => isSameDay(new Date(schedule.date), date))
-    
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('isDateScheduled check:', {
-        checkingDate: date.toDateString(),
-        hasSchedule,
-        matchingSchedules: schedules.filter(s => isSameDay(new Date(s.date), date)).map(s => ({
-          scheduleId: s.id,
-          scheduleDate: s.date,
-          productCount: s.productSchedules?.length || 0
-        }))
-      });
-    }
-    
-    return hasSchedule
-  }
+  const isDateScheduled = useCallback(
+    (date: Date, schedules: ISchedule.ISchedule[]) => {
+      const hasSchedule = schedules.some((schedule) =>
+        isSameDay(new Date(schedule.date), date)
+      )
+
+      // Debug logging (reduced to avoid spam)
+      if (process.env.NODE_ENV === 'development' && hasSchedule) {
+        console.log('isDateScheduled check:', {
+          checkingDate: date.toDateString(),
+          hasSchedule,
+          matchingSchedules: schedules.filter((s) =>
+            isSameDay(new Date(s.date), date)
+          ).length
+        })
+      }
+
+      return hasSchedule
+    },
+    []
+  )
 
   return (
     <Layout isFetching={isFetching} error={error as Error} onSearch={setQuery}>
@@ -145,7 +150,7 @@ export default function Home() {
         <Tabs
           isFitted
           onChange={handleTabChange}
-          defaultIndex={getDefaultIndex()}
+          defaultIndex={defaultIndex}
           flex={1}
           variant="soft-rounded"
         >

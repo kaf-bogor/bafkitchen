@@ -24,7 +24,6 @@ import { useDebouncedCallback } from 'use-debounce'
 import { Footer, Navbar } from '@/components/homepage'
 
 export default function Layout({
-  storeName,
   children,
   breadcrumbs,
   error,
@@ -38,7 +37,7 @@ export default function Layout({
 
   return (
     <Box bg="gray.200" minH="100vh">
-      <Navbar storeName={storeName} />
+      <Navbar />
       <VStack
         gap={6}
         mt="64px"
@@ -114,7 +113,6 @@ export default function Layout({
 }
 
 type Props = {
-  storeName?: string
   children: ReactNode
   error?: Error
   isFetching?: boolean

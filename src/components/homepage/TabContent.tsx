@@ -26,7 +26,7 @@ export default function TabContent({
           {date
             .getScheduleForDay(day, schedules)
             .flatMap((schedule) =>
-              schedule.productSchedules.map(({ product }) => (
+              schedule.products.map((product) => (
                 <CardProduct
                   qty={
                     cart.getTotalQuantity

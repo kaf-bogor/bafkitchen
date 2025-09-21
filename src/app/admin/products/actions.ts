@@ -183,7 +183,8 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
 
   useEffect(() => {
     fetchProducts()
-  }, [fetchProducts])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return { data, loading, error, refetch: fetchProducts }
 }

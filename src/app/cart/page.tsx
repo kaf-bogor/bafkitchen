@@ -34,12 +34,11 @@ import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
 import { useGetSettings } from '@/app/admin/settings/actions'
-import OrdererInput from '@/app/s/[storeName]/cart/components/OrdererInput'
-import { useStore } from '@/app/s/[storeName]/useStore'
 import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components/homepage'
+import OrdererInput from '@/components/OrdererInput'
+import { useCart } from '@/hooks/useCart'
 import { IProduct, IOrder } from '@/interfaces'
-import { cartStore } from '@/stores/useCart'
 import { currency, schema, order } from '@/utils'
 
 import { useCreateOrders } from './actions'
@@ -49,7 +48,7 @@ export default function CartPage() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef(null)
   const { user } = useAuth()
-  const cart = useStore(cartStore, (state) => state, 'bafkitchen')
+  const cart = useCart()
   const items = (cart.getProducts && cart.getProducts()) || []
   const totalCartPrice = cart.getTotalPrice && cart.getTotalPrice()
 

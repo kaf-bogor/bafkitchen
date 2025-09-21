@@ -5,11 +5,7 @@ export interface ISchedule {
   date: string
   createdAt: string
   updatedAt: string
-  productSchedules: {
-    productId: string
-    scheduleId: string
-    product: IProduct.IProductResponse
-  }[]
+  products: IProduct.IProductResponse[]
 }
 
 export interface IScheduleResponse {

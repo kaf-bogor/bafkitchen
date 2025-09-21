@@ -31,8 +31,6 @@ export const useGetOrderDetail = (orderId?: string) => {
         updatedAt: o.updatedAt?.toDate?.() ?? new Date(0),
         customerId: o.customerId ?? '',
         status: o.status ?? 'pending',
-        storeId: o.storeId ?? '',
-        store: { name: o.store?.name ?? '' } as any,
         productOrders: (o.productOrders ?? []).map((po: any) => ({
           id: po.id ?? '',
           quantity: po.quantity ?? 0,

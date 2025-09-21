@@ -12,6 +12,7 @@ import {
 import { EOrderStatus } from '@/constants/order'
 import { EInvoiceStatus } from '@/interfaces/invoice'
 import { IOrder as IOrderType, IOrderActivity } from '@/interfaces/order'
+import { currency } from '@/utils'
 import { db } from '@/utils/firebase'
 
 // Fetch single order
@@ -79,54 +80,93 @@ const generateInvoiceNumber = (): string => {
 // Generate invoices for an order based on vendors
 const generateInvoicesForOrder = async (orderId: string, orderData: any) => {
   try {
+    console.log('🚀 Starting invoice generation for order:', orderId)
+    console.log('📦 Order data:', JSON.stringify(orderData, null, 2))
+
     // Group products by vendor
     const productsByVendor = new Map<string, any[]>()
-    
+
     if (orderData.productOrders && Array.isArray(orderData.productOrders)) {
+      console.log('📦 Found', orderData.productOrders.length, 'product orders')
+
       // Get vendor info from product's store data
       for (const productOrder of orderData.productOrders) {
+        console.log('🔍 Processing product order:', productOrder)
+
         let vendorId = 'default-vendor'
         let vendorName = 'Unknown Vendor'
-        
+
         if (productOrder.product) {
-          // First try to get storeId from product
-          if (productOrder.product.storeId) {
-            vendorId = productOrder.product.storeId
+          console.log('📝 Product data:', productOrder.product)
+
+          // First priority: Get vendor directly from product.vendor
+          if (productOrder.product.vendor) {
+            vendorId = productOrder.product.vendor.id
+            vendorName = productOrder.product.vendor.name
+            console.log('✅ Found vendor from product.vendor:', vendorName)
           }
-          
-          // Try to find vendor name from order.vendors array (stores data)
-          if (orderData.vendors && Array.isArray(orderData.vendors)) {
-            const vendor = orderData.vendors.find((v: any) => v.id === vendorId)
-            if (vendor && vendor.name) {
+          // Second priority: Try to match vendor from order.vendors using product's vendor reference
+          else if (orderData.vendors && Array.isArray(orderData.vendors)) {
+            console.log('🏪 Order vendors:', orderData.vendors)
+
+            // Try to find vendor by matching some identifier from the product
+            let foundVendor = null
+
+            // If product has any vendor reference, try to match it
+            if (productOrder.product.vendorId) {
+              foundVendor = orderData.vendors.find((v: any) => v.id === productOrder.product.vendorId)
+            }
+
+            if (foundVendor) {
+              vendorId = foundVendor.id
+              vendorName = foundVendor.name
+              console.log('✅ Matched vendor from order.vendors:', vendorName)
+            } else if (orderData.vendors.length === 1) {
+              // Only use the single vendor if there's exactly one vendor in the order
+              const vendor = orderData.vendors[0]
+              vendorId = vendor.id
               vendorName = vendor.name
+              console.log('✅ Using single vendor from order.vendors:', vendorName)
+            } else {
+              console.warn('⚠️ Could not match product to any specific vendor, multiple vendors available')
             }
           }
-          
+
           // Fallback: check if product has store info directly
-          if (vendorName === 'Unknown Vendor' && productOrder.product.store?.name) {
-            vendorName = productOrder.product.store.name
+          if (vendorName === 'Unknown Vendor' && productOrder.product.store) {
+            if (productOrder.product.store.name) {
+              vendorName = productOrder.product.store.name
+            }
+            if (productOrder.product.store.id) {
+              vendorId = productOrder.product.store.id
+            }
+            console.log('✅ Found vendor name from product.store:', vendorName)
           }
         }
-        
-        // Additional fallback: try to get vendor from stores collection directly
+
+        // Additional fallback: try to get vendor from vendors collection directly
         if (vendorName === 'Unknown Vendor' && vendorId !== 'default-vendor') {
           try {
-            const storeDoc = await getDoc(doc(db, 'stores', vendorId))
-            if (storeDoc.exists()) {
-              const storeData = storeDoc.data()
-              if (storeData.name) {
-                vendorName = storeData.name
+            console.log('🔍 Fetching vendor data for:', vendorId)
+            const vendorDoc = await getDoc(doc(db, 'vendors', vendorId))
+            if (vendorDoc.exists()) {
+              const vendorData = vendorDoc.data()
+              if (vendorData.name) {
+                vendorName = vendorData.name
+                console.log('✅ Found vendor name from vendors collection:', vendorName)
               }
             }
           } catch (error) {
-            console.warn(`Could not fetch store ${vendorId}:`, error)
+            console.warn(`Could not fetch vendor ${vendorId}:`, error)
           }
         }
-        
+
+        console.log(`📋 Final vendor info - ID: ${vendorId}, Name: ${vendorName}`)
+
         if (!productsByVendor.has(vendorId)) {
           productsByVendor.set(vendorId, [])
         }
-        
+
         productsByVendor.get(vendorId)?.push({
           ...productOrder,
           vendorId,
@@ -134,6 +174,22 @@ const generateInvoicesForOrder = async (orderId: string, orderData: any) => {
         })
       }
     }
+
+    console.log('📊 Products grouped by vendor:')
+    Array.from(productsByVendor.entries()).forEach(([vendorId, products]) => {
+      console.log(`  📍 Vendor: ${products[0]?.vendorName} (ID: ${vendorId})`)
+      console.log(`     Products: ${products.length}`)
+      products.forEach((product, index) => {
+        console.log(`     ${index + 1}. ${product.product?.name || 'Unknown Product'} (Qty: ${product.quantity})`)
+      })
+    })
+
+    if (productsByVendor.size === 0) {
+      console.error('❌ No products were grouped by vendor - this will result in no invoices!')
+      return
+    }
+
+    console.log(`🎯 Will generate ${productsByVendor.size} invoices (one per vendor)`)
     
     // Generate invoices for each vendor
     const invoicePromises = []
@@ -179,12 +235,16 @@ const generateInvoicesForOrder = async (orderId: string, orderData: any) => {
       // Save to Firestore
       const invoicePromise = addDoc(collection(db, 'invoices'), invoiceData)
       invoicePromises.push(invoicePromise)
-      
-      console.log('📄 Generated invoice for vendor:', vendorName, 'Amount:', totalAmount)
+
+      console.log(`📄 Created invoice for vendor: ${vendorName} (${vendorId})`)
+      console.log(`    📋 Invoice Number: ${invoiceData.invoiceNumber}`)
+      console.log(`    💰 Amount: ${currency.toIDRFormat(totalAmount)}`)
+      console.log(`    📦 Items: ${items.length}`)
     }
-    
+
+    console.log(`🔄 Saving ${invoicePromises.length} invoices to database...`)
     await Promise.all(invoicePromises)
-    console.log('✅ All invoices generated successfully')
+    console.log(`✅ Successfully generated ${invoicePromises.length} invoices for order ${orderId}`)
     
   } catch (error) {
     console.error('❌ Error generating invoices:', error)

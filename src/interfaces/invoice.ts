@@ -11,7 +11,7 @@ export interface IInvoice {
   settledDate?: string
   createdAt: string
   updatedAt: string
-  
+
   // Invoice items (products from this specific vendor)
   items: IInvoiceItem[]
   

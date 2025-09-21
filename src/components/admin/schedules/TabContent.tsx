@@ -39,12 +39,12 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
 
   const handleDelete = async (productId: string, scheduleId: string) => {
     try {
-      const result = await removeSchedule({ productId, scheduleId })
+      await removeSchedule({ productId, scheduleId })
       setListSchedules((prev) =>
         prev.map((schedule) => ({
           ...schedule,
-          productSchedules: schedule.productSchedules.filter(
-            ({ scheduleId }) => scheduleId !== result.deletedProductSchedule.scheduleId
+          products: schedule.products.filter(
+            (product) => product.id !== productId
           )
         }))
       )
@@ -69,13 +69,13 @@ export default function TabContent({ schedules, day, selectedDay }: Props) {
               {date
                 .getScheduleForDay(day, listSchedules)
                 .flatMap((schedule) =>
-                  schedule.productSchedules.map((productSchedule) => (
+                  schedule.products.map((product) => (
                     <CardProduct
-                      key={`${productSchedule.scheduleId}-${productSchedule.productId}`}
-                      product={productSchedule.product}
+                      key={`${schedule.id}-${product.id}`}
+                      product={product}
                       editable={false}
                       onDelete={() =>
-                        handleDelete(productSchedule.productId, productSchedule.scheduleId)
+                        handleDelete(product.id, schedule.id)
                       }
                       isDeleting={isDeleting}
                     />

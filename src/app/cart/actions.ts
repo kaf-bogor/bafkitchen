@@ -1,8 +1,7 @@
 import { useState } from 'react'
 
-import { addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 
-import { IStore } from '@/interfaces'
 import { IOrder as IOrderType, IOrderRequest } from '@/interfaces/order'
 import { db } from '@/utils/firebase'
 import { generateOrderId } from '@/utils/orderIdGenerator'
@@ -27,83 +26,23 @@ export const useCreateOrders = () => {
       
       const orderNumber = generateOrderId()
       
-      // Fetch all vendors from stores collection
-      let vendors: IStore.IStore[] = []
-      try {
-        const storesSnapshot = await getDocs(collection(db, 'stores'))
-        
-        if (storesSnapshot.empty) {
-          // Try to fetch from vendors collection instead
-          const vendorsSnapshot = await getDocs(collection(db, 'vendors'))
-          
-          if (!vendorsSnapshot.empty) {
-            vendors = vendorsSnapshot.docs.map((doc) => {
-              const data = doc.data()
-              return {
-                id: doc.id,
-                name: data.name || '',
-                userId: data.userId || '',
-                isDeleted: Boolean(data.isDeleted),
-                createdAt: String(data.createdAt || ''),
-                updatedAt: String(data.updatedAt || ''),
-                user: {
-                  id: data.userId || '',
-                  name: data.userName || '',
-                  email: data.userEmail || '',
-                  role: 'admin',
-                  createdAt: '',
-                  updatedAt: '',
-                  phoneNumber: null,
-                  lastSignInAt: ''
-                }
-              } as IStore.IStore
-            }).filter(store => !store.isDeleted)
-          }
-        } else {
-          vendors = storesSnapshot.docs.map((doc) => {
-            const data = doc.data()
-            return {
-              id: doc.id,
-              name: data.name || '',
-              userId: data.userId || '',
-              isDeleted: Boolean(data.isDeleted),
-              createdAt: String(data.createdAt || ''),
-              updatedAt: String(data.updatedAt || ''),
-              user: {
-                id: data.userId || '',
-                name: data.userName || '',
-                email: data.userEmail || '',
-                role: 'admin',
-                createdAt: '',
-                updatedAt: '',
-                phoneNumber: null,
-                lastSignInAt: ''
-              }
-            } as IStore.IStore
-          }).filter(store => !store.isDeleted)
-        }
-      } catch (error) {
-        console.error('❌ Error fetching vendors:', error)
-        // Continue with empty vendors array if fetch fails
-      }
-      
       // Transform cart items to productOrders format with vendor information
       const productOrders = await Promise.all(
         orderRequest.items.map(async (item, index) => {
           // Fetch full product details to get vendor information
           let productData: any = {}
-          
+
           try {
             const { doc, getDoc } = await import('firebase/firestore')
             const productDoc = await getDoc(doc(db, 'products', item.id || ''))
-            
+
             if (productDoc.exists()) {
               productData = productDoc.data()
             }
           } catch (error) {
             console.warn(`Failed to fetch product details for ${item.id}:`, error)
           }
-          
+
           return {
             id: index + 1, // Sequential ID for product order
             quantity: item.quantity || 0,
@@ -119,6 +58,21 @@ export const useCreateOrders = () => {
           }
         })
       )
+
+      // Collect unique vendors from products
+      const vendors: any[] = []
+      const vendorMap = new Map()
+
+      productOrders.forEach(order => {
+        if (order.product.vendor && !vendorMap.has(order.product.vendor.id)) {
+          vendorMap.set(order.product.vendor.id, {
+            id: order.product.vendor.id,
+            name: order.product.vendor.name
+          })
+        }
+      })
+
+      vendors.push(...Array.from(vendorMap.values()))
       
       const payload = {
         orderNumber,
@@ -137,7 +91,7 @@ export const useCreateOrders = () => {
         store: {
           name: 'Baf Kitchen'
         },
-        vendors: vendors || [] // Ensure vendors is never undefined
+        vendors: vendors // Vendors collected from product data
       }
       
       // Deep check for undefined values
@@ -196,7 +150,7 @@ export const useCreateOrders = () => {
         },
         productOrders,
         store: { name: 'Baf Kitchen' },
-        vendors: vendors || [],
+        vendors: vendors,
         status: 'Payment Pending'
       } as IOrderType
     } catch (err) {

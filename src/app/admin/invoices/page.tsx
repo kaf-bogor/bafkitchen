@@ -65,7 +65,7 @@ export default function InvoicesPage() {
 
     // Vendor filtering
     if (vendorFilter) {
-      filtered = filtered.filter(invoice => 
+      filtered = filtered.filter(invoice =>
         invoice.vendorName.toLowerCase().includes(vendorFilter.toLowerCase())
       )
     }
