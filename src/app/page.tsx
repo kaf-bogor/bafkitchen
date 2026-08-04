@@ -91,7 +91,8 @@ export default function Home() {
 
   useEffect(() => {
     refetchProducts()
-  }, [query, refetchProducts])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
 
   const handleTabChange = (index: number) => {
     setSelectedDate(weekDates[index])

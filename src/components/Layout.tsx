@@ -1,19 +1,17 @@
-import React, { ReactNode, useRef } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 
-import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons'
+import { HamburgerIcon } from '@chakra-ui/icons'
 import {
   Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   Flex,
-  HStack,
   IconButton,
-  Stack,
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react'
-import { motion } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 
 import { useAuth } from '@/app/UserProvider'
 import { SidebarAdmin, SidebarCustomer } from '@/components'
@@ -30,51 +28,90 @@ export default function Layout({
   const { user } = useAuth()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const bgColor = useColorModeValue('gray.50', 'gray.900')
+  const pathname = usePathname()
 
-  const sidebarRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    onClose()
+  }, [pathname, onClose])
 
   if (user) {
     return (
-      <HStack align="start" spacing={0}>
-        <Stack
-          pos={{ base: 'fixed', md: 'relative' }}
-          bgColor="white"
-          zIndex="99"
+      <Box minH="100vh" bg={bgColor}>
+        {/* Desktop: static fixed sidebar */}
+        <Box
+          display={{ base: 'none', md: 'block' }}
+          position="fixed"
+          top="0"
+          left="0"
+          h="100vh"
+          w="60"
+          zIndex={10}
+          bg="white"
+          overflowY="auto"
         >
-          <IconButton
-            size={'md'}
-            icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
-            aria-label={'Open Menu'}
-            display={{ base: 'flex', md: 'none' }}
-            onClick={isOpen ? onClose : onOpen}
+          {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
+        </Box>
+
+        {/* Mobile: backdrop + slide-in drawer */}
+        <Box display={{ base: 'block', md: 'none' }}>
+          <Box
+            position="fixed"
+            top="0"
+            left="0"
+            w="100vw"
+            h="100vh"
+            bg="blackAlpha.600"
+            zIndex={99}
+            onClick={onClose}
+            opacity={isOpen ? 1 : 0}
+            pointerEvents={isOpen ? 'auto' : 'none'}
+            transition="opacity 0.3s ease"
           />
           <Box
-            ref={sidebarRef}
-            display={{ base: isOpen ? 'flex' : 'none', md: 'flex' }}
+            position="fixed"
+            top="0"
+            left="0"
+            h="100vh"
+            w="60"
+            zIndex={100}
+            bg="white"
+            overflowY="auto"
+            boxShadow="xl"
+            transform={isOpen ? 'translateX(0)' : 'translateX(-100%)'}
+            transition="transform 0.3s ease"
           >
-            <Box display={{ base: 'none', md: 'block' }}>
-              {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
-            </Box>
-            <Box display={{ base: 'block', md: 'none' }}>
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: isOpen ? 0 : '-100%' }}
-                exit={{ x: '-100%' }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
-                {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
-              </motion.div>
-            </Box>
+            {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
           </Box>
-        </Stack>
-        <Box as="main" w="full" minH="90vh" bg={bgColor}>
+        </Box>
+
+        {/* Main content */}
+        <Box as="main" ml={{ base: 0, md: '240px' }} minH="100vh">
+          {/* Mobile top bar with burger button */}
+          <Flex
+            display={{ base: 'flex', md: 'none' }}
+            bg="white"
+            borderBottomWidth="1px"
+            h="57px"
+            px={3}
+            align="center"
+            position="sticky"
+            top="0"
+            zIndex={9}
+          >
+            <IconButton
+              icon={<HamburgerIcon />}
+              aria-label="Open Menu"
+              variant="ghost"
+              onClick={onOpen}
+            />
+          </Flex>
+
           {!!breadcrumbs?.length && (
             <Flex
               bg="white"
               borderBottomWidth="1px"
               boxShadow="xs"
               mb={6}
-              ml={{ base: '32px', md: '0' }}
               p={3}
               justifyContent="space-between"
               alignItems="center"
@@ -108,7 +145,7 @@ export default function Layout({
             </Flex>
           )}
         </Box>
-      </HStack>
+      </Box>
     )
   }
 }
