@@ -30,6 +30,8 @@ const UserContext = createContext<UserContextType>({
 // Create a custom hook to use the UserContext
 export const useAuth = () => useContext(UserContext)
 
+const AUTH_TIMEOUT = 4000
+
 // Create a provider component
 export function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -38,13 +40,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Fallback: never block the app longer than AUTH_TIMEOUT on auth restore
+    const fallback = setTimeout(() => setLoading(false), AUTH_TIMEOUT)
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      clearTimeout(fallback)
       setUser(currentUser)
       setLoading(false)
     })
 
     // Cleanup subscription on unmount
-    return () => unsubscribe()
+    return () => {
+      clearTimeout(fallback)
+      unsubscribe()
+    }
   }, [])
 
   useEffect(() => {

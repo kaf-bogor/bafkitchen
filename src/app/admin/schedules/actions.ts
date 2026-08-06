@@ -18,6 +18,20 @@ import {
 import { ISchedule, IProduct } from '@/interfaces'
 import { db } from '@/utils/firebase'
 
+const FETCH_TIMEOUT = 15000
+
+// Reject with a timeout error so the UI shows an error state instead of an infinite spinner
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Koneksi lambat, silakan coba lagi')),
+        ms
+      )
+    )
+  ])
+
 // Fungsi untuk mengambil data schedules
 export const useGetSchedules = (
   start?: Date,
@@ -48,7 +62,10 @@ export const useGetSchedules = (
         )
       }
 
-      const schedulesSnap = await getDocs(schedulesQuery)
+      const schedulesSnap = await withTimeout(
+        getDocs(schedulesQuery),
+        FETCH_TIMEOUT
+      )
       const schedules = schedulesSnap.docs.map((d) => {
         const data = d.data() as any
         return {
