@@ -30,7 +30,8 @@ import {
   AiOutlineCalendar,
   AiOutlineUser,
   AiOutlineFileText,
-  AiOutlineSetting
+  AiOutlineSetting,
+  AiOutlineDesktop
 } from 'react-icons/ai'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
@@ -45,6 +46,12 @@ const Sidebar = ({ ...rest }: Props) => {
   const hoverBg = useColorModeValue('gray.100', 'gray.700')
 
   const listItems: SidebarMenuItem[] = [
+    {
+      id: 0,
+      text: 'Kasir (POS)',
+      path: '/pos',
+      icon: AiOutlineDesktop
+    },
     {
       id: 1,
       text: 'User',

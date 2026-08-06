@@ -40,3 +40,21 @@ body {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* POS receipt printing: only the receipt is printed */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pos-receipt,
+  #pos-receipt * {
+    visibility: visible;
+  }
+  #pos-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 72mm;
+    padding: 4mm;
+  }
+}

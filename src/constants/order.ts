@@ -74,3 +74,8 @@ export enum ETimeFrame {
   WEEKLY = 'weekly',
   MONTHLY = 'monthly'
 }
+
+export enum EOrderChannel {
+  POS = 'pos',
+  ONLINE = 'online'
+}

@@ -7,6 +7,21 @@ export interface IOrderRequest {
   totalPrice: number
 }
 
+export interface IPaymentInfo {
+  method: string
+  tendered: number
+  change: number
+}
+
+export interface IPosOrderRequest {
+  items: IProductCart[]
+  totalPrice: number
+  customerName?: string
+  notes?: string
+  payment: IPaymentInfo
+  cashierName?: string
+}
+
 export interface IProductOrder {
   id: number
   quantity: number
@@ -38,6 +53,9 @@ export interface IOrder {
   }
   vendors?: IStore[] // List of all vendors/stores available at checkout time
   status: string
+  channel?: string // 'pos' for cashier sales, undefined for online orders
+  payment?: IPaymentInfo
+  cashier?: string
 }
 
 export interface IUpdateOrderStatusRequest {
