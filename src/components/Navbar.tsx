@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
-import { auth } from '@/utils/firebase'
+import { handleLogout } from '@/utils/auth'
 
 export default function Navbar() {
   const router = useRouter()
 
-  const handleLogout = async () => {
+  const onLogout = async () => {
     try {
-      await auth.signOut()
-      router.push(ADMIN_LOGIN_PATH)
+      await handleLogout({
+        onLogout: () => router.push(ADMIN_LOGIN_PATH)
+      })
     } catch (error) {
       console.log(error, 'error')
     }
@@ -32,7 +33,7 @@ export default function Navbar() {
 
         <Flex alignItems={'center'}>
           <Stack direction={'row'} spacing={7}>
-            <Button onClick={handleLogout}>Logout</Button>
+            <Button onClick={onLogout}>Logout</Button>
           </Stack>
         </Flex>
       </Flex>

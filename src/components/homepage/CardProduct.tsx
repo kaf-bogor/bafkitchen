@@ -11,12 +11,13 @@ import {
   Stack,
   Image,
   Input,
-  InputGroup
+  InputGroup,
+  Badge
 } from '@chakra-ui/react'
 import Link from 'next/link'
 
 import { IProduct } from '@/interfaces'
-import { currency } from '@/utils'
+import { currency, date } from '@/utils'
 
 function CardProduct({
   product,
@@ -32,6 +33,7 @@ function CardProduct({
   const [cartState, setCartState] = useState<CartState>('default')
 
   const cartQty = useMemo(() => qty, [qty])
+  const isPreorder = product.availability === 'preorder'
 
   return (
     <Center>
@@ -39,36 +41,61 @@ function CardProduct({
         role="group"
         w="full"
         bg="white"
-        boxShadow="md"
-        rounded="lg"
+        boxShadow="sm"
+        rounded="xl"
+        overflow="hidden"
         pos="relative"
         zIndex={1}
+        transition="all 0.2s"
+        _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
       >
-        <Image
-          roundedTopLeft="lg"
-          roundedTopRight="lg"
-          height={160}
-          width="full"
-          objectFit="cover"
-          src={imageUrl}
-          alt="#"
-        />
+        <Box position="relative">
+          <Image
+            height={160}
+            width="full"
+            objectFit="cover"
+            src={imageUrl || '/placeholder.png'}
+            alt={name}
+          />
+          <Badge
+            position="absolute"
+            top={3}
+            left={3}
+            colorScheme={isPreorder ? 'orange' : 'green'}
+            variant="solid"
+            textTransform="uppercase"
+            fontSize="xs"
+            px={2}
+            py={1}
+            rounded="full"
+          >
+            {isPreorder ? 'Pre-order' : 'Ready'}
+          </Badge>
+        </Box>
 
-        <Stack align="left" p={6}>
+        <Stack align="left" p={4} spacing={1}>
           <Link href={`/s/${safeVendor.name}`}>
-            <Text color="gray.500" fontSize="sm" textTransform="uppercase">
+            <Text color="gray.500" fontSize="xs" textTransform="uppercase" letterSpacing="wide">
               {safeVendor.name}
             </Text>
           </Link>
-          <Text fontSize="md" fontFamily="body" noOfLines={1}>
+          <Text fontSize="md" fontWeight="semibold" fontFamily="body" noOfLines={1}>
             {name}
           </Text>
-          <Text fontSize="sm">{currency.toIDRFormat(price)}</Text>
+          <Text fontSize="sm" color="green.700" fontWeight="medium">
+            {currency.toIDRFormat(price)}
+          </Text>
+          {isPreorder && product.preorderStart && product.preorderEnd && (
+            <Text fontSize="xs" color="orange.600">
+              {date.formatDateRange(product.preorderStart, product.preorderEnd)}
+            </Text>
+          )}
         </Stack>
         <Stack p={3} align="center" justify="center">
           {cartState === 'default' && qty === 0 && (
             <Button
-              w="50%"
+              w="full"
+              size="sm"
               colorScheme="green"
               onClick={() => setCartState('setQuantity')}
             >
@@ -76,13 +103,13 @@ function CardProduct({
             </Button>
           )}
           {(cartState === 'setQuantity' || qty > 0) && (
-            <InputGroup bg="gray.200" w="50%" rounded="2xl">
+            <InputGroup bg="gray.100" w="full" rounded="xl" size="sm">
               <Button
                 bg="white"
                 roundedTopRight="0"
                 roundedBottomRight="0"
                 borderWidth="1px"
-                borderColor="green"
+                borderColor="green.500"
                 onClick={onRemoveQty}
               >
                 <MinusIcon color="red.700" />
@@ -98,15 +125,15 @@ function CardProduct({
                 bg="white"
                 borderTopWidth="1px"
                 borderBottomWidth="1px"
-                borderTopColor="green"
-                borderBottomColor="green"
+                borderTopColor="green.500"
+                borderBottomColor="green.500"
               />
               <Button
                 bg="white"
                 roundedTopLeft="0"
                 roundedBottomLeft="0"
                 borderWidth="1px"
-                borderColor="green"
+                borderColor="green.500"
                 onClick={onAddQty}
               >
                 <AddIcon color="green" />

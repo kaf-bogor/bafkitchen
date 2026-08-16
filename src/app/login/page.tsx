@@ -10,13 +10,13 @@ import { FcGoogle } from 'react-icons/fc'
 import { IoArrowBack } from 'react-icons/io5'
 
 import { useAuth } from '@/app/UserProvider'
-import { handleGoogleLogin, saveUserToFirestore } from '@/utils/firebase'
+import { handleGoogleLogin } from '@/utils/auth'
 
 const MotionBox = motion(Box)
 
 export default function SimpleCard() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, refetch } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   // Define all color mode values at the top level
@@ -35,26 +35,9 @@ export default function SimpleCard() {
   const handleLogin = async () => {
     await handleGoogleLogin({
       onError: setError,
-      onSuccess: (user) => {
-        const { uid, displayName, email, photoURL, phoneNumber } = user
-        saveUserToFirestore(
-          'customer',
-          {
-            uid,
-            displayName,
-            email,
-            photoURL,
-            phoneNumber
-          },
-          {
-            onError() {
-              setError('Error saving user to Firestore')
-            },
-            onSuccess() {
-              router.push('/dashboard/')
-            }
-          }
-        )
+      onSuccess: async () => {
+        await refetch()
+        router.push('/dashboard/')
       }
     })
   }

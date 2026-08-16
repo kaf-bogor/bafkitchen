@@ -1,13 +1,16 @@
+'use client'
+
 import React from 'react'
 
 import {
   Box,
   Button,
+  Divider,
+  Flex,
   HStack,
   Heading,
-  Link as LinkChakra,
+  Icon,
   List,
-  ListIcon,
   ListItem,
   Modal,
   ModalCloseButton,
@@ -22,155 +25,170 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
+  AiOutlineCalendar,
+  AiOutlineDesktop,
+  AiOutlineFileText,
   AiOutlineLogout,
+  AiOutlineSetting,
   AiOutlineShop,
   AiOutlineShopping,
   AiOutlineShoppingCart,
   AiOutlineTags,
-  AiOutlineCalendar,
   AiOutlineUser,
-  AiOutlineFileText,
-  AiOutlineSetting,
-  AiOutlineDesktop
+  AiOutlinePieChart
 } from 'react-icons/ai'
 
+
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
-import { handleLogout } from '@/utils/firebase'
+import { handleLogout } from '@/utils/auth'
 
-const Sidebar = ({ ...rest }: Props) => {
+import type { IconType } from 'react-icons'
+
+type MenuItem = {
+  text: string
+  path?: string
+  onClick?: () => void
+  icon: IconType
+}
+
+type Group = { title?: string; items: MenuItem[] }
+
+function Sidebar({ ...rest }: Props) {
   const pathname = usePathname()
-
   const router = useRouter()
-
   const { isOpen, onOpen, onClose } = useDisclosure()
   const hoverBg = useColorModeValue('gray.100', 'gray.700')
 
-  const listItems: SidebarMenuItem[] = [
+  function onLogoutClick() {
+    onOpen()
+  }
+
+  const groups: Group[] = [
     {
-      id: 0,
-      text: 'Kasir (POS)',
-      path: '/pos',
-      icon: AiOutlineDesktop
+      items: [{ text: 'Dasbor', path: '/admin', icon: AiOutlinePieChart }]
     },
     {
-      id: 1,
-      text: 'User',
-      path: '/admin/users',
-      icon: AiOutlineUser
+      title: 'Manajemen',
+      items: [
+        { text: 'Kasir (POS)', path: '/pos', icon: AiOutlineDesktop },
+        { text: 'Produk', path: '/admin/products', icon: AiOutlineShopping },
+        { text: 'Order', path: '/admin/orders', icon: AiOutlineShoppingCart },
+        { text: 'Vendor', path: '/admin/vendors', icon: AiOutlineShop },
+        { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags },
+        { text: 'Jadwal', path: '/admin/schedules', icon: AiOutlineCalendar }
+      ]
     },
     {
-      id: 2,
-      text: 'Vendor',
-      path: '/admin/vendors',
-      icon: AiOutlineShop
+      title: 'Keuangan',
+      items: [
+        { text: 'Invoice', path: '/admin/invoices', icon: AiOutlineFileText },
+        { text: 'Pengguna', path: '/admin/users', icon: AiOutlineUser }
+      ]
     },
     {
-      id: 3,
-      text: 'Produk',
-      path: '/admin/products',
-      icon: AiOutlineShopping
-    },
-    {
-      id: 4,
-      text: 'Order',
-      path: '/admin/orders',
-      icon: AiOutlineShoppingCart
-    },
-    {
-      id: 5,
-      text: 'Kategori',
-      path: '/admin/categories',
-      icon: AiOutlineTags
-    },
-    {
-      id: 6,
-      text: 'Jadwal',
-      path: '/admin/schedules',
-      icon: AiOutlineCalendar
-    },
-    {
-      id: 7,
-      text: 'Invoice',
-      path: '/admin/invoices',
-      icon: AiOutlineFileText
-    },
-    {
-      id: 8,
-      text: 'Settings',
-      path: '/admin/settings',
-      icon: AiOutlineSetting
-    },
-    {
-      id: 9,
-      text: 'Logout',
-      onClick: onOpen,
-      icon: AiOutlineLogout
+      title: 'Lainnya',
+      items: [
+        { text: 'Pengaturan', path: '/admin/settings', icon: AiOutlineSetting },
+        { text: 'Keluar', onClick: onLogoutClick, icon: AiOutlineLogout }
+      ]
     }
   ]
 
-  const SidebarItem = ({
-    path,
-    onClick,
-    children
-  }: {
-    path?: string
-    onClick?: SidebarMenuItem['onClick']
-    children: React.ReactNode
-  }) => {
-    return path ? (
-      <Link href={path} prefetch>
-        {children}
-      </Link>
-    ) : (
-      <LinkChakra onClick={onClick}>{children}</LinkChakra>
-    )
+  const isActive = (itemPath?: string) => {
+    if (!itemPath) return false
+    if (itemPath === '/admin') return pathname === '/admin'
+    return pathname === itemPath || pathname.startsWith(itemPath + '/')
   }
 
   return (
     <Box
       as="aside"
-      borderRight="2px"
-      borderColor={useColorModeValue('gray.200', 'gray.900')}
+      bg="white"
+      borderRight="1px solid"
+      borderColor="gray.200"
       w="60"
       top="0"
       h="100%"
       minH="100vh"
       zIndex={99}
+      display="flex"
+      flexDirection="column"
       {...rest}
     >
       <Link href="/admin">
-        <HStack p="2.5" h="57px" justify="space-between">
-          <Heading as="h1" size="md">
-            Admin Dashboard
+        <HStack p="5" spacing={3}>
+          <FlexLogo />
+          <Heading as="h1" size="sm" fontWeight="700">
+            BAF Kitchen
           </Heading>
         </HStack>
       </Link>
-      <Box>
-        <List spacing={0} p="0.5">
-          {listItems.map(({ id, icon, text, path, onClick }) => (
-            <SidebarItem key={id} path={path} onClick={onClick}>
-              <ListItem
-                as={HStack}
-                spacing={0}
-                h="10"
-                pl="2.5"
-                cursor="pointer"
-                backgroundColor={pathname === path ? 'gray.200' : ''}
-                _hover={{ bg: hoverBg }}
-                rounded="md"
+
+      <Box flex="1" overflowY="auto" px={3} pb={4}>
+        {groups.map((group, gi) => (
+          <Box key={gi} mt={gi === 0 ? 0 : 5}>
+            {group.title && (
+              <Text
+                px={3}
+                mb={2}
+                fontSize="xs"
+                fontWeight="600"
+                textTransform="uppercase"
+                letterSpacing="wider"
+                color="gray.400"
               >
-                <ListIcon boxSize={5} as={icon} />
-                {text && <Text>{text}</Text>}
-              </ListItem>
-            </SidebarItem>
-          ))}
-        </List>
+                {group.title}
+              </Text>
+            )}
+            <List spacing={0.5}>
+              {group.items.map((item) => {
+                const active = isActive(item.path)
+                const content = (
+                  <ListItem
+                    as={HStack}
+                    spacing={3}
+                    h="10"
+                    px={3}
+                    cursor="pointer"
+                    rounded="lg"
+                    bg={active ? 'brand.50' : 'transparent'}
+                    color={active ? 'brand.700' : 'gray.600'}
+                    fontWeight={active ? '600' : '500'}
+                    _hover={{ bg: active ? 'brand.50' : hoverBg }}
+                    transition="background 0.15s, color 0.15s"
+                  >
+                    <Icon as={item.icon} boxSize={5} flexShrink={0} />
+                    <Text fontSize="sm" noOfLines={1}>
+                      {item.text}
+                    </Text>
+                  </ListItem>
+                )
+                return item.path ? (
+                  <Link key={item.text} href={item.path} prefetch>
+                    {content}
+                  </Link>
+                ) : (
+                  <Box key={item.text} onClick={item.onClick}>
+                    {content}
+                  </Box>
+                )
+              })}
+            </List>
+          </Box>
+        ))}
+      </Box>
+
+      <Divider borderColor="gray.200" />
+      <Box p={4}>
+        <Text fontSize="xs" color="gray.400">
+          v1.0 · BAF Kitchen
+        </Text>
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Yakin ingin logout?</ModalHeader>
+          <ModalHeader>Yakin ingin keluar?</ModalHeader>
           <ModalCloseButton />
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>
@@ -187,7 +205,7 @@ const Sidebar = ({ ...rest }: Props) => {
                 })
               }
             >
-              Logout
+              Keluar
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -196,15 +214,32 @@ const Sidebar = ({ ...rest }: Props) => {
   )
 }
 
-export default Sidebar
-
-type SidebarMenuItem = {
-  id: number
-  path?: string
-  onClick?: () => void
-  text: string
-  icon: React.ElementType
+function FlexLogo() {
+  return (
+    <FlexBrand>
+      <Icon as={AiOutlineShopping} color="white" boxSize={5} />
+    </FlexBrand>
+  )
 }
+
+function FlexBrand({ children }: { children: React.ReactNode }) {
+  return (
+    <Flex
+      bg="brand.500"
+      color="white"
+      w="9"
+      h="9"
+      borderRadius="lg"
+      alignItems="center"
+      justifyContent="center"
+      flexShrink={0}
+    >
+      {children}
+    </Flex>
+  )
+}
+
+export default Sidebar
 
 type Props = {
   display?: {

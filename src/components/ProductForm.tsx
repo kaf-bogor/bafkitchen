@@ -18,6 +18,8 @@ import {
   FormHelperText,
   HStack,
   IconButton,
+  Radio,
+  RadioGroup,
   useToast
 } from '@chakra-ui/react'
 import { Select as MultiSelect, MultiValue } from 'chakra-react-select'
@@ -25,8 +27,8 @@ import { useFormik } from 'formik'
 import { NumericFormat, NumberFormatValues } from 'react-number-format'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
-import { useGetCategories, useCreateCategories } from '@/app/admin/categories/actions'
-import { getVendors } from '@/app/admin/vendors/actions'
+import { useGetCategories, useCreateCategories } from '@/app/admin/(panel)/categories/actions'
+import { getVendors } from '@/app/admin/(panel)/vendors/actions'
 import {
   IEditProductRequest,
   IProductResponse,
@@ -212,6 +214,50 @@ export default function ProductForm({
             <FormHelperText>Kosongkan jika ingin tidak ada stok</FormHelperText>
             <FormErrorMessage>{errors.stock}</FormErrorMessage>
           </FormControl>
+
+          <FormControl>
+            <FormLabel>Ketersediaan</FormLabel>
+            <RadioGroup
+              name="availability"
+              value={values.availability || 'ready'}
+              onChange={(value) => setFieldValue('availability', value)}
+            >
+              <HStack spacing={6}>
+                <Radio value="ready">Ready</Radio>
+                <Radio value="preorder">Pre-order</Radio>
+              </HStack>
+            </RadioGroup>
+            <FormHelperText>
+              {values.availability === 'preorder'
+                ? 'Produk hanya tersedia untuk pre-order dalam rentang tanggal di bawah.'
+                : 'Produk langsung tersedia untuk dijual.'}
+            </FormHelperText>
+          </FormControl>
+
+          {values.availability === 'preorder' && (
+            <Flex direction={{ base: 'column', md: 'row' }} w="full" gap={3}>
+              <FormControl>
+                <FormLabel>Tanggal Mulai Pre-order</FormLabel>
+                <Input
+                  name="preorderStart"
+                  type="date"
+                  value={values.preorderStart?.slice(0, 10) || ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Tanggal Berakhir Pre-order</FormLabel>
+                <Input
+                  name="preorderEnd"
+                  type="date"
+                  value={values.preorderEnd?.slice(0, 10) || ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+              </FormControl>
+            </Flex>
+          )}
 
           <FormControl isInvalid={!!errors.vendor && !!touched.vendor}>
             <FormLabel>Vendor</FormLabel>

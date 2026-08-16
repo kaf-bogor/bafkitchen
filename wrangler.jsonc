@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "store-builder",
+  "compatibility_date": "2026-08-14",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "vinext/server/fetch-handler",
+  "assets": {
+    "directory": "dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "cache": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "VINEXT_KV_CACHE",
+      "id": "1194d5ac595e448a91b98e1003ea4548"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "baf-kitchen-db",
+      "database_id": "e139abfa-96a9-464e-887b-bcab7de04c8c",
+      "migrations_dir": "d1/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "baf-kitchen-media",
+      "preview_bucket_name": "baf-kitchen-media-preview"
+    }
+  ],
+  "vars": {
+    "AUTH_SECRET": "c37547743fc94674950d26221012fc5ad8c284c90998c077eefa2976bfefe93c",
+    "BOOTSTRAP_ADMIN_EMAIL": "kubido@gmail.com"
+  }
+}

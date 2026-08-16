@@ -4,19 +4,16 @@ import React, { useEffect, useState } from 'react'
 
 import { Flex } from '@chakra-ui/react'
 
+import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components'
-import { auth } from '@/utils/firebase'
 
 export default function HomeDashboard() {
-  const [user, setUser] = useState<any | null>(null)
+  const { user } = useAuth()
+  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser)
-    })
-
-    return () => unsubscribe()
-  }, [])
+    setEmail(user?.email ?? null)
+  }, [user])
 
   const breadcrumbs = [
     { label: 'Dashboard', path: '/dashboard' },
@@ -24,7 +21,7 @@ export default function HomeDashboard() {
   ]
 
   return (
-    <Layout breadcrumbs={breadcrumbs} isAdmin={false}>
+    <Layout breadcrumbs={breadcrumbs}>
       <Flex
         style={{
           display: 'flex',
@@ -35,8 +32,8 @@ export default function HomeDashboard() {
       >
         <div>
           <div>Ini halaman setting</div>
-          {user ? (
-            <div style={{ marginTop: 8 }}>Signed in as: {user.email}</div>
+          {email ? (
+            <div style={{ marginTop: 8 }}>Signed in as: {email}</div>
           ) : (
             <div style={{ marginTop: 8 }}>Not signed in</div>
           )}

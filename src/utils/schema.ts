@@ -40,6 +40,9 @@ export const adminProductForm = z.object({
   }),
   categoryIds: z.array(z.string()).optional(),
   description: z.string().optional(),
+  availability: z.enum(['ready', 'preorder']).optional().default('ready'),
+  preorderStart: z.string().nullable().optional(),
+  preorderEnd: z.string().nullable().optional(),
   image: z.any().optional()
 })
 

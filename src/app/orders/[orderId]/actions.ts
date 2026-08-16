@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
-import { doc, getDoc } from 'firebase/firestore'
-
 import { IOrder } from '@/interfaces'
-import { db } from '@/utils/firebase'
-
+import { apiFetch } from '@/utils/api'
 
 export const useGetOrderDetail = (orderId?: string) => {
   const [data, setData] = useState<IOrder.IProductOrderResponse | null>(null)
@@ -18,17 +15,14 @@ export const useGetOrderDetail = (orderId?: string) => {
     setError(null)
 
     try {
-      const oref = doc(db, 'orders', orderId)
-      const snap = await getDoc(oref)
-      if (!snap.exists()) throw new Error('Order not found')
-      const o = snap.data() as any
-      // Best-effort mapping to IProductOrderResponse
+      const res = await apiFetch<{ order: any }>(`/api/orders/${orderId}`)
+      const o = res.order
       const orderDetail = {
-        id: snap.id,
+        id: o.id,
         number: o.number ?? 0,
         total: o.total ?? 0,
-        createdAt: o.createdAt?.toDate?.() ?? new Date(0),
-        updatedAt: o.updatedAt?.toDate?.() ?? new Date(0),
+        createdAt: o.createdAt ? new Date(o.createdAt) : new Date(0),
+        updatedAt: o.updatedAt ? new Date(o.updatedAt) : new Date(0),
         customerId: o.customerId ?? '',
         status: o.status ?? 'pending',
         productOrders: (o.productOrders ?? []).map((po: any) => ({
@@ -59,5 +53,3 @@ export const useGetOrderDetail = (orderId?: string) => {
 
   return { data, loading, error, refetch: fetchOrderDetail }
 }
-
-

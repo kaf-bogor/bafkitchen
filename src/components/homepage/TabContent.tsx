@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
 import React, { useCallback } from 'react'
 
 import { Box, SimpleGrid, Text, VStack } from '@chakra-ui/react'

@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
 import React, { ReactNode, useState } from 'react'
 
 import { Search2Icon } from '@chakra-ui/icons'

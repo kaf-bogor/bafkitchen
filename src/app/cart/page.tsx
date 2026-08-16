@@ -33,7 +33,7 @@ import Link from 'next/link'
 import { FaTrash, FaMinus, FaPlus, FaCartShopping } from 'react-icons/fa6'
 import { toFormikValidationSchema } from 'zod-formik-adapter'
 
-import { useGetSettings } from '@/app/admin/settings/actions'
+import { useGetSettings } from '@/app/admin/(panel)/settings/actions'
 import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components/homepage'
 import OrdererInput from '@/components/OrdererInput'

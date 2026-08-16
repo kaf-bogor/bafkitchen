@@ -28,7 +28,7 @@ import {
 } from 'react-icons/ai'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
-import { handleLogout } from '@/utils/firebase'
+import { handleLogout } from '@/utils/auth'
 
 const Sidebar = ({ ...rest }: Props) => {
   const pathname = usePathname()
@@ -76,6 +76,11 @@ const Sidebar = ({ ...rest }: Props) => {
     )
   }
 
+  const isActive = (itemPath?: string) => {
+    if (!itemPath) return false
+    return pathname === itemPath || pathname.startsWith(itemPath + '/')
+  }
+
   return (
     <Box
       as="aside"
@@ -105,7 +110,7 @@ const Sidebar = ({ ...rest }: Props) => {
                 h="10"
                 pl="2.5"
                 cursor="pointer"
-                backgroundColor={pathname === path ? 'gray.200' : ''}
+                backgroundColor={isActive(path) ? 'gray.200' : ''}
                 // eslint-disable-next-line react-hooks/rules-of-hooks
                 _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
                 rounded="md"

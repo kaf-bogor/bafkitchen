@@ -13,6 +13,9 @@ export interface ICreateProductRequest {
   categoryIds: string[]
   description: string
   image?: File 
+  availability?: string
+  preorderStart?: string | null
+  preorderEnd?: string | null
 }
 
 export interface IProductsResponse {
@@ -28,6 +31,9 @@ export interface IProductResponse {
   description: string
   imageUrl: string
   image?: File
+  availability: string
+  preorderStart: string | null
+  preorderEnd: string | null
   createdAt: string
   updatedAt: string
   vendor: IVendor
@@ -52,6 +58,9 @@ export interface ICreateProductInput {
   description: string
   image?: File | null
   imageUrl?: string
+  availability?: string
+  preorderStart?: string | null
+  preorderEnd?: string | null
 }
 
 export type IProduct = {
@@ -64,6 +73,9 @@ export type IProduct = {
   categories: ICategory[]
   description: string
   imageUrl: string
+  availability?: string
+  preorderStart?: string | null
+  preorderEnd?: string | null
 }
 
 export const IProduct = {
@@ -76,7 +88,10 @@ export const IProduct = {
     vendor: product.vendor,
     categories: [],
     description: product.description,
-    imageUrl: product.imageUrl
+    imageUrl: product.imageUrl,
+    availability: product.availability || 'ready',
+    preorderStart: product.preorderStart ?? null,
+    preorderEnd: product.preorderEnd ?? null
   })
 }
 
@@ -94,6 +109,9 @@ export interface IEditProductRequest {
   description: string
   image?: File
   imageUrl?: string
+  availability?: string
+  preorderStart?: string | null
+  preorderEnd?: string | null
 }
 
 export interface IProductCart extends IProduct {

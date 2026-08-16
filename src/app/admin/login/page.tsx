@@ -28,13 +28,13 @@ import { IoArrowBack } from 'react-icons/io5'
 import { MdAdminPanelSettings } from 'react-icons/md'
 
 import { useAuth } from '@/app/UserProvider'
-import { handleGoogleLogin, saveUserToFirestore } from '@/utils/firebase'
+import { handleGoogleLogin } from '@/utils/auth'
 
 const MotionBox = motion(Box)
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, refetch } = useAuth()
 
   const [error, setError] = useState<string | null>(null)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -58,27 +58,13 @@ export default function AdminLoginPage() {
   const handleLogin = async () => {
     await handleGoogleLogin({
       onError: setError,
-      onSuccess: (user) => {
-        const { uid, displayName, email, photoURL, phoneNumber } = user
-        saveUserToFirestore(
-          'admin',
-          {
-            uid,
-            displayName,
-            email,
-            photoURL,
-            phoneNumber
-          },
-          {
-            onError() {
-              setError('Error saving user to Firestore')
-            },
-            async onSuccess() {
-              // Session cookies removed; rely on Firebase client auth
-              router.push('/admin/')
-            }
-          }
-        )
+      onSuccess: async (user) => {
+        if (user.role !== 'admin') {
+          setError('Anda tidak memiliki akses admin. Hubungi admin untuk mendapatkan akses.')
+          return
+        }
+        await refetch()
+        router.push('/admin/')
       }
     })
   }

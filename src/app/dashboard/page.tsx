@@ -37,8 +37,8 @@ import { Layout } from '@/components'
 import { invoiceStatusColors, invoiceStatusMessages, EInvoiceStatus } from '@/interfaces/invoice'
 import { currency } from '@/utils'
 
-import { useGetInvoicesByVendor, useGetInvoices } from '../admin/invoices/actions'
-import { useGetVendors } from '../admin/vendors/actions'
+import { useGetInvoicesByVendor, useGetInvoices } from '../admin/(panel)/invoices/actions'
+import { useGetVendors } from '../admin/(panel)/vendors/actions'
 
 export default function VendorDashboard() {
   const searchParams = useSearchParams()
@@ -133,7 +133,7 @@ export default function VendorDashboard() {
   }, [vendorInvoices])
 
   return (
-    <Layout breadcrumbs={breadcrumbs} isAdmin={false} isFetching={isFetching} error={error as Error}>
+    <Layout breadcrumbs={breadcrumbs} isFetching={isFetching} error={error as Error}>
       <VStack spacing={6} align="stretch">
         {/* Header and Vendor Selection */}
         <Card>

@@ -1,163 +1,82 @@
-import React, { ReactNode, useEffect } from 'react'
+import React, { ReactNode } from 'react'
 
-import { HamburgerIcon } from '@chakra-ui/icons'
 import {
   Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   Flex,
-  IconButton,
-  useColorModeValue,
-  useDisclosure
+  Heading
 } from '@chakra-ui/react'
-import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 
-import { useAuth } from '@/app/UserProvider'
-import { SidebarAdmin, SidebarCustomer } from '@/components'
 import { Error as ErrorComponent, Loading } from '@/components/shared'
 
 export default function Layout({
   children,
   breadcrumbs,
+  title,
   error,
-  isAdmin = true,
   isFetching,
   rightHeaderComponent
 }: Props) {
-  const { user } = useAuth()
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const bgColor = useColorModeValue('gray.50', 'gray.900')
-  const pathname = usePathname()
-
-  useEffect(() => {
-    onClose()
-  }, [pathname, onClose])
-
-  if (user) {
-    return (
-      <Box minH="100vh" bg={bgColor}>
-        {/* Desktop: static fixed sidebar */}
-        <Box
-          display={{ base: 'none', md: 'block' }}
-          position="fixed"
-          top="0"
-          left="0"
-          h="100vh"
-          w="60"
-          zIndex={10}
-          bg="white"
-          overflowY="auto"
+  return (
+    <Box>
+      {(title || breadcrumbs?.length) && (
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          justify="space-between"
+          align={{ base: 'stretch', md: 'center' }}
+          gap={3}
+          mb={5}
         >
-          {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
-        </Box>
-
-        {/* Mobile: backdrop + slide-in drawer */}
-        <Box display={{ base: 'block', md: 'none' }}>
-          <Box
-            position="fixed"
-            top="0"
-            left="0"
-            w="100vw"
-            h="100vh"
-            bg="blackAlpha.600"
-            zIndex={99}
-            onClick={onClose}
-            opacity={isOpen ? 1 : 0}
-            pointerEvents={isOpen ? 'auto' : 'none'}
-            transition="opacity 0.3s ease"
-          />
-          <Box
-            position="fixed"
-            top="0"
-            left="0"
-            h="100vh"
-            w="60"
-            zIndex={100}
-            bg="white"
-            overflowY="auto"
-            boxShadow="xl"
-            transform={isOpen ? 'translateX(0)' : 'translateX(-100%)'}
-            transition="transform 0.3s ease"
-          >
-            {isAdmin ? <SidebarAdmin /> : <SidebarCustomer />}
-          </Box>
-        </Box>
-
-        {/* Main content */}
-        <Box as="main" ml={{ base: 0, md: '240px' }} minH="100vh">
-          {/* Mobile top bar with burger button */}
-          <Flex
-            display={{ base: 'flex', md: 'none' }}
-            bg="white"
-            borderBottomWidth="1px"
-            h="57px"
-            px={3}
-            align="center"
-            position="sticky"
-            top="0"
-            zIndex={9}
-          >
-            <IconButton
-              icon={<HamburgerIcon />}
-              aria-label="Open Menu"
-              variant="ghost"
-              onClick={onOpen}
-            />
-          </Flex>
-
-          {!!breadcrumbs?.length && (
-            <Flex
-              bg="white"
-              borderBottomWidth="1px"
-              boxShadow="xs"
-              mb={6}
-              p={3}
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Breadcrumb>
+          <Flex direction="column" gap={1}>
+            {!!breadcrumbs?.length && (
+              <Breadcrumb spacing="8px" fontSize="sm" color="gray.500" separator="/">
                 {breadcrumbs.map(({ label, path }) => (
-                  <BreadcrumbItem key={path}>
-                    <BreadcrumbLink href={path}>{label}</BreadcrumbLink>
+                  <BreadcrumbItem key={label + (path || '')}>
+                    {path ? (
+                      <BreadcrumbLink as={Link} href={path} color="gray.500">
+                        {label}
+                      </BreadcrumbLink>
+                    ) : (
+                      <Box as="span" color="gray.400">
+                        {label}
+                      </Box>
+                    )}
                   </BreadcrumbItem>
                 ))}
               </Breadcrumb>
-              <Flex>{rightHeaderComponent}</Flex>
-            </Flex>
-          )}
+            )}
+            {title && (
+              <Heading size="lg" fontWeight="700" color="gray.800">
+                {title}
+              </Heading>
+            )}
+          </Flex>
+          {rightHeaderComponent && <Flex flexShrink={0}>{rightHeaderComponent}</Flex>}
+        </Flex>
+      )}
 
-          {error && <ErrorComponent error={error} />}
-          {!error && (
-            <Flex
-              flex={1}
-              flexGrow={0}
-              direction="column"
-              m={3}
-              p={3}
-              bg="white"
-              boxShadow="md"
-              borderRadius="md"
-              overflowX="auto"
-            >
-              {isFetching && <Loading />}
-              {!error && !isFetching && children}
-            </Flex>
-          )}
+      {error && <ErrorComponent error={error} />}
+      {!error && (
+        <Box>
+          {isFetching && <Loading />}
+          {!error && !isFetching && children}
         </Box>
-      </Box>
-    )
-  }
+      )}
+    </Box>
+  )
 }
 
 type Props = {
   children: ReactNode
+  title?: string
   error?: Error
   isFetching?: boolean
   rightHeaderComponent?: ReactNode
-  isAdmin?: boolean
   breadcrumbs?: {
     label: string
-    path: string
+    path?: string
   }[]
 }

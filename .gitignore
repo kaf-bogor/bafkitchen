@@ -28,6 +28,12 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.dev.vars
+
+# cloudflare
+.wrangler/
+/dev.db
+/dev.sqlite
 
 # vercel
 .vercel
@@ -35,3 +41,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/dist/
+.vinext/

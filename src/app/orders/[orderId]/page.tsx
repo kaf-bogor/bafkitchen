@@ -30,9 +30,10 @@ import { useGetOrderDetail } from './actions'
 export default function OrderDetailPage({
   params
 }: {
-  params: { orderId: string }
+  params: Promise<{ orderId: string }>
 }) {
-  const { data: order, loading: isFetching, error } = useGetOrderDetail(params.orderId)
+  const { orderId } = React.use(params)
+  const { data: order, loading: isFetching, error } = useGetOrderDetail(orderId)
 
   return (
     <Layout isFetching={isFetching} error={error as Error}>

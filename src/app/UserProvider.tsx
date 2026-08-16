@@ -9,51 +9,43 @@ import React, {
   ReactNode
 } from 'react'
 
-import { onAuthStateChanged, User } from 'firebase/auth'
 import { usePathname, useRouter } from 'next/navigation'
 
 import { Loading } from '@/components/shared'
-import { auth } from '@/utils/firebase'
+import { fetchCurrentUser, AuthUser } from '@/utils/auth'
 
 // Define the shape of the UserContext
 interface UserContextType {
-  user: User | null
+  user: AuthUser | null
   loading: boolean
+  refetch: () => Promise<void>
 }
 
 // Create the UserContext with default values
 const UserContext = createContext<UserContextType>({
   user: null,
-  loading: true
+  loading: true,
+  refetch: async () => {}
 })
 
 // Create a custom hook to use the UserContext
 export const useAuth = () => useContext(UserContext)
 
-const AUTH_TIMEOUT = 4000
-
 // Create a provider component
 export function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const refetch = async () => {
+    const currentUser = await fetchCurrentUser()
+    setUser(currentUser)
+    setLoading(false)
+  }
+
   useEffect(() => {
-    // Fallback: never block the app longer than AUTH_TIMEOUT on auth restore
-    const fallback = setTimeout(() => setLoading(false), AUTH_TIMEOUT)
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      clearTimeout(fallback)
-      setUser(currentUser)
-      setLoading(false)
-    })
-
-    // Cleanup subscription on unmount
-    return () => {
-      clearTimeout(fallback)
-      unsubscribe()
-    }
+    refetch()
   }, [])
 
   useEffect(() => {
@@ -71,7 +63,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (pathname === '/login') {
           router.replace('/dashboard')
         }
-        if (pathname === '/admin/login') {
+        if (pathname === '/admin/login' && user.role === 'admin') {
           router.replace('/admin')
         }
       }
@@ -79,7 +71,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [user, loading, pathname, router])
 
   return (
-    <UserContext.Provider value={{ user, loading }}>
+    <UserContext.Provider value={{ user, loading, refetch }}>
       {loading ? <Loading /> : children}
     </UserContext.Provider>
   )

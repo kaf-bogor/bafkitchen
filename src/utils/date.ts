@@ -11,6 +11,14 @@ export const formatDate = (date: Date) => {
   return format(date, 'EEEE, d MMMM', { locale: id }).replace(/minggu/i, 'Ahad')
 }
 
+export const formatShortDate = (date: string | Date) => {
+  return format(new Date(date), 'd MMM yyyy', { locale: id })
+}
+
+export const formatDateRange = (start: string, end: string) => {
+  return `${formatShortDate(start)} - ${formatShortDate(end)}`
+}
+
 export const getScheduleForDay = (
   day: Date,
   schedules: ISchedule.ISchedule[]

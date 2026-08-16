@@ -62,35 +62,35 @@ const SettingsForm: React.FC<Props> = ({
     <Box as="form" onSubmit={handleSubmit}>
       <VStack spacing={4} align="stretch">
         <FormControl isInvalid={!!errors.admin_phone_number}>
-          <FormLabel>Admin Phone Number</FormLabel>
+          <FormLabel>No. telepon admin</FormLabel>
           <Input
             name="admin_phone_number"
             value={formData.admin_phone_number}
             onChange={onChange}
-            placeholder="e.g., 6281234567890"
+            placeholder="cth., 6281234567890"
             type="tel"
           />
           <FormErrorMessage>{errors.admin_phone_number}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={!!errors.app_name}>
-          <FormLabel>App Name</FormLabel>
+          <FormLabel>Nama aplikasi</FormLabel>
           <Input
             name="app_name"
             value={formData.app_name}
             onChange={onChange}
-            placeholder="e.g., BAF Kitchen"
+            placeholder="cth., BAF Kitchen"
           />
           <FormErrorMessage>{errors.app_name}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={!!errors.app_domain}>
-          <FormLabel>App Domain</FormLabel>
+          <FormLabel>Domain aplikasi</FormLabel>
           <Input
             name="app_domain"
             value={formData.app_domain}
             onChange={onChange}
-            placeholder="e.g., https://bafkitchen.bilistiwabogor.com"
+            placeholder="cth., https://bafkitchen.bilistiwabogor.com"
             type="url"
           />
           <FormErrorMessage>{errors.app_domain}</FormErrorMessage>
@@ -99,11 +99,11 @@ const SettingsForm: React.FC<Props> = ({
         <Button
           w="200px"
           type="submit"
-          colorScheme="blue"
+          colorScheme="brand"
           isLoading={isLoading}
-          loadingText={settings ? 'Updating...' : 'Creating...'}
+          loadingText={settings ? 'Menyimpan...' : 'Menyimpan...'}
         >
-          {settings ? 'Update Settings' : 'Create Settings'}
+          {settings ? 'Simpan perubahan' : 'Simpan pengaturan'}
         </Button>
       </VStack>
     </Box>
