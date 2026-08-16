@@ -75,8 +75,14 @@ export default function CardProduct({
       <Stack px={5} pb={4}>
         <ButtonGroup gap={2} w="full">
           {editable && (
-            <Button size="sm" colorScheme="brand" flex="1">
-              <Link href={`/admin/products/${id}/edit`}>Edit</Link>
+            <Button
+              as={Link}
+              href={`/admin/products/${id}/edit`}
+              size="sm"
+              colorScheme="brand"
+              flex="1"
+            >
+              Ubah
             </Button>
           )}
           {onDelete && (
