@@ -21,6 +21,24 @@ const brand = {
 
 const theme = extendTheme({
   config,
+  styles: {
+    global: {
+      body: {
+        color: 'text-body',
+        bg: 'app-bg',
+        textRendering: 'optimizeLegibility',
+        WebkitFontSmoothing: 'antialiased'
+      },
+      ':focus-visible': {
+        outline: '2px solid',
+        outlineColor: 'brand.500',
+        outlineOffset: '2px'
+      },
+      '::selection': {
+        bg: 'brand.100'
+      }
+    }
+  },
   colors: {
     brand,
     primary: brand,
@@ -43,6 +61,20 @@ const theme = extendTheme({
       500: '#3b82f6',
       600: '#2563eb',
       50: '#eff6ff'
+    }
+  },
+  // Semantic color tokens — always reference these instead of raw gray values.
+  semanticTokens: {
+    colors: {
+      'app-bg': { default: 'gray.50', _dark: 'gray.900' },
+      surface: { default: 'white', _dark: 'gray.800' },
+      'surface-muted': { default: 'gray.100', _dark: 'gray.700' },
+      'text-strong': { default: 'gray.900', _dark: 'white' },
+      'text-body': { default: 'gray.700', _dark: 'gray.200' },
+      'text-muted': { default: 'gray.500', _dark: 'gray.400' },
+      'text-subtle': { default: 'gray.400', _dark: 'gray.500' },
+      'border-subtle': { default: 'gray.200', _dark: 'gray.700' },
+      'border-strong': { default: 'gray.300', _dark: 'gray.600' }
     }
   },
   fonts: {
@@ -104,19 +136,102 @@ const theme = extendTheme({
     xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     outline: '0 0 0 3px rgba(66, 153, 225, 0.6)',
-    inner: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)'
+    inner: 'inset 0 2px 4px 0 rgba(0,0,0,0.06)',
+    // Elevation scale — use these for consistent depth across surfaces.
+    card: '0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06)',
+    dropdown:
+      '0 4px 12px -2px rgba(16, 24, 40, 0.12), 0 2px 6px -2px rgba(16, 24, 40, 0.08)',
+    modal: '0 24px 48px -12px rgba(16, 24, 40, 0.24)'
+  },
+  // Typography scale — apply with the `textStyle` prop.
+  textStyles: {
+    pageTitle: {
+      fontSize: { base: '2xl', md: '3xl' },
+      fontWeight: '700',
+      lineHeight: '1.2',
+      letterSpacing: '-0.02em',
+      color: 'text-strong'
+    },
+    sectionTitle: {
+      fontSize: { base: 'lg', md: 'xl' },
+      fontWeight: '700',
+      lineHeight: '1.3',
+      letterSpacing: '-0.01em',
+      color: 'text-strong'
+    },
+    body: {
+      fontSize: 'md',
+      lineHeight: '1.6',
+      color: 'text-body'
+    },
+    small: {
+      fontSize: 'sm',
+      lineHeight: '1.5',
+      color: 'text-body'
+    },
+    caption: {
+      fontSize: 'xs',
+      lineHeight: '1.4',
+      color: 'text-muted'
+    },
+    button: {
+      fontSize: 'sm',
+      fontWeight: '600'
+    },
+    price: {
+      fontSize: 'lg',
+      fontWeight: '700',
+      letterSpacing: '-0.01em',
+      color: 'brand.700'
+    }
+  },
+  // Surface treatments — apply with the `layerStyle` prop.
+  layerStyles: {
+    card: {
+      bg: 'surface',
+      border: '1px solid',
+      borderColor: 'border-subtle',
+      borderRadius: 'xl',
+      boxShadow: 'card'
+    },
+    panel: {
+      bg: 'surface',
+      border: '1px solid',
+      borderColor: 'border-subtle',
+      borderRadius: 'xl'
+    },
+    muted: {
+      bg: 'surface-muted',
+      borderRadius: 'lg'
+    }
   },
   components: {
+    Heading: {
+      baseStyle: {
+        fontWeight: '700',
+        letterSpacing: '-0.01em',
+        color: 'text-strong'
+      }
+    },
     Button: {
       baseStyle: {
         fontWeight: '600',
-        borderRadius: 'lg'
+        borderRadius: 'lg',
+        _focusVisible: {
+          boxShadow: '0 0 0 3px var(--chakra-colors-brand-200)',
+          outline: 'none'
+        }
       },
       sizes: {
         md: {
           h: '10',
           px: '4',
           fontSize: 'sm'
+        },
+        lg: {
+          h: '12',
+          px: '6',
+          fontSize: 'md'
         }
       },
       variants: {
@@ -134,16 +249,24 @@ const theme = extendTheme({
           }
         },
         outline: {
-          borderColor: 'gray.300',
-          color: 'gray.700',
+          borderColor: 'border-strong',
+          color: 'text-body',
           _hover: {
             bg: 'gray.50',
             borderColor: 'gray.400'
           }
         },
         ghost: {
+          color: 'text-body',
           _hover: {
             bg: 'gray.100'
+          }
+        },
+        subtle: {
+          bg: 'gray.100',
+          color: 'text-body',
+          _hover: {
+            bg: 'gray.200'
           }
         },
         danger: {
@@ -164,13 +287,14 @@ const theme = extendTheme({
       variants: {
         outline: {
           field: {
-            borderColor: 'gray.300',
+            borderColor: 'border-subtle',
+            bg: 'surface',
             _focus: {
               borderColor: 'brand.500',
               boxShadow: '0 0 0 1px var(--chakra-colors-brand-500)'
             },
             _hover: {
-              borderColor: 'gray.400'
+              borderColor: 'border-strong'
             }
           }
         }
@@ -185,13 +309,14 @@ const theme = extendTheme({
       variants: {
         outline: {
           field: {
-            borderColor: 'gray.300',
+            borderColor: 'border-subtle',
+            bg: 'surface',
             _focus: {
               borderColor: 'brand.500',
               boxShadow: '0 0 0 1px var(--chakra-colors-brand-500)'
             },
             _hover: {
-              borderColor: 'gray.400'
+              borderColor: 'border-strong'
             }
           }
         }
@@ -203,13 +328,75 @@ const theme = extendTheme({
       },
       variants: {
         outline: {
-          borderColor: 'gray.300',
+          borderColor: 'border-subtle',
+          bg: 'surface',
           _focus: {
             borderColor: 'brand.500',
             boxShadow: '0 0 0 1px var(--chakra-colors-brand-500)'
           },
           _hover: {
-            borderColor: 'gray.400'
+            borderColor: 'border-strong'
+          }
+        }
+      }
+    },
+    FormLabel: {
+      baseStyle: {
+        fontSize: 'sm',
+        fontWeight: '600',
+        color: 'text-body',
+        mb: 1.5
+      }
+    },
+    FormHelperText: {
+      baseStyle: {
+        fontSize: 'xs',
+        color: 'text-muted',
+        mt: 1.5
+      }
+    },
+    FormErrorMessage: {
+      baseStyle: {
+        fontSize: 'xs',
+        mt: 1.5
+      }
+    },
+    Checkbox: {
+      baseStyle: {
+        control: {
+          borderColor: 'border-strong',
+          borderRadius: 'base',
+          _checked: {
+            bg: 'brand.500',
+            borderColor: 'brand.500'
+          }
+        },
+        label: {
+          fontSize: 'sm',
+          color: 'text-body'
+        }
+      }
+    },
+    Radio: {
+      baseStyle: {
+        control: {
+          borderColor: 'border-strong',
+          _checked: {
+            bg: 'brand.500',
+            borderColor: 'brand.500'
+          }
+        },
+        label: {
+          fontSize: 'sm',
+          color: 'text-body'
+        }
+      }
+    },
+    Switch: {
+      baseStyle: {
+        track: {
+          _checked: {
+            bg: 'brand.500'
           }
         }
       }
@@ -217,11 +404,11 @@ const theme = extendTheme({
     Card: {
       baseStyle: {
         container: {
-          bg: 'white',
+          bg: 'surface',
           borderRadius: 'xl',
-          boxShadow: 'sm',
           border: '1px solid',
-          borderColor: 'gray.200',
+          borderColor: 'border-subtle',
+          boxShadow: 'card',
           overflow: 'hidden'
         }
       }
@@ -233,12 +420,13 @@ const theme = extendTheme({
             fontSize: 'xs',
             textTransform: 'uppercase',
             letterSpacing: 'wider',
-            color: 'gray.500',
+            color: 'text-muted',
             fontWeight: '600',
             borderColor: 'gray.100'
           },
           td: {
             fontSize: 'sm',
+            color: 'text-body',
             borderColor: 'gray.100'
           }
         }
@@ -252,15 +440,49 @@ const theme = extendTheme({
         py: '0.5'
       }
     },
+    Menu: {
+      baseStyle: {
+        list: {
+          borderRadius: 'lg',
+          boxShadow: 'dropdown',
+          border: '1px solid',
+          borderColor: 'border-subtle',
+          py: 1
+        },
+        item: {
+          fontSize: 'sm',
+          fontWeight: '500',
+          borderRadius: 'md',
+          _hover: {
+            bg: 'gray.50'
+          },
+          _focus: {
+            bg: 'gray.50'
+          }
+        }
+      }
+    },
     Tooltip: {
       baseStyle: {
-        borderRadius: 'md'
+        borderRadius: 'md',
+        boxShadow: 'dropdown',
+        fontSize: 'xs',
+        px: 2,
+        py: 1
+      }
+    },
+    Alert: {
+      baseStyle: {
+        container: {
+          borderRadius: 'lg'
+        }
       }
     },
     Modal: {
       baseStyle: {
         dialog: {
-          borderRadius: 'xl'
+          borderRadius: 'xl',
+          boxShadow: 'modal'
         },
         header: {
           fontSize: 'lg',
@@ -272,11 +494,21 @@ const theme = extendTheme({
       variants: {
         softRounded: {
           tab: {
-            fontWeight: '500',
+            fontWeight: '600',
             borderRadius: 'lg',
             _selected: {
-              bg: 'brand.500',
-              color: 'white'
+              bg: 'brand.50',
+              color: 'brand.700'
+            }
+          }
+        },
+        line: {
+          tab: {
+            fontWeight: '600',
+            color: 'text-muted',
+            _selected: {
+              color: 'brand.700',
+              borderColor: 'brand.500'
             }
           }
         }
@@ -284,7 +516,16 @@ const theme = extendTheme({
     },
     Divider: {
       baseStyle: {
-        borderColor: 'gray.200'
+        borderColor: 'border-subtle'
+      }
+    },
+    Link: {
+      baseStyle: {
+        color: 'brand.600',
+        _hover: {
+          color: 'brand.700',
+          textDecoration: 'none'
+        }
       }
     }
   }

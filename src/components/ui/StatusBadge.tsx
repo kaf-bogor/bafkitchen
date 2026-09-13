@@ -1,19 +1,23 @@
 import React from 'react'
 
-import { Badge } from '@chakra-ui/react'
+import { Badge, type BadgeProps } from '@chakra-ui/react'
 
 const toneByColor: Record<string, string> = {
-  green: 'success',
-  blue: 'info',
-  orange: 'warning',
-  red: 'error',
+  green: 'green',
+  blue: 'blue',
+  orange: 'orange',
+  red: 'red',
   gray: 'gray',
   purple: 'purple',
   teal: 'teal',
-  yellow: 'warning'
+  yellow: 'yellow'
 }
 
-export default function StatusBadge({ color = 'gray', children }: Props) {
+export default function StatusBadge({
+  color = 'gray',
+  children,
+  ...rest
+}: Props) {
   const tone = toneByColor[color] || 'gray'
   return (
     <Badge
@@ -25,13 +29,14 @@ export default function StatusBadge({ color = 'gray', children }: Props) {
       fontWeight="600"
       fontSize="xs"
       whiteSpace="nowrap"
+      {...rest}
     >
       {children}
     </Badge>
   )
 }
 
-type Props = {
+type Props = Omit<BadgeProps, 'color' | 'colorScheme'> & {
   color?: string
   children: React.ReactNode
 }

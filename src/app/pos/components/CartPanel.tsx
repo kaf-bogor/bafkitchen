@@ -17,7 +17,6 @@ import {
   FormLabel,
   HStack,
   IconButton,
-  Image,
   Input,
   Modal,
   ModalBody,
@@ -33,6 +32,7 @@ import {
 } from '@chakra-ui/react'
 import { FaMinus, FaPlus, FaTrash, FaPause } from 'react-icons/fa'
 
+import ProductImage from '@/components/ProductImage'
 import { usePosCart } from '@/hooks/usePosCart'
 import { currency } from '@/utils'
 
@@ -105,13 +105,12 @@ export default function CartPanel({ onCheckout }: Props) {
         )}
         {items.map((item) => (
           <Flex key={item.id} p={3} gap={3} align="center">
-            <Image
-              src={item.imageUrl || '/logo.png'}
+            <ProductImage
+              src={item.imageUrl}
               alt={item.name}
               boxSize="48px"
               rounded="md"
               objectFit="cover"
-              fallbackSrc="/logo.png"
             />
             <Box flex={1} minW={0}>
               <Text fontSize="sm" fontWeight="medium" noOfLines={1}>

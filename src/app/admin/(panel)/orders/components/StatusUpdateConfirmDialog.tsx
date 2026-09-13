@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useRef } from 'react'
 
 import {
   AlertDialog,
@@ -8,11 +10,21 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   Button,
+  FormControl,
+  FormLabel,
+  HStack,
+  Input,
   Text,
-  Badge
+  VStack
 } from '@chakra-ui/react'
 
-import { mapOrderStatusToColor, mapOrderStatusToMessage, getNextStatusMessage } from '@/constants/order'
+import ProductImage from '@/components/ProductImage'
+import { StatusBadge } from '@/components/ui'
+import {
+  mapOrderStatusToColor,
+  mapOrderStatusToMessage,
+  getNextStatusMessage
+} from '@/constants/order'
 
 interface StatusUpdateConfirmDialogProps {
   isOpen: boolean
@@ -23,6 +35,11 @@ interface StatusUpdateConfirmDialogProps {
   actionDescription: string
   orderNumber: string
   isLoading?: boolean
+  showProofUpload?: boolean
+  proofFile?: File | null
+  proofPreviewUrl?: string | null
+  // eslint-disable-next-line no-unused-vars
+  onProofChange?: (file: File | null) => void
 }
 
 export default function StatusUpdateConfirmDialog({
@@ -33,9 +50,12 @@ export default function StatusUpdateConfirmDialog({
   nextStatus,
   actionDescription,
   orderNumber,
-  isLoading = false
+  isLoading = false,
+  showProofUpload = false,
+  proofPreviewUrl,
+  onProofChange
 }: StatusUpdateConfirmDialogProps) {
-  const cancelRef = React.useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   if (!nextStatus) return null
 
@@ -48,48 +68,65 @@ export default function StatusUpdateConfirmDialog({
     >
       <AlertDialogOverlay>
         <AlertDialogContent>
-          <AlertDialogHeader fontSize="lg" fontWeight="bold">
+          <AlertDialogHeader fontSize="lg" fontWeight="600">
             {actionDescription}
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            <Text mb={4}>
-              Apakah Anda yakin ingin melakukan aksi ini untuk pesanan <strong>{orderNumber}</strong>?
-            </Text>
-            
-            <div>
-              <Text fontSize="sm" color="gray.600" mb={2}>Status akan berubah dari:</Text>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <Badge 
-                  colorScheme={mapOrderStatusToColor[currentStatus]} 
-                  fontSize="sm" 
-                  px={3} 
-                  py={1}
-                  borderRadius="md"
-                >
+            <VStack align="stretch" spacing={4}>
+              <Text fontSize="sm" color="text-body">
+                Apakah Anda yakin ingin melakukan aksi ini untuk pesanan{' '}
+                <strong>{orderNumber}</strong>?
+              </Text>
+
+              <HStack spacing={2} flexWrap="nowrap">
+                <StatusBadge color={mapOrderStatusToColor[currentStatus]}>
                   {mapOrderStatusToMessage[currentStatus] || currentStatus}
-                </Badge>
-                <Text fontSize="sm" color="gray.500">→</Text>
-                <Badge 
-                  colorScheme={mapOrderStatusToColor[nextStatus]} 
-                  fontSize="sm" 
-                  px={3} 
-                  py={1}
-                  borderRadius="md"
-                >
+                </StatusBadge>
+                <Text fontSize="xs" color="text-subtle">
+                  →
+                </Text>
+                <StatusBadge color={mapOrderStatusToColor[nextStatus]}>
                   {getNextStatusMessage(currentStatus)}
-                </Badge>
-              </div>
-            </div>
+                </StatusBadge>
+              </HStack>
+
+              {showProofUpload && (
+                <FormControl>
+                  <FormLabel>Bukti pembayaran</FormLabel>
+                  {proofPreviewUrl && (
+                    <ProductImage
+                      src={proofPreviewUrl}
+                      alt="Bukti pembayaran"
+                      boxSize="120px"
+                      objectFit="cover"
+                      borderRadius="lg"
+                      mb={2}
+                    />
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    p={1}
+                    onChange={(e) =>
+                      onProofChange?.(e.target.files?.[0] || null)
+                    }
+                  />
+                  <Text fontSize="xs" color="text-subtle" mt={1}>
+                    Unggah foto bukti transfer/pembayaran (opsional).
+                  </Text>
+                </FormControl>
+              )}
+            </VStack>
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose} disabled={isLoading}>
+            <Button ref={cancelRef} onClick={onClose} isDisabled={isLoading}>
               Batal
             </Button>
-            <Button 
-              colorScheme="blue" 
-              onClick={onConfirm} 
+            <Button
+              colorScheme="brand"
+              onClick={onConfirm}
               ml={3}
               isLoading={isLoading}
               loadingText="Memperbarui..."

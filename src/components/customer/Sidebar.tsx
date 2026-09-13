@@ -24,7 +24,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   AiOutlineLogout,
   AiOutlineShop,
-  AiOutlineShopping
+  AiOutlineShopping,
+  AiOutlineAppstore
 } from 'react-icons/ai'
 
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
@@ -43,6 +44,12 @@ const Sidebar = ({ ...rest }: Props) => {
       text: 'Home',
       path: '/dashboard',
       icon: AiOutlineShop
+    },
+    {
+      id: 3,
+      text: 'Produk',
+      path: '/dashboard/products',
+      icon: AiOutlineAppstore
     },
     {
       id: 2,
@@ -109,14 +116,18 @@ const Sidebar = ({ ...rest }: Props) => {
                 spacing={0}
                 h="10"
                 pl="2.5"
+                pr="2"
                 cursor="pointer"
-                backgroundColor={isActive(path) ? 'gray.200' : ''}
+                color={isActive(path) ? 'brand.700' : 'gray.600'}
+                fontWeight={isActive(path) ? '600' : '500'}
+                backgroundColor={isActive(path) ? 'brand.50' : 'transparent'}
                 // eslint-disable-next-line react-hooks/rules-of-hooks
                 _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
                 rounded="md"
+                transition="background 0.15s, color 0.15s"
               >
                 <ListIcon boxSize={5} as={icon} />
-                {text && <Text>{text}</Text>}
+                {text && <Text fontSize="sm">{text}</Text>}
               </ListItem>
             </SidebarItem>
           ))}

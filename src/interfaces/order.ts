@@ -26,6 +26,7 @@ export interface IProductOrder {
   id: number
   quantity: number
   productId: string
+  notes?: string
   product: {
     id: string
     name: string
@@ -41,7 +42,7 @@ export interface IProductOrder {
 
 export interface IOrder {
   id: string
-  orderNumber?: string // Human-readable order number like BAF-20240912-12345
+  orderNumber?: string // Human-readable order number like BZ-0010926
   total: number
   createdAt: string
   updatedAt: string
@@ -53,9 +54,13 @@ export interface IOrder {
   }
   vendors?: IStore[] // List of all vendors/stores available at checkout time
   status: string
-  channel?: string // 'pos' for cashier sales, undefined for online orders
+  channel?: string // 'pos' for cashier sales, 'preorder' for pre-order
+  fulfillmentDate?: string // ISO date for scheduled/pre-order fulfillment
   payment?: IPaymentInfo
   cashier?: string
+  paymentProofUrl?: string
+  paymentProofKey?: string
+  activities?: IOrderActivity[]
 }
 
 export interface IUpdateOrderStatusRequest {
@@ -85,6 +90,8 @@ export interface IOrderActivity {
   fromStatus?: string
   toStatus?: string
   notes?: string
+  proofUrl?: string
+  proofKey?: string
   timestamp: string
   createdAt: string
 }

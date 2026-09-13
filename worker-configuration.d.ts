@@ -8,7 +8,8 @@ interface __BaseEnv_Env {
 	ASSETS: Fetcher;
 	AUTH_SECRET: "<your-auth-secret>";
 	BOOTSTRAP_ADMIN_EMAIL: "<your-admin-email>";
-	NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
+	GOOGLE_CLIENT_ID: string;
+	GOOGLE_CLIENT_SECRET: string;
 	NEXT_PUBLIC_APP_DOMAIN: string;
 	NEXT_PUBLIC_ADMIN_PHONE_NUMBER: string;
 }
@@ -20,7 +21,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "AUTH_SECRET" | "BOOTSTRAP_ADMIN_EMAIL" | "NEXT_PUBLIC_GOOGLE_CLIENT_ID" | "NEXT_PUBLIC_APP_DOMAIN" | "NEXT_PUBLIC_ADMIN_PHONE_NUMBER">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "AUTH_SECRET" | "BOOTSTRAP_ADMIN_EMAIL" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "NEXT_PUBLIC_APP_DOMAIN" | "NEXT_PUBLIC_ADMIN_PHONE_NUMBER">> {}
 }
 
 // Begin runtime types

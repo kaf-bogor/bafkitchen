@@ -41,6 +41,26 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* Hide native number-input spinners on quantity fields */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Hide horizontal scrollbars on chip rows */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* POS receipt printing: only the receipt is printed */
 @media print {
   body * {

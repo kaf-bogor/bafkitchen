@@ -2,35 +2,48 @@
 
 import React from 'react'
 
-import {
-  Box,
-  Container,
-  Stack,
-  Text,
-  useColorModeValue
-} from '@chakra-ui/react'
+import { Box, Container, Flex, HStack, Text } from '@chakra-ui/react'
 import Link from 'next/link'
 import { MdOutlineDashboard } from 'react-icons/md'
 
-export default function SmallWithLogoLeft() {
+export default function Footer() {
+  const year = new Date().getFullYear()
+
   return (
     <Box
-      bg={useColorModeValue('gray.50', 'gray.900')}
-      color={useColorModeValue('gray.700', 'gray.200')}
+      as="footer"
+      borderTop="1px solid"
+      borderColor="gray.100"
+      bg="white"
+      color="gray.500"
     >
       <Container
-        as={Stack}
-        maxW={'6xl'}
-        py={4}
-        direction={{ base: 'column', md: 'row' }}
-        spacing={4}
-        justify={{ base: 'center', md: 'space-between' }}
-        align={{ base: 'center', md: 'center' }}
+        as={Flex}
+        maxW="1200px"
+        py={5}
+        px={{ base: 4, sm: 6, lg: 8 }}
+        direction={{ base: 'column', sm: 'row' }}
+        gap={2}
+        justify={{ base: 'center', sm: 'space-between' }}
+        align="center"
       >
-        <Text>© 2024 BAF Kitchen</Text>
-        <Link href="/admin">
-          <MdOutlineDashboard />
-        </Link>
+        <Text fontSize="sm">© {year} Bazaf</Text>
+        <HStack spacing={1}>
+          <Link
+            href="/admin"
+            aria-label="Panel admin"
+            style={{ color: 'inherit' }}
+          >
+            <Box
+              p={2}
+              borderRadius="lg"
+              color="gray.400"
+              _hover={{ bg: 'gray.100', color: 'gray.600' }}
+            >
+              <MdOutlineDashboard size={18} />
+            </Box>
+          </Link>
+        </HStack>
       </Container>
     </Box>
   )

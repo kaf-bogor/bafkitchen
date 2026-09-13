@@ -3,6 +3,7 @@ import { id } from 'date-fns/locale'
 import Papa from 'papaparse'
 
 import { IOrder } from '@/interfaces'
+import { IInvoice, invoiceStatusMessages } from '@/interfaces/invoice'
 import { currency } from '@/utils'
 
 interface ExportOrderData {
@@ -191,6 +192,49 @@ export const exportDetailedOrdersToCSV = (orders: IOrder.IOrder[], filename?: st
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
     link.setAttribute('download', filename || `Orders_Detailed_Export_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+}
+
+export const exportInvoicesToCSV = (
+  invoices: IInvoice[],
+  filename?: string
+) => {
+  const headers = [
+    'No. Invoice',
+    'Tanggal Terbit',
+    'Vendor',
+    'No. Order',
+    'Total',
+    'Jatuh Tempo',
+    'Status'
+  ]
+
+  const data = invoices.map((invoice) => [
+    invoice.invoiceNumber,
+    format(new Date(invoice.issuedDate), 'dd/MM/yyyy', { locale: id }),
+    invoice.vendorName,
+    invoice.orderId,
+    currency.toIDRFormat(invoice.totalAmount),
+    format(new Date(invoice.dueDate), 'dd/MM/yyyy', { locale: id }),
+    invoiceStatusMessages[invoice.status] || invoice.status
+  ])
+
+  const csv = Papa.unparse({ fields: headers, data })
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute(
+      'download',
+      filename || `Invoices_Export_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
+    )
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()

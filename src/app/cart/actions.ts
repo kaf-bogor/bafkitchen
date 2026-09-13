@@ -19,6 +19,7 @@ export const useCreateOrders = () => {
         priceBase: item.priceBase,
         price: item.price,
         quantity: item.quantity,
+        notes: item.notes || '',
         vendor: item.vendor?.id
           ? { id: item.vendor.id, name: item.vendor.name }
           : undefined

@@ -3,6 +3,9 @@ import { IVendor } from '@/interfaces/vendor'
 
 export interface ICreateProductRequest {
   name: string
+  sku?: string
+  unit?: string
+  isActive?: boolean
   priceBase: number
   price: number
   stock: number | null
@@ -16,6 +19,16 @@ export interface ICreateProductRequest {
   availability?: string
   preorderStart?: string | null
   preorderEnd?: string | null
+  channels?: string[]
+  availabilityType?: string
+  weeklyDays?: number[]
+  specificDates?: string[]
+  preorderLeadDays?: number | null
+  preorderCutoffTime?: string | null
+  preorderMinQty?: number | null
+  preorderMaxQty?: number | null
+  preorderCapacity?: number | null
+  fulfillmentType?: string
 }
 
 export interface IProductsResponse {
@@ -25,6 +38,9 @@ export interface IProductsResponse {
 export interface IProductResponse {
   id: string
   name: string
+  sku: string
+  unit: string
+  isActive: boolean
   priceBase: number
   price: number
   stock: number
@@ -34,6 +50,17 @@ export interface IProductResponse {
   availability: string
   preorderStart: string | null
   preorderEnd: string | null
+  channels: string[]
+  availabilityType: string
+  weeklyDays: number[]
+  specificDates: string[]
+  preorderLeadDays: number | null
+  preorderCutoffTime: string | null
+  preorderMinQty: number | null
+  preorderMaxQty: number | null
+  preorderCapacity: number | null
+  fulfillmentType: string
+  approvalStatus?: 'pending' | 'approved' | 'rejected'
   createdAt: string
   updatedAt: string
   vendor: IVendor
@@ -47,6 +74,9 @@ export interface ICategoryInput {
 
 export interface ICreateProductInput {
   name: string
+  sku?: string
+  unit?: string
+  isActive?: boolean
   priceBase: number
   price: number
   stock: number
@@ -61,6 +91,16 @@ export interface ICreateProductInput {
   availability?: string
   preorderStart?: string | null
   preorderEnd?: string | null
+  channels?: string[]
+  availabilityType?: string
+  weeklyDays?: number[]
+  specificDates?: string[]
+  preorderLeadDays?: number | null
+  preorderCutoffTime?: string | null
+  preorderMinQty?: number | null
+  preorderMaxQty?: number | null
+  preorderCapacity?: number | null
+  fulfillmentType?: string
 }
 
 export type IProduct = {
@@ -98,6 +138,9 @@ export const IProduct = {
 export interface IEditProductRequest {
   id: string
   name: string
+  sku?: string
+  unit?: string
+  isActive?: boolean
   priceBase: number
   price: number
   stock: number | null
@@ -112,8 +155,19 @@ export interface IEditProductRequest {
   availability?: string
   preorderStart?: string | null
   preorderEnd?: string | null
+  channels?: string[]
+  availabilityType?: string
+  weeklyDays?: number[]
+  specificDates?: string[]
+  preorderLeadDays?: number | null
+  preorderCutoffTime?: string | null
+  preorderMinQty?: number | null
+  preorderMaxQty?: number | null
+  preorderCapacity?: number | null
+  fulfillmentType?: string
 }
 
 export interface IProductCart extends IProduct {
   quantity: number
+  notes?: string
 }

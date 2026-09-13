@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import {
   Box,
@@ -22,19 +22,23 @@ import {
 } from '@chakra-ui/react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { FcGoogle } from 'react-icons/fc'
 import { IoArrowBack } from 'react-icons/io5'
 import { MdAdminPanelSettings } from 'react-icons/md'
 
 import { useAuth } from '@/app/UserProvider'
-import { handleGoogleLogin } from '@/utils/auth'
 
 const MotionBox = motion(Box)
 
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: 'Login dengan Google dibatalkan.',
+  failed: 'Login gagal. Silakan coba lagi.',
+  state: 'Sesi login tidak valid. Silakan coba lagi.',
+  not_admin: 'Anda tidak memiliki akses admin. Hubungi admin untuk mendapatkan akses.'
+}
+
 export default function AdminLoginPage() {
-  const router = useRouter()
-  const { user, refetch } = useAuth()
+  const { user } = useAuth()
 
   const [error, setError] = useState<string | null>(null)
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -55,18 +59,16 @@ export default function AdminLoginPage() {
   const adminBg = useColorModeValue('blue.50', 'blue.900')
   const adminButtonHover = useColorModeValue('blue.700', 'blue.300')
 
-  const handleLogin = async () => {
-    await handleGoogleLogin({
-      onError: setError,
-      onSuccess: async (user) => {
-        if (user.role !== 'admin') {
-          setError('Anda tidak memiliki akses admin. Hubungi admin untuk mendapatkan akses.')
-          return
-        }
-        await refetch()
-        router.push('/admin/')
-      }
-    })
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error')
+    if (code) {
+      setError(GOOGLE_ERROR_MESSAGES[code] ?? 'Login gagal. Silakan coba lagi.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  const handleLogin = () => {
+    window.location.href = '/api/auth/google?redirect=/admin/'
   }
 
   if (user) {

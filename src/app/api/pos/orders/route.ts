@@ -1,5 +1,5 @@
 import { json, db, now, uuid } from '@/lib/server/db'
-import { generateOrderId } from '@/utils/orderIdGenerator'
+import { generateOrderNumber } from '@/lib/server/orderNumber'
 
 interface CartItem {
   id: string
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
   const ts = now()
   const id = uuid()
-  const orderNumber = generateOrderId()
+  const orderNumber = await generateOrderNumber()
   const customer = {
     name: body.customerName || 'Walk-in Customer',
     phoneNumber: '-',
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       body.totalPrice || 0,
       JSON.stringify(customer),
       'Payment Confirmed',
-      JSON.stringify({ name: 'Baf Kitchen' }),
+      JSON.stringify({ name: 'Bazaf' }),
       JSON.stringify(Array.from(vendorMap.values())),
       'pos',
       JSON.stringify(payment),
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     customerId: '',
     customer,
     productOrders,
-    store: { name: 'Baf Kitchen' },
+    store: { name: 'Bazaf' },
     vendors: Array.from(vendorMap.values()),
     status: 'Payment Confirmed',
     channel: 'pos',

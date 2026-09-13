@@ -32,7 +32,12 @@ export default function Layout({
         >
           <Flex direction="column" gap={1}>
             {!!breadcrumbs?.length && (
-              <Breadcrumb spacing="8px" fontSize="sm" color="gray.500" separator="/">
+              <Breadcrumb
+                spacing="8px"
+                fontSize="sm"
+                color="gray.500"
+                separator="/"
+              >
                 {breadcrumbs.map(({ label, path }) => (
                   <BreadcrumbItem key={label + (path || '')}>
                     {path ? (
@@ -49,12 +54,19 @@ export default function Layout({
               </Breadcrumb>
             )}
             {title && (
-              <Heading size="lg" fontWeight="700" color="gray.800">
+              <Heading
+                size="lg"
+                fontWeight="700"
+                letterSpacing="-0.01em"
+                color="gray.900"
+              >
                 {title}
               </Heading>
             )}
           </Flex>
-          {rightHeaderComponent && <Flex flexShrink={0}>{rightHeaderComponent}</Flex>}
+          {rightHeaderComponent && (
+            <Flex flexShrink={0}>{rightHeaderComponent}</Flex>
+          )}
         </Flex>
       )}
 

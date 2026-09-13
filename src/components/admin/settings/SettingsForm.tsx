@@ -79,7 +79,7 @@ const SettingsForm: React.FC<Props> = ({
             name="app_name"
             value={formData.app_name}
             onChange={onChange}
-            placeholder="cth., BAF Kitchen"
+            placeholder="cth., Bazaf"
           />
           <FormErrorMessage>{errors.app_name}</FormErrorMessage>
         </FormControl>
@@ -90,7 +90,7 @@ const SettingsForm: React.FC<Props> = ({
             name="app_domain"
             value={formData.app_domain}
             onChange={onChange}
-            placeholder="cth., https://bafkitchen.bilistiwabogor.com"
+            placeholder="cth., https://bazaf.bilistiwabogor.com"
             type="url"
           />
           <FormErrorMessage>{errors.app_domain}</FormErrorMessage>

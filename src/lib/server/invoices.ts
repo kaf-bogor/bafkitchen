@@ -13,10 +13,24 @@ interface ProductOrder {
   }
 }
 
-const generateInvoiceNumber = () => {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const randomStr = Math.random().toString(36).slice(2, 6).toUpperCase()
-  return `INV-${dateStr}-${randomStr}`
+const generateInvoiceNumber = async (): Promise<string> => {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const year = String(now.getFullYear()).slice(-2)
+  const suffix = `${month}-${year}`
+
+  const row = await db()
+    .prepare(
+      `SELECT MAX(CAST(substr(invoice_number, 5, length(invoice_number) - 9) AS INTEGER)) AS maxseq
+       FROM invoices
+       WHERE invoice_number LIKE ?`
+    )
+    .bind(`INV-%${suffix}`)
+    .first<{ maxseq: number | null }>()
+
+  const next = (row?.maxseq ?? 0) + 1
+
+  return `INV-${String(next).padStart(3, '0')}${suffix}`
 }
 
 /**
@@ -83,7 +97,7 @@ export async function generateInvoicesForOrder(orderId: string) {
     const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     const invoice = {
       id: uuid(),
-      invoiceNumber: generateInvoiceNumber(),
+      invoiceNumber: await generateInvoiceNumber(),
       orderId,
       vendorId,
       vendorName,

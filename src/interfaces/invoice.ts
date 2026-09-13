@@ -1,6 +1,6 @@
 export interface IInvoice {
   id: string
-  invoiceNumber: string // Format: INV-YYYYMMDD-XXXX
+  invoiceNumber: string // Format: INV-<seq><MM>-<YY>, e.g. INV-00109-26
   orderId: string
   vendorId: string
   vendorName: string
@@ -23,7 +23,7 @@ export interface IInvoice {
     kelas: string
   }
   
-  // BAFkitchen commission/fee details
+  // Bazaf commission/fee details
   commission?: {
     percentage: number
     amount: number

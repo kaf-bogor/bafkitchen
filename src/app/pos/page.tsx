@@ -23,7 +23,6 @@ import { useDebouncedCallback } from 'use-debounce'
 
 import { useGetCategories } from '@/app/admin/(panel)/categories/actions'
 import { useGetProducts } from '@/app/admin/(panel)/products/actions'
-import { useGetSchedules } from '@/app/admin/(panel)/schedules/actions'
 import { useOrders } from '@/app/admin/actions'
 import { useAuth } from '@/app/UserProvider'
 import { EOrderChannel } from '@/constants/order'
@@ -47,7 +46,6 @@ export default function PosPage() {
   const toast = useToast()
   const { user, loading: authLoading } = useAuth()
 
-  const [viewMode, setViewMode] = useState<'schedule' | 'all'>('schedule')
   const [search, setSearch] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
@@ -73,11 +71,6 @@ export default function PosPage() {
   const todayStart = useMemo(() => startOfDay(new Date()), [])
   const todayEnd = useMemo(() => endOfDay(new Date()), [])
 
-  const { data: schedules, loading: isLoadingSchedules } = useGetSchedules(
-    todayStart,
-    todayEnd,
-    !!user
-  )
   const { data: allProducts, loading: isLoadingProducts } = useGetProducts()
   const { data: categories } = useGetCategories()
   const { data: todayOrders, loading: isLoadingOrders } = useOrders(
@@ -94,15 +87,8 @@ export default function PosPage() {
     [todayOrders]
   )
 
-  const scheduledProducts = useMemo(
-    () =>
-      (schedules || []).flatMap((s) => s.products || []) as
-        IProduct.IProductResponse[],
-    [schedules]
-  )
-
   const displayedProducts = useMemo(() => {
-    const source = viewMode === 'schedule' ? scheduledProducts : allProducts
+    const source = allProducts
     const getCategoryIds = (p: any): string[] =>
       p.categories?.length
         ? p.categories.map((c: any) => c.id)
@@ -116,7 +102,7 @@ export default function PosPage() {
         getCategoryIds(p).includes(selectedCategoryId)
       return matchesSearch && matchesCategory
     })
-  }, [viewMode, scheduledProducts, allProducts, search, selectedCategoryId])
+  }, [allProducts, search, selectedCategoryId])
 
   const debouncedSearch = useDebouncedCallback(setSearch, 300)
 
@@ -192,8 +178,7 @@ export default function PosPage() {
     )
   }
 
-  const isLoadingCatalog =
-    viewMode === 'schedule' ? isLoadingSchedules : isLoadingProducts
+  const isLoadingCatalog = isLoadingProducts
 
   return (
     <Flex direction="column" h="100vh" bg="gray.100" overflow="hidden">
@@ -223,30 +208,6 @@ export default function PosPage() {
                 border="none"
               />
             </InputGroup>
-            <HStack
-              spacing={0}
-              bg="white"
-              rounded="md"
-              boxShadow="sm"
-              p={1}
-            >
-              <Button
-                size="sm"
-                colorScheme={viewMode === 'schedule' ? 'green' : 'gray'}
-                variant={viewMode === 'schedule' ? 'solid' : 'ghost'}
-                onClick={() => setViewMode('schedule')}
-              >
-                Menu Hari Ini
-              </Button>
-              <Button
-                size="sm"
-                colorScheme={viewMode === 'all' ? 'green' : 'gray'}
-                variant={viewMode === 'all' ? 'solid' : 'ghost'}
-                onClick={() => setViewMode('all')}
-              >
-                Semua Produk
-              </Button>
-            </HStack>
           </HStack>
 
           <HStack spacing={2} mb={4} flexWrap="wrap">
@@ -289,21 +250,7 @@ export default function PosPage() {
 
           {!isLoadingCatalog && displayedProducts.length === 0 && (
             <Center flex={1} flexDirection="column" gap={3}>
-              <Text color="gray.400">
-                {viewMode === 'schedule'
-                  ? 'Tidak ada menu terjadwal hari ini'
-                  : 'Tidak ada produk ditemukan'}
-              </Text>
-              {viewMode === 'schedule' && (
-                <Button
-                  size="sm"
-                  colorScheme="green"
-                  variant="outline"
-                  onClick={() => setViewMode('all')}
-                >
-                  Lihat Semua Produk
-                </Button>
-              )}
+              <Text color="gray.400">Tidak ada produk ditemukan</Text>
             </Center>
           )}
 

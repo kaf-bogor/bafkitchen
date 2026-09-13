@@ -27,56 +27,34 @@ export default function OrdererInput({
   return (
     <VStack spacing={4} align="stretch">
       <FormControl isInvalid={!!errors.name}>
-        <FormLabel>Full Name *</FormLabel>
+        <FormLabel>Nama lengkap</FormLabel>
         <Input
           name="name"
           value={order.name}
           onChange={onChange}
-          placeholder="Enter your full name"
+          placeholder="Masukkan nama lengkap"
         />
         <FormErrorMessage>{errors.name}</FormErrorMessage>
       </FormControl>
 
       <FormControl isInvalid={!!errors.phoneNumber}>
-        <FormLabel>Phone Number *</FormLabel>
+        <FormLabel>No. telepon</FormLabel>
         <Input
           name="phoneNumber"
           value={order.phoneNumber}
           onChange={onChange}
-          placeholder="Enter your phone number"
+          placeholder="Contoh: 08123456789"
         />
         <FormErrorMessage>{errors.phoneNumber}</FormErrorMessage>
       </FormControl>
 
-      <FormControl isInvalid={!!errors.namaSantri}>
-        <FormLabel>Nama Santri *</FormLabel>
-        <Input
-          name="namaSantri"
-          value={order.namaSantri}
-          onChange={onChange}
-          placeholder="Enter santri name"
-        />
-        <FormErrorMessage>{errors.namaSantri}</FormErrorMessage>
-      </FormControl>
-
-      <FormControl isInvalid={!!errors.kelas}>
-        <FormLabel>Kelas *</FormLabel>
-        <Input
-          name="kelas"
-          value={order.kelas}
-          onChange={onChange}
-          placeholder="Enter class"
-        />
-        <FormErrorMessage>{errors.kelas}</FormErrorMessage>
-      </FormControl>
-
       <FormControl isInvalid={!!errors.notes}>
-        <FormLabel>Notes</FormLabel>
+        <FormLabel>Catatan tambahan (opsional)</FormLabel>
         <Textarea
           name="notes"
           value={order.notes}
           onChange={onChange}
-          placeholder="Any additional notes (optional)"
+          placeholder="Catatan umum untuk pesanan ini (opsional)"
           rows={3}
         />
         <FormErrorMessage>{errors.notes}</FormErrorMessage>

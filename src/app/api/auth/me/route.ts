@@ -18,6 +18,11 @@ export async function GET(request: Request) {
     }>()
   if (!row) return json({ user: null })
 
+  const vendor = await db()
+    .prepare('SELECT id, name FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+    .bind(row.id)
+    .first<{ id: string; name: string }>()
+
   return json({
     user: {
       uid: row.id,
@@ -25,7 +30,9 @@ export async function GET(request: Request) {
       email: row.email,
       photoURL: row.photo_url,
       phoneNumber: row.phone_number,
-      role: row.role
+      role: row.role,
+      vendorId: vendor?.id ?? null,
+      vendorName: vendor?.name ?? null
     }
   })
 }

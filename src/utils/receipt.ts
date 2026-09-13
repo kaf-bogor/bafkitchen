@@ -24,7 +24,7 @@ export interface IReceiptData {
   }
 }
 
-// Builds receipt data from a Firestore order document
+// Builds receipt data from an order document
 // eslint-disable-next-line no-unused-vars
 export const buildReceiptData = (order: {
   orderNumber?: string
@@ -66,7 +66,7 @@ export const exportReceiptToPDF = (receipt: IReceiptData) => {
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(12)
-  pdf.text('BAF KITCHEN', pageWidth / 2, y, { align: 'center' })
+  pdf.text('BAZAF', pageWidth / 2, y, { align: 'center' })
   y += lineHeight
 
   pdf.setFont('helvetica', 'normal')

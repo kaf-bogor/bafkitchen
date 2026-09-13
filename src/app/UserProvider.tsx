@@ -49,24 +49,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        if (pathname.includes('/dashboard')) {
-          router.replace('/login')
-        }
-        if (pathname.includes('/admin')) {
-          router.replace('/admin/login')
-        }
-      }
+    if (loading) return
 
-      if (user) {
-        if (pathname === '/login') {
-          router.replace('/dashboard')
-        }
-        if (pathname === '/admin/login' && user.role === 'admin') {
-          router.replace('/admin')
-        }
+    const isAdminArea = pathname === '/admin' || pathname.startsWith('/admin/')
+    const isAdminLogin = pathname === '/admin/login'
+
+    if (!user) {
+      if (pathname.includes('/dashboard')) {
+        router.replace('/login')
       }
+      if (isAdminArea) {
+        router.replace('/admin/login')
+      }
+      return
+    }
+
+    if (pathname === '/login') {
+      router.replace(user.role === 'admin' ? '/admin' : '/dashboard')
+      return
+    }
+
+    if (isAdminLogin && user.role === 'admin') {
+      router.replace('/admin')
+      return
+    }
+
+    // Non-admins (vendors/customers) must not access the admin panel.
+    if (isAdminArea && !isAdminLogin && user.role !== 'admin') {
+      router.replace(user.vendorId ? '/dashboard' : '/')
     }
   }, [user, loading, pathname, router])
 

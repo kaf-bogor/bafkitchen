@@ -17,6 +17,8 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
       payment: string | null
       cashier: string | null
       activities: string
+      payment_proof_url: string | null
+      payment_proof_key: string | null
       created_at: string
       updated_at: string
     }>()
@@ -25,17 +27,19 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
   return json({
     order: {
       id: row.id,
-      orderNumber: row.order_number ?? `BAF-${row.id.slice(-8)}`,
+      orderNumber: row.order_number ?? `BZ-${row.id.slice(-8)}`,
       productOrders: parseJson(row.product_orders, []),
       total: row.total,
       customer: parseJson(row.customer, {}),
       status: row.status,
-      store: parseJson(row.store, { name: 'Baf Kitchen' }),
+      store: parseJson(row.store, { name: 'Bazaf' }),
       vendors: parseJson(row.vendors, []),
       channel: row.channel ?? undefined,
       payment: row.payment ? parseJson(row.payment, null) : undefined,
       cashier: row.cashier ?? undefined,
       activities: parseJson(row.activities, []),
+      paymentProofUrl: row.payment_proof_url ?? undefined,
+      paymentProofKey: row.payment_proof_key ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }

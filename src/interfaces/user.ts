@@ -7,6 +7,8 @@ export interface IUser {
   updatedAt: Date
   phoneNumber?: string | null
   lastSignInAt?: Date | null
+  vendorId?: string | null
+  vendorName?: string | null
 }
 
 export interface ICreateUserRequest {
@@ -30,8 +32,8 @@ export interface IUserResponse {
   name: string
   email: string
   role: string
-  phoneNumber?: string
+  phoneNumber?: string | null
   createdAt: Date
   updatedAt: Date
-  lastSignInAt?: Date
+  lastSignInAt?: Date | null
 }

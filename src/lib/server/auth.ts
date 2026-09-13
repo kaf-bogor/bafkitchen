@@ -7,7 +7,7 @@ export interface SessionUser {
   role: string
 }
 
-const SESSION_COOKIE = 'baf_session'
+const SESSION_COOKIE = 'bazaf_session'
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
 const encoder = new TextEncoder()

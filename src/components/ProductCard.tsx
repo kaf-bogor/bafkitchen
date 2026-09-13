@@ -8,10 +8,10 @@ import {
   CardFooter,
   ButtonGroup,
   Button,
-  Image,
   Text
 } from '@chakra-ui/react'
 
+import ProductImage from '@/components/ProductImage'
 import { IProduct } from '@/interfaces'
 import { currency } from '@/utils'
 
@@ -23,14 +23,12 @@ interface ProductCardProps {
 
 export default function ProductCard(props: ProductCardProps) {
   const product: IProduct.IProduct = props.product
-  const defaultImage =
-    'https://via.placeholder.com/600x400?text=No+Image'
 
   return (
     <Card>
       <CardBody>
-        <Image
-          src={product.imageUrl || defaultImage}
+        <ProductImage
+          src={product.imageUrl}
           width="100%"
           objectFit="cover"
           height={160}

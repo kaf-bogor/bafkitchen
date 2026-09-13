@@ -24,11 +24,6 @@ export interface IStore {
   user: User
 }
 
-export interface IProductScheduleRequest {
-  productId: string
-  date: string
-}
-
 export interface User {
   id: string
   name: string

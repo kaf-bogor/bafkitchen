@@ -26,21 +26,20 @@ export default function StatCard({
       border="1px solid"
       borderColor="gray.200"
       borderRadius="xl"
-      boxShadow="sm"
       p={5}
-      transition="all 0.2s"
-      _hover={{ boxShadow: 'md', transform: 'translateY(-2px)' }}
+      transition="border-color 0.2s"
+      _hover={{ borderColor: 'gray.300' }}
     >
       <Flex justify="space-between" align="start" gap={4}>
-        <Flex direction="column" gap={1} minW="0">
+        <Flex direction="column" gap={1.5} minW="0">
           <Text color="gray.500" fontSize="sm" fontWeight="500">
             {label}
           </Text>
-          <Text fontSize="2xl" fontWeight="700" color="gray.800" noOfLines={1}>
+          <Text fontSize="2xl" fontWeight="700" color="gray.900" noOfLines={1}>
             {value}
           </Text>
           {sublabel && (
-            <Text color="gray.400" fontSize="xs">
+            <Text color="gray.500" fontSize="sm">
               {sublabel}
             </Text>
           )}
@@ -63,14 +62,7 @@ export default function StatCard({
   )
 }
 
-type Tone =
-  | 'brand'
-  | 'green'
-  | 'blue'
-  | 'orange'
-  | 'red'
-  | 'purple'
-  | 'gray'
+type Tone = 'brand' | 'green' | 'blue' | 'orange' | 'red' | 'purple' | 'gray'
 
 type Props = {
   label: string

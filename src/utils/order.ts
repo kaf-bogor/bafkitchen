@@ -14,22 +14,23 @@ export const generateOrderText = ({
   orderId: string
 }) => {
   const text =
-    `Assalamualaikum, saya mau order.
-  ${items
-    .map((product, i) => {
-      return `\n${i + 1}. *${product.name}*
+    `Assalamualaikum, saya mau order.\n` +
+    items
+      .map((product, i) => {
+        const note = product.notes?.trim()
+        return `\n${i + 1}. *${product.name}*
     Quantity: ${product.quantity}
     Harga (@): ${toIDRFormat(product.price)}
-    Total Harga: ${toIDRFormat(product.price * product.quantity)}`
-    })
-    .join(' ')}` +
+    Total Harga: ${toIDRFormat(product.price * product.quantity)}${
+      note ? `\n    Catatan: ${note}` : ''
+    }`
+      })
+      .join('\n') +
     `\n\nTotal : *${toIDRFormat(totalPrice)}*` +
-    `\n\n*Pengiriman* : Kelas ${customer.kelas}\n` +
-    '--------------------------------' +
+    '\n--------------------------------' +
     '\n*Nama :*' +
     `\n${customer.name} ( ${customer.phoneNumber} )` +
-    '\n\n*Kelas :*' +
-    `\n${customer.kelas}` +
+    (customer.notes ? `\n\n*Catatan tambahan :*\n${customer.notes}` : '') +
     '\n--------------------------------' +
     `\nHalaman order: ${process.env.NEXT_PUBLIC_APP_DOMAIN}/orders/${orderId}`
 
@@ -51,7 +52,11 @@ export const generateOrderHtmlEmail = ({
     .map(
       (product, i) => `
       <tr>
-        <td>${i + 1}. ${product.name}</td>
+        <td>${i + 1}. ${product.name}${
+          product.notes
+            ? `<br/><small>Catatan: ${product.notes}</small>`
+            : ''
+        }</td>
         <td>${product.quantity}</td>
         <td>${toIDRFormat(product.price)}</td>
         <td>${toIDRFormat(product.price * product.quantity)}</td>
@@ -107,11 +112,11 @@ export const generateOrderHtmlEmail = ({
           <h2>Informasi Pelanggan</h2>
           <p><strong>Nama:</strong> ${customer.name}</p>
           <p><strong>Telepon:</strong> ${customer.phoneNumber}</p>
-          <p><strong>Kelas:</strong> ${customer.kelas}</p>
+          ${customer.notes ? `<p><strong>Catatan:</strong> ${customer.notes}</p>` : ''}
         </div>
 
         <p>Anda dapat melihat detail pesanan Anda di:</p>
-        <p><a href="https://bafkitchen.posku.online/orders/${orderId}">https://bafkitchen.posku.online/orders/${orderId}</a></p>
+        <p><a href="https://bazaf.bilistiwabogor.com/orders/${orderId}">https://bazaf.bilistiwabogor.com/orders/${orderId}</a></p>
 
         <p>Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi kami.</p>
 

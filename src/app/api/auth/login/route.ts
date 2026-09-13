@@ -83,16 +83,19 @@ export async function POST(request: Request) {
   const ok = await verifyPassword(password, row.password_hash)
   if (!ok) return json({ error: 'Invalid email or password' }, { status: 401 })
 
+  const isBootstrapAdmin = email === process.env.BOOTSTRAP_ADMIN_EMAIL
+  const role = isBootstrapAdmin ? 'admin' : row.role
+
   await database
-    .prepare('UPDATE users SET last_sign_in_at = ? WHERE id = ?')
-    .bind(ts, row.id)
+    .prepare('UPDATE users SET role = ?, last_sign_in_at = ? WHERE id = ?')
+    .bind(role, ts, row.id)
     .run()
 
   const cookie = await createSessionCookie({
     uid: row.id,
     email,
     name: row.name ?? email,
-    role: row.role
+    role
   })
 
   return json(
@@ -102,7 +105,7 @@ export async function POST(request: Request) {
         displayName: row.name ?? email,
         email,
         photoURL: null,
-        role: row.role
+        role
       }
     },
     { headers: { 'Set-Cookie': cookie } }

@@ -125,7 +125,11 @@ export const useUpdateVendor = () => {
     try {
       const res = await apiFetch<{ vendor: IVendor }>(`/api/vendors/${request.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ name: request.name, userId: request.userId })
+        body: JSON.stringify({
+          name: request.name,
+          userId: request.userId,
+          type: request.type
+        })
       })
       return transformVendorData(res.vendor)
     } catch (err) {

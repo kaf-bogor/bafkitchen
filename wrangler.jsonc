@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "store-builder",
+  "name": "bazaf",
   "compatibility_date": "2026-08-14",
   "compatibility_flags": [
     "nodejs_compat"
@@ -36,7 +36,7 @@
     }
   ],
   "vars": {
-    "AUTH_SECRET": "c37547743fc94674950d26221012fc5ad8c284c90998c077eefa2976bfefe93c",
-    "BOOTSTRAP_ADMIN_EMAIL": "kubido@gmail.com"
+    "BOOTSTRAP_ADMIN_EMAIL": "kubido@gmail.com",
+    "GOOGLE_CLIENT_ID": "325348369984-nhrc953cgl9nm918jesuff0g0c3t78a5.apps.googleusercontent.com"
   }
 }

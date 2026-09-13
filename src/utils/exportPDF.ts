@@ -5,151 +5,369 @@ import { jsPDF } from 'jspdf'
 import { IInvoice } from '@/interfaces/invoice'
 import { currency } from '@/utils'
 
+// BAZAF design tokens (kept in sync with src/theme/index.ts)
+const BRAND = { r: 22, g: 163, b: 74 } // brand.600
+const INK = { r: 23, g: 25, b: 35 } // gray.900
+const BODY = { r: 45, g: 55, b: 72 } // gray.700
+const MUTED = { r: 113, g: 128, b: 150 } // gray.500
+const LINE = { r: 226, g: 232, b: 240 } // gray.200
+const SOFT = { r: 247, g: 250, b: 252 } // gray.50
+
+const PAGE_WIDTH = 210
+const MARGIN = 20
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2
+
+const setColor = (
+  pdf: jsPDF,
+  mode: 'text' | 'fill' | 'draw',
+  color: { r: number; g: number; b: number }
+) => {
+  if (mode === 'text') pdf.setTextColor(color.r, color.g, color.b)
+  if (mode === 'fill') pdf.setFillColor(color.r, color.g, color.b)
+  if (mode === 'draw') pdf.setDrawColor(color.r, color.g, color.b)
+}
+
+const getStatusInfo = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'settled':
+      return { label: 'LUNAS', color: { r: 34, g: 197, b: 94 } }
+    case 'overdue':
+      return { label: 'TERLAMBAT', color: { r: 239, g: 68, b: 68 } }
+    case 'issued':
+      return { label: 'DITERBITKAN', color: { r: 59, g: 130, b: 246 } }
+    default:
+      return { label: 'MENUNGGU', color: { r: 234, g: 179, b: 8 } }
+  }
+}
+
 export const exportInvoiceToPDF = (invoice: IInvoice) => {
-  const pdf = new jsPDF()
-  
-  // Set font
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   pdf.setFont('helvetica', 'normal')
-  
-  // Company Header
-  pdf.setFontSize(20)
-  pdf.setTextColor(37, 99, 235) // Blue color
-  pdf.text('BAFkitchen', 20, 25)
-  
-  pdf.setFontSize(10)
-  pdf.setTextColor(100, 100, 100)
-  pdf.text('Invoice Management System', 20, 32)
-  
-  // Invoice Title
-  pdf.setFontSize(24)
-  pdf.setTextColor(0, 0, 0)
-  pdf.text('INVOICE', 150, 25)
-  
-  // Invoice Number and Date
-  pdf.setFontSize(12)
-  pdf.text(`Invoice #: ${invoice.invoiceNumber}`, 150, 35)
-  pdf.text(`Issue Date: ${format(new Date(invoice.issuedDate), 'dd MMMM yyyy', { locale: id })}`, 150, 42)
-  pdf.text(`Due Date: ${format(new Date(invoice.dueDate), 'dd MMMM yyyy', { locale: id })}`, 150, 49)
-  
-  // Status
-  const statusColor = getStatusColor(invoice.status)
-  pdf.setTextColor(statusColor.r, statusColor.g, statusColor.b)
-  pdf.text(`Status: ${invoice.status.toUpperCase()}`, 150, 56)
-  
-  // Reset color
-  pdf.setTextColor(0, 0, 0)
-  
-  // Vendor Information
+
+  // ---- Header: brand mark + wordmark ----
+  setColor(pdf, 'fill', BRAND)
+  pdf.roundedRect(MARGIN, 16, 12, 12, 3, 3, 'F')
+  pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(14)
-  pdf.text('Bill To:', 20, 70)
-  
-  pdf.setFontSize(11)
-  pdf.text(`Vendor: ${invoice.vendorName}`, 20, 80)
-  pdf.text(`Vendor ID: ${invoice.vendorId}`, 20, 87)
-  
-  // Customer Information
-  pdf.text('Customer Information:', 20, 105)
-  pdf.text(`Name: ${invoice.customer?.name || 'N/A'}`, 20, 115)
-  pdf.text(`Phone: ${invoice.customer?.phoneNumber || 'N/A'}`, 20, 122)
-  pdf.text(`Nama Santri: ${invoice.customer?.namaSantri || 'N/A'}`, 20, 129)
-  pdf.text(`Kelas: ${invoice.customer?.kelas || 'N/A'}`, 20, 136)
-  
-  // Items Table Header
-  let yPosition = 160
-  pdf.setFontSize(12)
-  pdf.setFillColor(240, 240, 240)
-  pdf.rect(20, yPosition - 5, 170, 10, 'F')
-  
-  pdf.text('Product', 25, yPosition)
-  pdf.text('Qty', 100, yPosition)
-  pdf.text('Unit Price', 120, yPosition)
-  pdf.text('Total', 160, yPosition)
-  
-  // Items
-  pdf.setFontSize(10)
-  yPosition += 15
-  
-  invoice.items.forEach((item) => {
-    if (yPosition > 250) {
-      pdf.addPage()
-      yPosition = 30
-    }
-    
-    // Wrap long product names
-    const productName = item.productName.length > 35 ? 
-      item.productName.substring(0, 35) + '...' : item.productName
-    
-    pdf.text(productName, 25, yPosition)
-    pdf.text(item.quantity.toString(), 105, yPosition)
-    pdf.text(currency.toIDRFormat(item.unitPrice), 125, yPosition)
-    pdf.text(currency.toIDRFormat(item.totalPrice), 165, yPosition)
-    
-    yPosition += 10
+  pdf.setTextColor(255, 255, 255)
+  pdf.text('B', MARGIN + 4.4, 24.6)
+
+  setColor(pdf, 'text', INK)
+  pdf.setFontSize(16)
+  pdf.text('Bazaf', MARGIN + 16, 23.5)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text('Invoice', MARGIN + 16, 28.5)
+
+  // ---- Header: invoice meta (right aligned) ----
+  setColor(pdf, 'text', INK)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(22)
+  pdf.text('INVOICE', PAGE_WIDTH - MARGIN, 24, { align: 'right' })
+
+  setColor(pdf, 'text', MUTED)
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text(`No. ${invoice.invoiceNumber}`, PAGE_WIDTH - MARGIN, 30, {
+    align: 'right'
   })
-  
-  // Summary
-  yPosition += 10
-  pdf.line(20, yPosition, 190, yPosition)
-  yPosition += 15
-  
-  pdf.setFontSize(11)
-  
-  // Subtotal
-  pdf.text('Subtotal:', 120, yPosition)
-  pdf.text(currency.toIDRFormat(invoice.totalAmount), 165, yPosition)
-  yPosition += 10
-  
-  // Commission (if applicable)
-  if (invoice.commission) {
-    pdf.setTextColor(100, 100, 100)
-    pdf.text(`BAFkitchen Commission (${invoice.commission.percentage}%):`, 120, yPosition)
-    pdf.text(`-${currency.toIDRFormat(invoice.commission.amount)}`, 165, yPosition)
-    yPosition += 10
-    
-    // Net Amount
-    pdf.setTextColor(0, 0, 0)
-    pdf.setFontSize(12)
-    pdf.text('Net Amount:', 120, yPosition)
-    pdf.text(currency.toIDRFormat(invoice.totalAmount - invoice.commission.amount), 165, yPosition)
-    yPosition += 15
-  }
-  
-  // Payment Information
-  if (invoice.settledDate) {
-    pdf.setTextColor(34, 197, 94) // Green
-    pdf.text(`Settled on: ${format(new Date(invoice.settledDate), 'dd MMMM yyyy', { locale: id })}`, 20, yPosition)
-  } else {
-    const isOverdue = new Date(invoice.dueDate) < new Date()
-    if (isOverdue) {
-      pdf.setTextColor(239, 68, 68) // Red
-      pdf.text('OVERDUE - Payment Required Immediately', 20, yPosition)
-    } else {
-      pdf.setTextColor(234, 179, 8) // Yellow
-      pdf.text(`Payment due by: ${format(new Date(invoice.dueDate), 'dd MMMM yyyy', { locale: id })}`, 20, yPosition)
-    }
-  }
-  
-  // Footer
-  pdf.setTextColor(100, 100, 100)
+  pdf.text(
+    `Tanggal: ${format(new Date(invoice.issuedDate), 'dd MMM yyyy', { locale: id })}`,
+    PAGE_WIDTH - MARGIN,
+    35,
+    { align: 'right' }
+  )
+  pdf.text(
+    `Jatuh tempo: ${format(new Date(invoice.dueDate), 'dd MMM yyyy', { locale: id })}`,
+    PAGE_WIDTH - MARGIN,
+    40,
+    { align: 'right' }
+  )
+
+  // ---- Status pill ----
+  const status = getStatusInfo(invoice.status)
+  pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(8)
-  pdf.text('Generated by BAFkitchen Invoice Management System', 20, 280)
-  pdf.text(`Generated on: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`, 20, 285)
-  
-  // Save the PDF
-  const fileName = `Invoice_${invoice.invoiceNumber}_${invoice.vendorName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+  const pillWidth = pdf.getTextWidth(status.label) + 8
+  const pillX = PAGE_WIDTH - MARGIN - pillWidth
+  setColor(pdf, 'fill', status.color)
+  pdf.roundedRect(pillX, 44, pillWidth, 7.5, 3.75, 3.75, 'F')
+  pdf.setTextColor(255, 255, 255)
+  pdf.text(status.label, pillX + pillWidth / 2, 49, { align: 'center' })
+
+  // ---- Divider ----
+  setColor(pdf, 'draw', LINE)
+  pdf.setLineWidth(0.3)
+  pdf.line(MARGIN, 58, PAGE_WIDTH - MARGIN, 58)
+
+  // ---- Bill to / Customer ----
+  const col2X = MARGIN + CONTENT_WIDTH / 2 + 5
+
+  setColor(pdf, 'text', MUTED)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(8)
+  pdf.text('DITAGIHKAN KEPADA', MARGIN, 67)
+  pdf.text('PELANGGAN', col2X, 67)
+
+  setColor(pdf, 'text', INK)
+  pdf.setFontSize(11)
+  pdf.text(invoice.vendorName || '-', MARGIN, 73)
+  pdf.text(invoice.customer?.name || '-', col2X, 73)
+
+  setColor(pdf, 'text', BODY)
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text(`ID vendor: ${invoice.vendorId || '-'}`, MARGIN, 78.5)
+
+  let customerY = 78.5
+  if (invoice.customer?.phoneNumber) {
+    pdf.text(`Telepon: ${invoice.customer.phoneNumber}`, col2X, customerY)
+    customerY += 5
+  }
+  if (invoice.customer?.namaSantri) {
+    pdf.text(`Nama santri: ${invoice.customer.namaSantri}`, col2X, customerY)
+    customerY += 5
+  }
+  if (invoice.customer?.kelas) {
+    pdf.text(`Kelas: ${invoice.customer.kelas}`, col2X, customerY)
+    customerY += 5
+  }
+
+  // ---- Items table ----
+  let y = Math.max(customerY, 86) + 6
+  setColor(pdf, 'fill', SOFT)
+  pdf.rect(MARGIN, y - 5, CONTENT_WIDTH, 9, 'F')
+
+  setColor(pdf, 'text', MUTED)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(8)
+  pdf.text('PRODUK', MARGIN + 3, y)
+  pdf.text('QTY', MARGIN + 100, y, { align: 'right' })
+  pdf.text('HARGA', MARGIN + 140, y, { align: 'right' })
+  pdf.text('TOTAL', PAGE_WIDTH - MARGIN - 3, y, { align: 'right' })
+
+  y += 8
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+
+  invoice.items.forEach((item) => {
+    if (y > 250) {
+      pdf.addPage()
+      y = 30
+    }
+
+    const name =
+      item.productName.length > 45
+        ? `${item.productName.substring(0, 45)}...`
+        : item.productName
+
+    setColor(pdf, 'text', INK)
+    pdf.text(name, MARGIN + 3, y)
+    setColor(pdf, 'text', BODY)
+    pdf.text(String(item.quantity), MARGIN + 100, y, { align: 'right' })
+    pdf.text(currency.toIDRFormat(item.unitPrice), MARGIN + 140, y, {
+      align: 'right'
+    })
+    pdf.text(currency.toIDRFormat(item.totalPrice), PAGE_WIDTH - MARGIN - 3, y, {
+      align: 'right'
+    })
+
+    setColor(pdf, 'draw', LINE)
+    pdf.line(MARGIN, y + 3, PAGE_WIDTH - MARGIN, y + 3)
+    y += 8
+  })
+
+  // ---- Summary ----
+  y += 4
+  const boxWidth = 82
+  const boxX = PAGE_WIDTH - MARGIN - boxWidth
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  setColor(pdf, 'text', BODY)
+  pdf.text('Subtotal', boxX, y)
+  pdf.text(currency.toIDRFormat(invoice.totalAmount), PAGE_WIDTH - MARGIN, y, {
+    align: 'right'
+  })
+  y += 6
+
+  if (invoice.commission) {
+    pdf.text(`Komisi Bazaf (${invoice.commission.percentage}%)`, boxX, y)
+    pdf.text(
+      `-${currency.toIDRFormat(invoice.commission.amount)}`,
+      PAGE_WIDTH - MARGIN,
+      y,
+      { align: 'right' }
+    )
+    y += 6
+  }
+
+  setColor(pdf, 'draw', LINE)
+  pdf.line(boxX, y - 2, PAGE_WIDTH - MARGIN, y - 2)
+
+  setColor(pdf, 'text', INK)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.text('Net diterima', boxX, y + 3)
+  pdf.text(
+    currency.toIDRFormat(invoice.totalAmount - (invoice.commission?.amount || 0)),
+    PAGE_WIDTH - MARGIN,
+    y + 3,
+    { align: 'right' }
+  )
+  y += 14
+
+  // ---- Payment note ----
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  if (invoice.settledDate) {
+    setColor(pdf, 'text', { r: 34, g: 197, b: 94 })
+    pdf.text(
+      `Lunas pada ${format(new Date(invoice.settledDate), 'dd MMMM yyyy', { locale: id })}`,
+      MARGIN,
+      y
+    )
+  } else if (new Date(invoice.dueDate) < new Date()) {
+    setColor(pdf, 'text', { r: 239, g: 68, b: 68 })
+    pdf.text('TERLAMBAT - pembayaran segera diperlukan', MARGIN, y)
+  } else {
+    setColor(pdf, 'text', MUTED)
+    pdf.text(
+      `Bayar sebelum ${format(new Date(invoice.dueDate), 'dd MMMM yyyy', { locale: id })}`,
+      MARGIN,
+      y
+    )
+  }
+
+  // ---- Footer ----
+  setColor(pdf, 'draw', LINE)
+  pdf.line(MARGIN, 275, PAGE_WIDTH - MARGIN, 275)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFontSize(8)
+  pdf.text('Dibuat oleh Bazaf', MARGIN, 281)
+  pdf.text(
+    `Dicetak ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: id })}`,
+    PAGE_WIDTH - MARGIN,
+    281,
+    { align: 'right' }
+  )
+
+  const fileName = `Invoice_${invoice.invoiceNumber}_${invoice.vendorName.replace(
+    /[^a-zA-Z0-9]/g,
+    '_'
+  )}.pdf`
   pdf.save(fileName)
 }
 
-// Helper function to get status color
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'settled':
-      return { r: 34, g: 197, b: 94 } // Green
-    case 'overdue':
-      return { r: 239, g: 68, b: 68 } // Red
-    case 'issued':
-      return { r: 59, g: 130, b: 246 } // Blue
-    default:
-      return { r: 234, g: 179, b: 8 } // Yellow
+export const exportInvoicesListToPDF = (
+  invoices: IInvoice[],
+  filename?: string
+) => {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pageWidth = PAGE_WIDTH
+
+  const renderHeader = () => {
+    setColor(pdf, 'fill', BRAND)
+    pdf.roundedRect(MARGIN, 16, 10, 10, 2.5, 2.5, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(12)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text('B', MARGIN + 3.6, 23)
+
+    setColor(pdf, 'text', INK)
+    pdf.setFontSize(15)
+    pdf.text('Bazaf', MARGIN + 14, 22)
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text('Daftar Invoice', MARGIN + 14, 27)
+
+    setColor(pdf, 'text', INK)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(18)
+    pdf.text('INVOICE', pageWidth - MARGIN, 22, { align: 'right' })
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(
+      `Dicetak ${format(new Date(), 'dd MMM yyyy HH:mm', { locale: id })}`,
+      pageWidth - MARGIN,
+      27,
+      { align: 'right' }
+    )
+
+    setColor(pdf, 'draw', LINE)
+    pdf.line(MARGIN, 34, pageWidth - MARGIN, 34)
   }
+
+  const renderTableHeader = (y: number) => {
+    setColor(pdf, 'fill', SOFT)
+    pdf.rect(MARGIN, y - 5, CONTENT_WIDTH, 9, 'F')
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(8)
+    pdf.text('NO. INVOICE', MARGIN + 3, y)
+    pdf.text('TANGGAL', MARGIN + 45, y)
+    pdf.text('VENDOR', MARGIN + 72, y)
+    pdf.text('TOTAL', pageWidth - MARGIN - 40, y, { align: 'right' })
+    pdf.text('STATUS', pageWidth - MARGIN - 3, y, { align: 'right' })
+  }
+
+  renderHeader()
+  let y = 44
+  renderTableHeader(y)
+  y += 8
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+
+  invoices.forEach((invoice) => {
+    if (y > 270) {
+      pdf.addPage()
+      renderHeader()
+      y = 44
+      renderTableHeader(y)
+      y += 8
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+    }
+
+    const status = getStatusInfo(invoice.status)
+    const vendor =
+      invoice.vendorName.length > 18
+        ? `${invoice.vendorName.substring(0, 18)}...`
+        : invoice.vendorName
+
+    setColor(pdf, 'text', INK)
+    pdf.text(invoice.invoiceNumber, MARGIN + 3, y)
+    setColor(pdf, 'text', BODY)
+    pdf.text(
+      format(new Date(invoice.issuedDate), 'dd MMM yyyy', { locale: id }),
+      MARGIN + 45,
+      y
+    )
+    pdf.text(vendor, MARGIN + 72, y)
+    pdf.text(currency.toIDRFormat(invoice.totalAmount), pageWidth - MARGIN - 40, y, {
+      align: 'right'
+    })
+    setColor(pdf, 'text', status.color)
+    pdf.text(status.label, pageWidth - MARGIN - 3, y, { align: 'right' })
+
+    setColor(pdf, 'draw', LINE)
+    pdf.line(MARGIN, y + 3, pageWidth - MARGIN, y + 3)
+    y += 8
+  })
+
+  setColor(pdf, 'draw', LINE)
+  pdf.line(MARGIN, 275, pageWidth - MARGIN, 275)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFontSize(8)
+  pdf.text(`Total ${invoices.length} invoice`, MARGIN, 281)
+  pdf.text('Dibuat oleh Bazaf', pageWidth - MARGIN, 281, { align: 'right' })
+
+  pdf.save(
+    filename ||
+      `Invoices_List_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
+  )
 }

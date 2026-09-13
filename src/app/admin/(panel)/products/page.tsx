@@ -1,41 +1,109 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import { Search2Icon } from '@chakra-ui/icons'
-import { Box, Button, Grid, GridItem, Input, InputGroup, InputLeftElement } from '@chakra-ui/react'
+import {
+  Box,
+  Button,
+  Grid,
+  GridItem,
+  HStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Select,
+  VStack,
+  useToast
+} from '@chakra-ui/react'
 import Link from 'next/link'
 
-import { useGetProducts } from '@/app/admin/(panel)/products/actions'
+import {
+  useGetProducts,
+  useUpdateProductApproval
+} from '@/app/admin/(panel)/products/actions'
 import { CardProduct, Layout } from '@/components'
 import { EmptyState, PageHeader } from '@/components/ui'
 
+const APPROVAL_OPTIONS = [
+  { value: '', label: 'Semua status' },
+  { value: 'pending', label: 'Menunggu persetujuan' },
+  { value: 'approved', label: 'Disetujui' },
+  { value: 'rejected', label: 'Ditolak' }
+]
+
 export default function ProductPage() {
+  const toast = useToast()
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   const {
     data: products,
     loading: isFetching,
-    error
+    error,
+    refetch
   } = useGetProducts({ q: query })
+
+  const { updateProductApproval } = useUpdateProductApproval()
+  const [approvingId, setApprovingId] = useState('')
 
   const sortProducts = (a: any, b: any) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1
 
-  const filtered = products
-    ? [...products].sort(sortProducts)
-    : []
+  const filtered = useMemo(() => {
+    const list = products ? [...products].sort(sortProducts) : []
+    if (!statusFilter) return list
+    return list.filter(
+      (product) => (product.approvalStatus || 'approved') === statusFilter
+    )
+  }, [products, statusFilter])
+
+  const pendingCount = useMemo(
+    () =>
+      (products || []).filter(
+        (product) => (product.approvalStatus || 'approved') === 'pending'
+      ).length,
+    [products]
+  )
+
+  const handleApproval = async (
+    id: string,
+    status: 'approved' | 'rejected'
+  ) => {
+    setApprovingId(id)
+    try {
+      await updateProductApproval(id, status)
+      toast({
+        title: status === 'approved' ? 'Produk disetujui' : 'Produk ditolak',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal memperbarui status produk',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    } finally {
+      setApprovingId('')
+    }
+  }
 
   return (
-    <Layout
-      error={error as Error}
-      isFetching={isFetching}
-    >
+    <Layout error={error as Error} isFetching={isFetching}>
       <PageHeader
         title="Produk"
-        subtitle="Kelola produk yang dijual di BAF Kitchen"
+        subtitle={
+          pendingCount > 0
+            ? `${pendingCount} produk menunggu persetujuan`
+            : 'Kelola produk yang dijual di Bazaf'
+        }
         breadcrumbs={[
-          { label: 'Dashboard', path: '/admin' },
+          { label: 'Dasbor', path: '/admin' },
           { label: 'Produk' }
         ]}
         actions={
@@ -47,7 +115,7 @@ export default function ProductPage() {
         }
       />
 
-      <Box mb={5} maxW="md">
+      <HStack mb={5} gap={3} maxW="lg">
         <InputGroup>
           <InputLeftElement pointerEvents="none">
             <Search2Icon color="gray.400" />
@@ -58,7 +126,19 @@ export default function ProductPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </InputGroup>
-      </Box>
+        <Select
+          maxW="220px"
+          bg="white"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          {APPROVAL_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </HStack>
 
       {!isFetching && filtered.length === 0 ? (
         <EmptyState
@@ -88,7 +168,32 @@ export default function ProductPage() {
           >
             {filtered.map((product) => (
               <GridItem key={product.id}>
-                <CardProduct product={product} />
+                <VStack align="stretch" spacing={3}>
+                  <CardProduct product={product} />
+                  {(product.approvalStatus || 'approved') === 'pending' && (
+                    <HStack spacing={2}>
+                      <Button
+                        size="sm"
+                        colorScheme="brand"
+                        flex="1"
+                        isLoading={approvingId === product.id}
+                        onClick={() => handleApproval(product.id, 'approved')}
+                      >
+                        Setujui
+                      </Button>
+                      <Button
+                        size="sm"
+                        colorScheme="red"
+                        variant="outline"
+                        flex="1"
+                        isDisabled={approvingId === product.id}
+                        onClick={() => handleApproval(product.id, 'rejected')}
+                      >
+                        Tolak
+                      </Button>
+                    </HStack>
+                  )}
+                </VStack>
               </GridItem>
             ))}
           </Grid>

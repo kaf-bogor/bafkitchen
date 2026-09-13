@@ -1,106 +1,89 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   Button,
-  Table,
-  Thead,
-  Tr,
-  Th,
-  Tbody,
-  Tag,
-  VStack,
-  Text,
-  Badge,
-  Flex,
+  HStack,
   Select,
-  FormControl,
-  FormLabel,
   SimpleGrid,
-  Card,
-  CardBody,
-  CardHeader,
-  Heading,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
+import { useAuth } from '@/app/UserProvider'
 import { Layout } from '@/components'
-import { invoiceStatusColors, invoiceStatusMessages, EInvoiceStatus } from '@/interfaces/invoice'
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  PageHeader,
+  Price,
+  StatCard,
+  StatusBadge
+} from '@/components/ui'
+import {
+  invoiceStatusColors,
+  invoiceStatusMessages,
+  EInvoiceStatus
+} from '@/interfaces/invoice'
 import { currency } from '@/utils'
 
-import { useGetInvoicesByVendor, useGetInvoices } from '../admin/(panel)/invoices/actions'
-import { useGetVendors } from '../admin/(panel)/vendors/actions'
+import { useGetInvoicesByVendor } from '../admin/(panel)/invoices/actions'
+import { useGetVendor } from '../admin/(panel)/vendors/actions'
 
 export default function VendorDashboard() {
   const searchParams = useSearchParams()
-  const vendorIdParam = searchParams.get('vendorId')
-  
-  const [selectedVendorId, setSelectedVendorId] = useState<string>(vendorIdParam || '')
+  const { user } = useAuth()
+
+  const isAdmin = user?.role === 'admin'
+
+  // Admins may open any vendor (impersonate); everyone else is locked to their own vendor.
+  const selectedVendorId = isAdmin
+    ? searchParams.get('vendorId') || ''
+    : user?.vendorId || ''
+
   const [statusFilter, setStatusFilter] = useState('')
 
-  // Get all invoices to extract vendor options
-  const { data: allInvoices } = useGetInvoices()
-  
-  // Get vendors from new vendors collection (with fallback to stores via invoices)
-  const { data: vendorsFromCollection } = useGetVendors()
-  
-  // Get invoices for selected vendor
-  const { data: vendorInvoices, loading: isFetching, error } = useGetInvoicesByVendor(selectedVendorId)
+  const { data: vendor } = useGetVendor(selectedVendorId)
 
-  const breadcrumbs = [{ label: 'Vendor Dashboard', path: '/dashboard' }]
+  const {
+    data: vendorInvoices,
+    loading: isFetching,
+    error
+  } = useGetInvoicesByVendor(selectedVendorId)
 
-  // Get unique vendors - prioritize vendors collection, fallback to invoices
-  const vendors = React.useMemo(() => {
-    // First try to use vendors from the vendors collection
-    if (vendorsFromCollection?.length) {
-      return vendorsFromCollection
-        .filter(vendor => vendor.isActive)
-        .map(vendor => ({
-          id: vendor.id,
-          name: vendor.name
-        }))
-    }
-    
-    // Fallback: extract vendors from invoices (current system)
-    if (!allInvoices?.length) return []
-    const vendorMap = new Map()
-    allInvoices.forEach(invoice => {
-      if (!vendorMap.has(invoice.vendorId)) {
-        vendorMap.set(invoice.vendorId, {
-          id: invoice.vendorId,
-          name: invoice.vendorName
-        })
-      }
-    })
-    return Array.from(vendorMap.values())
-  }, [vendorsFromCollection, allInvoices])
+  const vendorName = vendor?.name || user?.vendorName || ''
 
-  // Filter invoices by status
-  const filteredInvoices = React.useMemo(() => {
+  const filteredInvoices = useMemo(() => {
     if (!vendorInvoices?.length) return []
-    
     if (!statusFilter) return vendorInvoices
-    
-    return vendorInvoices.filter(invoice => invoice.status === statusFilter)
+    return vendorInvoices.filter((invoice) => invoice.status === statusFilter)
   }, [vendorInvoices, statusFilter])
 
-  // Calculate statistics
-  const stats = React.useMemo(() => {
-    if (!vendorInvoices?.length) return {
-      totalInvoices: 0,
-      totalAmount: 0,
-      pendingAmount: 0,
-      settledAmount: 0,
-      overdueCount: 0
+  const stats = useMemo(() => {
+    if (!vendorInvoices?.length) {
+      return {
+        totalInvoices: 0,
+        totalAmount: 0,
+        pendingAmount: 0,
+        settledAmount: 0,
+        overdueCount: 0
+      }
     }
 
     const now = new Date()
@@ -109,14 +92,14 @@ export default function VendorDashboard() {
     let settledAmount = 0
     let overdueCount = 0
 
-    vendorInvoices.forEach(invoice => {
+    vendorInvoices.forEach((invoice) => {
       totalAmount += invoice.totalAmount
-      
+
       if (invoice.status === EInvoiceStatus.SETTLED) {
         settledAmount += invoice.totalAmount
       } else {
         pendingAmount += invoice.totalAmount
-        
+
         if (new Date(invoice.dueDate) < now) {
           overdueCount++
         }
@@ -133,217 +116,220 @@ export default function VendorDashboard() {
   }, [vendorInvoices])
 
   return (
-    <Layout breadcrumbs={breadcrumbs} isFetching={isFetching} error={error as Error}>
-      <VStack spacing={6} align="stretch">
-        {/* Header and Vendor Selection */}
-        <Card>
-          <CardHeader>
-            <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
-              <Heading size="lg">Vendor Dashboard</Heading>
-              <FormControl maxW="300px">
-                <FormLabel fontSize="sm">Select Vendor:</FormLabel>
+    <Layout isFetching={isFetching} error={error as Error}>
+      <PageHeader
+        title={vendorName || 'Dashboard vendor'}
+        subtitle={
+          isAdmin && selectedVendorId
+            ? 'Melihat sebagai vendor (impersonate)'
+            : 'Ringkasan invoice vendor'
+        }
+        breadcrumbs={[{ label: 'Dashboard vendor' }]}
+      />
+
+      {selectedVendorId ? (
+        <>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5} mb={6}>
+            <StatCard
+              label="Total invoice"
+              value={stats.totalInvoices}
+              sublabel="Semua waktu"
+              tone="brand"
+            />
+            <StatCard
+              label="Total nilai"
+              value={currency.toIDRFormat(stats.totalAmount)}
+              sublabel="Semua invoice"
+              tone="blue"
+            />
+            <StatCard
+              label="Menunggu pembayaran"
+              value={currency.toIDRFormat(stats.pendingAmount)}
+              sublabel="Belum dibayar"
+              tone="orange"
+            />
+            <StatCard
+              label="Lunas"
+              value={currency.toIDRFormat(stats.settledAmount)}
+              sublabel="Sudah dibayar"
+              tone="green"
+            />
+          </SimpleGrid>
+
+          {stats.overdueCount > 0 && (
+            <Alert status="warning" borderRadius="lg" mb={6}>
+              <AlertIcon />
+              <AlertDescription>
+                {stats.overdueCount} invoice melewati jatuh tempo.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardHeader
+              title="Invoice"
+              description={`${filteredInvoices.length} invoice`}
+              actions={
                 <Select
-                  placeholder="Choose a vendor"
-                  value={selectedVendorId}
-                  onChange={(e) => setSelectedVendorId(e.target.value)}
-                >
-                  {vendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            </Flex>
-          </CardHeader>
-        </Card>
-
-        {selectedVendorId && (
-          <>
-            {/* Statistics Cards */}
-            <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Total Invoices</StatLabel>
-                    <StatNumber>{stats.totalInvoices}</StatNumber>
-                    <StatHelpText>All time</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-              
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Total Amount</StatLabel>
-                    <StatNumber color="blue.600">{currency.toIDRFormat(stats.totalAmount)}</StatNumber>
-                    <StatHelpText>All invoices</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-              
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Pending Amount</StatLabel>
-                    <StatNumber color="orange.600">{currency.toIDRFormat(stats.pendingAmount)}</StatNumber>
-                    <StatHelpText>Awaiting payment</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-              
-              <Card>
-                <CardBody>
-                  <Stat>
-                    <StatLabel>Settled Amount</StatLabel>
-                    <StatNumber color="green.600">{currency.toIDRFormat(stats.settledAmount)}</StatNumber>
-                    <StatHelpText>Paid invoices</StatHelpText>
-                  </Stat>
-                </CardBody>
-              </Card>
-            </SimpleGrid>
-
-            {/* Alerts for overdue invoices */}
-            {stats.overdueCount > 0 && (
-              <Box p={4} bg="red.50" borderRadius="md" border="1px solid" borderColor="red.200">
-                <Text color="red.600" fontWeight="bold">
-                  ⚠️ You have {stats.overdueCount} overdue invoice{stats.overdueCount > 1 ? 's' : ''}
-                </Text>
-              </Box>
-            )}
-
-            {/* Filters */}
-            <Box>
-              <FormControl maxW="200px">
-                <FormLabel fontSize="sm">Filter by Status:</FormLabel>
-                <Select
+                  size="sm"
+                  maxW="200px"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  size="sm"
                 >
-                  <option value="">All Statuses</option>
+                  <option value="">Semua status</option>
                   {Object.values(EInvoiceStatus).map((status) => (
                     <option key={status} value={status}>
                       {invoiceStatusMessages[status]}
                     </option>
                   ))}
                 </Select>
-              </FormControl>
-            </Box>
-
-            {/* Invoices Table */}
-            <Card>
-              <CardHeader>
-                <Heading size="md">Your Invoices ({filteredInvoices.length})</Heading>
-              </CardHeader>
-              <CardBody>
-                {filteredInvoices.length === 0 ? (
-                  <Text textAlign="center" color="gray.500" py={8}>
-                    No invoices found for the selected criteria.
-                  </Text>
-                ) : (
+              }
+            />
+            <CardBody p={0}>
+              {filteredInvoices.length === 0 ? (
+                <EmptyState
+                  title="Belum ada invoice"
+                  description="Invoice akan muncul di sini setelah pesanan diproses."
+                />
+              ) : (
+                <Box overflowX="auto">
                   <Table variant="simple">
                     <Thead>
                       <Tr>
-                        <Th>Invoice Number</Th>
-                        <Th>Issued Date</Th>
-                        <Th>Order ID</Th>
-                        <Th>Amount</Th>
-                        <Th>Due Date</Th>
+                        <Th>No. invoice</Th>
+                        <Th>Tanggal</Th>
+                        <Th>Order</Th>
+                        <Th>Jumlah</Th>
+                        <Th>Jatuh tempo</Th>
                         <Th>Status</Th>
-                        <Th>Action</Th>
+                        <Th>Aksi</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
                       {filteredInvoices.map((invoice) => {
-                        const isDueToday = new Date(invoice.dueDate).toDateString() === new Date().toDateString()
-                        const isOverdue = new Date(invoice.dueDate) < new Date() && invoice.status !== EInvoiceStatus.SETTLED
+                        const isDueToday =
+                          new Date(invoice.dueDate).toDateString() ===
+                          new Date().toDateString()
+                        const isOverdue =
+                          new Date(invoice.dueDate) < new Date() &&
+                          invoice.status !== EInvoiceStatus.SETTLED
 
                         return (
-                          <Tr key={invoice.id}>
-                            <Th>
-                              <Text fontWeight="bold">{invoice.invoiceNumber}</Text>
-                            </Th>
-                            <Th>
-                              <Text fontSize="sm">
-                                {format(new Date(invoice.issuedDate), 'dd MMM yyyy', { locale: id })}
+                          <Tr key={invoice.id} _hover={{ bg: 'gray.50' }}>
+                            <Td>
+                              <Text fontWeight="600">
+                                {invoice.invoiceNumber}
                               </Text>
-                            </Th>
-                            <Th>
-                              <Link href={`/admin/orders/${invoice.orderId}`} style={{ color: 'blue' }}>
+                            </Td>
+                            <Td>
+                              <Text fontSize="sm">
+                                {format(new Date(invoice.issuedDate), 'dd MMM yyyy', {
+                                  locale: id
+                                })}
+                              </Text>
+                            </Td>
+                            <Td>
+                              <Link href={`/admin/orders/${invoice.orderId}`}>
                                 {invoice.orderId.substring(0, 8)}...
                               </Link>
-                            </Th>
-                            <Th>
-                              <VStack align="start" spacing={1}>
-                                <Text fontWeight="bold">{currency.toIDRFormat(invoice.totalAmount)}</Text>
-                                {invoice.commission && (
-                                  <Text fontSize="xs" color="gray.600">
-                                    Net: {currency.toIDRFormat(invoice.totalAmount - invoice.commission.amount)}
-                                  </Text>
+                            </Td>
+                            <Td>
+                              <Price value={invoice.totalAmount} size="sm" />
+                              {invoice.commission && (
+                                <Text fontSize="xs" color="text-muted" mt={0.5}>
+                                  Net:{' '}
+                                  {currency.toIDRFormat(
+                                    invoice.totalAmount - invoice.commission.amount
+                                  )}
+                                </Text>
+                              )}
+                            </Td>
+                            <Td>
+                              <HStack spacing={2} flexWrap="wrap">
+                                <Text
+                                  fontSize="sm"
+                                  color={
+                                    isDueToday
+                                      ? 'orange.500'
+                                      : isOverdue
+                                        ? 'red.500'
+                                        : 'text-body'
+                                  }
+                                  fontWeight={
+                                    isDueToday || isOverdue ? '600' : 'normal'
+                                  }
+                                >
+                                  {format(
+                                    new Date(invoice.dueDate),
+                                    'dd MMM yyyy',
+                                    { locale: id }
+                                  )}
+                                </Text>
+                                {isOverdue && (
+                                  <StatusBadge
+                                    color="red"
+                                    px={2}
+                                    py={0.5}
+                                    fontSize="2xs"
+                                  >
+                                    Terlambat
+                                  </StatusBadge>
                                 )}
-                              </VStack>
-                            </Th>
-                            <Th>
-                              <Text 
-                                fontSize="sm" 
-                                color={isDueToday ? 'orange.500' : isOverdue ? 'red.500' : 'inherit'}
-                                fontWeight={isDueToday || isOverdue ? 'bold' : 'normal'}
-                              >
-                                {format(new Date(invoice.dueDate), 'dd MMM yyyy', { locale: id })}
-                              </Text>
-                              {isDueToday && (
-                                <Badge colorScheme="orange" size="sm" mt={1}>
-                                  Due Today
-                                </Badge>
-                              )}
-                              {isOverdue && (
-                                <Badge colorScheme="red" size="sm" mt={1}>
-                                  Overdue
-                                </Badge>
-                              )}
-                            </Th>
-                            <Th>
-                              <Tag
-                                size="sm"
-                                colorScheme={invoiceStatusColors[invoice.status]}
-                              >
+                                {isDueToday && (
+                                  <StatusBadge
+                                    color="orange"
+                                    px={2}
+                                    py={0.5}
+                                    fontSize="2xs"
+                                  >
+                                    Hari ini
+                                  </StatusBadge>
+                                )}
+                              </HStack>
+                            </Td>
+                            <Td>
+                              <StatusBadge color={invoiceStatusColors[invoice.status]}>
                                 {invoiceStatusMessages[invoice.status]}
-                              </Tag>
-                            </Th>
-                            <Th>
-                              <Link href={`/admin/invoices/${invoice.id}`}>
-                                <Button size="xs" colorScheme="blue" variant="outline">
-                                  View Details
+                              </StatusBadge>
+                            </Td>
+                            <Td>
+                              <Link href={`/dashboard/invoices/${invoice.id}`}>
+                                <Button size="xs" colorScheme="brand" variant="outline">
+                                  Lihat detail
                                 </Button>
                               </Link>
-                            </Th>
+                            </Td>
                           </Tr>
                         )
                       })}
                     </Tbody>
                   </Table>
-                )}
-              </CardBody>
-            </Card>
-          </>
-        )}
-
-        {!selectedVendorId && (
-          <Card>
-            <CardBody>
-              <VStack spacing={4} py={8}>
-                <Text fontSize="lg" color="gray.500">
-                  Welcome to the Vendor Dashboard
-                </Text>
-                <Text textAlign="center" color="gray.600">
-                  Please select a vendor from the dropdown above to view their invoices and payment information.
-                </Text>
-              </VStack>
+                </Box>
+              )}
             </CardBody>
           </Card>
-        )}
-      </VStack>
+        </>
+      ) : (
+        <EmptyState
+          title={
+            isAdmin ? 'Pilih vendor untuk dilihat' : 'Akun belum tertaut ke vendor'
+          }
+          description={
+            isAdmin
+              ? 'Gunakan tombol Impersonate di menu Pengguna untuk membuka dashboard vendor.'
+              : 'Hubungi admin untuk menautkan akun Anda dengan vendor.'
+          }
+          action={
+            isAdmin ? (
+              <Link href="/admin/users">
+                <Button colorScheme="brand" size="sm" mt={2}>
+                  Buka menu Pengguna
+                </Button>
+              </Link>
+            ) : undefined
+          }
+        />
+      )}
     </Layout>
   )
 }

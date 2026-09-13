@@ -1,10 +1,12 @@
 import { requireAdmin } from '@/lib/server/auth'
-import { json, db, now, uuid } from '@/lib/server/db'
+import { json, db, now } from '@/lib/server/db'
+import { generateVendorId } from '@/lib/server/vendorId'
 
 const transformVendor = (row: {
   id: string
   name: string
   email: string | null
+  type: string | null
   is_active: number
   user_id: string | null
   created_at: string
@@ -13,6 +15,7 @@ const transformVendor = (row: {
   id: row.id,
   name: row.name,
   email: row.email ?? '',
+  type: row.type ?? 'bazaf',
   isActive: row.is_active === 1,
   userId: row.user_id ?? '',
   createdAt: row.created_at,
@@ -46,6 +49,7 @@ export async function GET(request: Request) {
       id: string
       name: string
       email: string | null
+      type: string | null
       is_active: number
       user_id: string | null
       created_at: string
@@ -60,6 +64,7 @@ export async function GET(request: Request) {
         id: string
         name: string
         email: string | null
+        type: string | null
         is_active: number
         user_id: string | null
         created_at: string
@@ -77,18 +82,31 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     name?: string
     email?: string
+    type?: string
   } | null
   const name = body?.name?.trim()
   if (!name) return json({ error: 'Name is required' }, { status: 400 })
 
+  const type = body?.type ?? 'bazaf'
   const ts = now()
-  const id = uuid()
-  await db()
+  const database = db()
+
+  let id = generateVendorId()
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const existing = await database
+      .prepare('SELECT id FROM vendors WHERE id = ?')
+      .bind(id)
+      .first()
+    if (!existing) break
+    id = generateVendorId()
+  }
+
+  await database
     .prepare(
-      `INSERT INTO vendors (id, name, email, is_active, user_id, created_at, updated_at)
-       VALUES (?, ?, ?, 1, NULL, ?, ?)`
+      `INSERT INTO vendors (id, name, email, type, is_active, user_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 1, NULL, ?, ?)`
     )
-    .bind(id, name, body?.email?.trim() ?? null, ts, ts)
+    .bind(id, name, body?.email?.trim() ?? null, type, ts, ts)
     .run()
 
   return json(
@@ -97,6 +115,7 @@ export async function POST(request: Request) {
         id,
         name,
         email: body?.email?.trim() ?? '',
+        type,
         isActive: true,
         userId: '',
         createdAt: ts,

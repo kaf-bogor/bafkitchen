@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { useCreateProducts } from '@/app/admin/(panel)/products/actions'
 import { Layout, ProductForm } from '@/components'
+import { PageHeader } from '@/components/ui'
 import { IVendor } from '@/interfaces'
 
 export default function AddProduct() {
@@ -35,13 +36,18 @@ export default function AddProduct() {
   }
 
   const breadcrumbs = [
-    { label: 'dashboard', path: '/admin' },
-    { label: 'produk', path: '/admin/products' },
-    { label: 'Tambah', path: '/admin/products/add' }
+    { label: 'Dasbor', path: '/admin' },
+    { label: 'Produk', path: '/admin/products' },
+    { label: 'Tambah' }
   ]
 
   return (
-    <Layout breadcrumbs={breadcrumbs}>
+    <Layout>
+      <PageHeader
+        title="Tambah produk"
+        subtitle="Lengkapi informasi produk untuk mulai menjual"
+        breadcrumbs={breadcrumbs}
+      />
       <ProductForm
         isPending={loading}
         onCreate={handleCreateProduct}
@@ -50,6 +56,9 @@ export default function AddProduct() {
           createdAt: '',
           updatedAt: '',
           name: '',
+          sku: '',
+          unit: 'pcs',
+          isActive: true,
           description: '',
           imageUrl: '',
           price: 0,
@@ -58,6 +67,16 @@ export default function AddProduct() {
           availability: 'ready',
           preorderStart: null,
           preorderEnd: null,
+          channels: ['pos'],
+          availabilityType: 'always',
+          weeklyDays: [],
+          specificDates: [],
+          preorderLeadDays: null,
+          preorderCutoffTime: null,
+          preorderMinQty: null,
+          preorderMaxQty: null,
+          preorderCapacity: null,
+          fulfillmentType: 'takeaway',
           vendor: {} as IVendor.IVendor,
           categories: []
         }}

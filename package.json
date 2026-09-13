@@ -1,5 +1,5 @@
 {
-  "name": "store-builder",
+  "name": "bazaf",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -21,7 +21,6 @@
     "chakra-react-select": "^4.7.6",
     "chart.js": "^4.4.2",
     "date-fns": "^3.6.0",
-    "firebase": "^10.14.1",
     "formik": "^2.4.6",
     "framer-motion": "^11.0.5",
     "html2canvas": "^1.4.1",

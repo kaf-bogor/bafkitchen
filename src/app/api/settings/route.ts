@@ -13,7 +13,7 @@ interface SettingsRow {
 const transformSettings = (row: SettingsRow) => ({
   id: row.id,
   admin_phone_number: row.admin_phone_number ?? '',
-  app_name: row.app_name ?? 'BAF Kitchen',
+  app_name: row.app_name ?? 'Bazaf',
   app_domain: row.app_domain ?? '',
   created_at: row.created_at ?? '',
   updated_at: row.updated_at ?? ''
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     .bind(
       id,
       body?.admin_phone_number ?? '',
-      body?.app_name ?? 'BAF Kitchen',
+      body?.app_name ?? 'Bazaf',
       body?.app_domain ?? '',
       ts,
       ts
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       settings: {
         id,
         admin_phone_number: body?.admin_phone_number ?? '',
-        app_name: body?.app_name ?? 'BAF Kitchen',
+        app_name: body?.app_name ?? 'Bazaf',
         app_domain: body?.app_domain ?? '',
         created_at: ts,
         updated_at: ts

@@ -28,6 +28,7 @@ import {
   AiOutlineCalendar,
   AiOutlineDesktop,
   AiOutlineFileText,
+  AiOutlineHome,
   AiOutlineLogout,
   AiOutlineSetting,
   AiOutlineShop,
@@ -68,26 +69,33 @@ function Sidebar({ ...rest }: Props) {
       items: [{ text: 'Dasbor', path: '/admin', icon: AiOutlinePieChart }]
     },
     {
-      title: 'Manajemen',
+      title: 'Penjualan',
       items: [
         { text: 'Kasir (POS)', path: '/pos', icon: AiOutlineDesktop },
-        { text: 'Produk', path: '/admin/products', icon: AiOutlineShopping },
-        { text: 'Order', path: '/admin/orders', icon: AiOutlineShoppingCart },
-        { text: 'Vendor', path: '/admin/vendors', icon: AiOutlineShop },
-        { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags },
-        { text: 'Jadwal', path: '/admin/schedules', icon: AiOutlineCalendar }
+        { text: 'Pesanan', path: '/admin/orders', icon: AiOutlineShoppingCart },
+        { text: 'Pre-order', path: '/admin/preorders', icon: AiOutlineCalendar }
       ]
     },
     {
-      title: 'Keuangan',
+      title: 'Katalog',
       items: [
-        { text: 'Invoice', path: '/admin/invoices', icon: AiOutlineFileText },
-        { text: 'Pengguna', path: '/admin/users', icon: AiOutlineUser }
+        { text: 'Produk', path: '/admin/products', icon: AiOutlineShopping },
+        { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags }
+      ]
+    },
+    {
+      title: 'Operasional',
+      items: [
+        { text: 'Kalender', path: '/admin/calendar', icon: AiOutlineCalendar },
+        { text: 'Vendor', path: '/admin/vendors', icon: AiOutlineShop }
       ]
     },
     {
       title: 'Lainnya',
       items: [
+        { text: 'Lihat homepage', path: '/', icon: AiOutlineHome },
+        { text: 'Invoice', path: '/admin/invoices', icon: AiOutlineFileText },
+        { text: 'Pengguna', path: '/admin/users', icon: AiOutlineUser },
         { text: 'Pengaturan', path: '/admin/settings', icon: AiOutlineSetting },
         { text: 'Keluar', onClick: onLogoutClick, icon: AiOutlineLogout }
       ]
@@ -115,11 +123,11 @@ function Sidebar({ ...rest }: Props) {
       flexDirection="column"
       {...rest}
     >
-      <Link href="/admin">
+      <Link href="/">
         <HStack p="5" spacing={3}>
           <FlexLogo />
           <Heading as="h1" size="sm" fontWeight="700">
-            BAF Kitchen
+            Bazaf
           </Heading>
         </HStack>
       </Link>
@@ -181,7 +189,7 @@ function Sidebar({ ...rest }: Props) {
       <Divider borderColor="gray.200" />
       <Box p={4}>
         <Text fontSize="xs" color="gray.400">
-          v1.0 · BAF Kitchen
+          v1.0 · Bazaf
         </Text>
       </Box>
 

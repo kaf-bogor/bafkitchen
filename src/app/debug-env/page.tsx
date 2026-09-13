@@ -4,9 +4,7 @@ import React from 'react'
 
 export default function DebugEnv() {
   const config = {
-    appDomain: process.env.NEXT_PUBLIC_APP_DOMAIN,
-    firebaseProjectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    firebaseAuthDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    appDomain: process.env.NEXT_PUBLIC_APP_DOMAIN
   }
 
   return (
@@ -15,7 +13,6 @@ export default function DebugEnv() {
       <pre>{JSON.stringify(config, null, 2)}</pre>
       <p>
         <strong>Note:</strong> Remove this page after debugging!
-        Firebase config values are public by design for client-side auth.
       </p>
     </div>
   )

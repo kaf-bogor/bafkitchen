@@ -1,22 +1,37 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { Box, Button, Flex, Heading, Text, useColorModeValue, VStack, HStack, Icon, Container, ScaleFade } from '@chakra-ui/react'
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Text,
+  useColorModeValue,
+  VStack,
+  HStack,
+  Icon,
+  Container,
+  ScaleFade
+} from '@chakra-ui/react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { FcGoogle } from 'react-icons/fc'
 import { IoArrowBack } from 'react-icons/io5'
 
 import { useAuth } from '@/app/UserProvider'
-import { handleGoogleLogin } from '@/utils/auth'
 
 const MotionBox = motion(Box)
 
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: 'Login dengan Google dibatalkan.',
+  failed: 'Login gagal. Silakan coba lagi.',
+  state: 'Sesi login tidak valid. Silakan coba lagi.'
+}
+
 export default function SimpleCard() {
-  const router = useRouter()
-  const { user, refetch } = useAuth()
+  const { user } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   // Define all color mode values at the top level
@@ -32,22 +47,26 @@ export default function SimpleCard() {
   const buttonHoverBg = useColorModeValue('gray.50', 'gray.600')
   const buttonHoverBorder = useColorModeValue('gray.400', 'gray.500')
 
-  const handleLogin = async () => {
-    await handleGoogleLogin({
-      onError: setError,
-      onSuccess: async () => {
-        await refetch()
-        router.push('/dashboard/')
-      }
-    })
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error')
+    if (code) {
+      setError(GOOGLE_ERROR_MESSAGES[code] ?? 'Login gagal. Silakan coba lagi.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  const handleLogin = () => {
+    window.location.href = '/api/auth/google?redirect=/dashboard/'
   }
 
   if (user) {
     return (
       <Flex minH="100vh" align="center" justify="center" bg={bgMain}>
         <VStack spacing={4}>
-          <Box className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></Box>
-          <Text color={textSecondary} fontSize="sm">Redirecting...</Text>
+          <Box className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></Box>
+          <Text color={textSecondary} fontSize="sm">
+            Redirecting...
+          </Text>
         </VStack>
       </Flex>
     )
@@ -66,7 +85,7 @@ export default function SimpleCard() {
         bgImage="radial-gradient(circle at 1px 1px, rgba(0,0,0,0.3) 1px, transparent 0)"
         bgSize="20px 20px"
       />
-      
+
       <Container maxW="md" mx="auto" p={0}>
         <Flex minH="100vh" align="center" justify="center" position="relative">
           <ScaleFade initialScale={0.9} in={true}>
@@ -80,14 +99,16 @@ export default function SimpleCard() {
               {/* Back Button */}
               <Box mb={8}>
                 <Link href="/">
-                  <HStack 
-                    spacing={2} 
+                  <HStack
+                    spacing={2}
                     color={textSecondary}
                     _hover={{ color: textPrimary }}
                     transition="color 0.2s"
                   >
                     <Icon as={IoArrowBack} />
-                    <Text fontSize="sm" fontWeight="medium">Kembali</Text>
+                    <Text fontSize="sm" fontWeight="medium">
+                      Kembali
+                    </Text>
                   </HStack>
                 </Link>
               </Box>
@@ -96,7 +117,7 @@ export default function SimpleCard() {
               <MotionBox
                 bg={bgCard}
                 borderRadius="2xl"
-                boxShadow={"xl"}
+                boxShadow={'xl'}
                 border="1px solid"
                 borderColor={borderColor}
                 p={10}
@@ -107,16 +128,16 @@ export default function SimpleCard() {
                 <VStack spacing={8}>
                   {/* Header */}
                   <VStack spacing={3} textAlign="center">
-                    <Heading 
-                      size="xl" 
+                    <Heading
+                      size="xl"
                       color={textPrimary}
                       fontWeight="bold"
                       letterSpacing="tight"
                     >
                       Selamat Datang
                     </Heading>
-                    <Text 
-                      color={textSecondary} 
+                    <Text
+                      color={textSecondary}
                       fontSize="lg"
                       maxW="sm"
                       lineHeight="relaxed"
@@ -175,8 +196,8 @@ export default function SimpleCard() {
                   </Button>
 
                   {/* Footer */}
-                  <Text 
-                    color={textTertiary} 
+                  <Text
+                    color={textTertiary}
                     fontSize="xs"
                     textAlign="center"
                     maxW="sm"

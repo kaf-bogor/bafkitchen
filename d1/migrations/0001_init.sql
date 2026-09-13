@@ -1,7 +1,7 @@
--- BAF Kitchen schema migration — initial tables for D1 (SQLite)
+-- Bazaf schema migration — initial tables for D1 (SQLite)
 -- Time columns are stored as ISO-8601 strings ("2024-09-01T12:00:00.000Z") so
 -- lexicographic comparison is equivalent to chronological ordering.
--- Nested Firestore-style objects are stored as JSON TEXT columns.
+-- Nested objects are stored as JSON TEXT columns.
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,

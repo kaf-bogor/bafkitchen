@@ -121,7 +121,7 @@ export const posCartStore = create<PosCartState & PosCartActions>()(
       }))
     }),
     {
-      name: 'pos-cart-bafkitchen'
+      name: 'pos-cart-bazaf'
     }
   )
 )

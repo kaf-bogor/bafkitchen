@@ -9,7 +9,6 @@ export default function Card({ children, ...rest }: Props) {
       border="1px solid"
       borderColor="gray.200"
       borderRadius="xl"
-      boxShadow="sm"
       overflow="hidden"
       {...rest}
     >
@@ -44,7 +43,7 @@ export function CardHeader({
           </Box>
         )}
         {description && (
-          <Box fontSize="sm" color="gray.500" mt={0.5}>
+          <Box fontSize="sm" color="gray.500" mt={1} lineHeight="1.5">
             {description}
           </Box>
         )}

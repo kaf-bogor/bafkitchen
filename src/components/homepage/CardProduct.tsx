@@ -1,21 +1,12 @@
 'use client'
 
-import React, { useState, useMemo, memo } from 'react'
+import React, { useState, memo } from 'react'
 
 import { AddIcon, MinusIcon } from '@chakra-ui/icons'
-import {
-  Box,
-  Button,
-  Center,
-  Text,
-  Stack,
-  Image,
-  Input,
-  InputGroup,
-  Badge
-} from '@chakra-ui/react'
+import { Box, Button, Flex, Input, Stack, Text } from '@chakra-ui/react'
 import Link from 'next/link'
 
+import ProductImage from '@/components/ProductImage'
 import { IProduct } from '@/interfaces'
 import { currency, date } from '@/utils'
 
@@ -28,121 +19,172 @@ function CardProduct({
 }: Props) {
   const { name, price, vendor, imageUrl } = product
 
-  // Safeguard against undefined vendor
-  const safeVendor = vendor || { name: 'Baf Kitchen' }
+  const safeVendor = vendor || { name: 'Bazaf' }
   const [cartState, setCartState] = useState<CartState>('default')
-
-  const cartQty = useMemo(() => qty, [qty])
   const isPreorder = product.availability === 'preorder'
+  const availabilityLabel = isPreorder ? 'Pre-order' : 'Tersedia'
 
   return (
-    <Center>
-      <Box
-        role="group"
-        w="full"
-        bg="white"
-        boxShadow="sm"
-        rounded="xl"
-        overflow="hidden"
-        pos="relative"
-        zIndex={1}
-        transition="all 0.2s"
-        _hover={{ boxShadow: 'lg', transform: 'translateY(-2px)' }}
-      >
-        <Box position="relative">
-          <Image
-            height={160}
-            width="full"
-            objectFit="cover"
-            src={imageUrl || '/placeholder.png'}
-            alt={name}
-          />
-          <Badge
-            position="absolute"
-            top={3}
-            left={3}
-            colorScheme={isPreorder ? 'orange' : 'green'}
-            variant="solid"
-            textTransform="uppercase"
-            fontSize="xs"
-            px={2}
+    <Box
+      as="article"
+      role="group"
+      display="flex"
+      flexDir="column"
+      h="full"
+      bg="white"
+      borderRadius="2xl"
+      border="1px solid"
+      borderColor="gray.100"
+      overflow="hidden"
+      transition="border-color 0.2s, box-shadow 0.2s"
+      _hover={{
+        borderColor: 'gray.200',
+        boxShadow: '0 12px 28px -14px rgba(16, 24, 40, 0.18)'
+      }}
+    >
+      <Box position="relative">
+        <ProductImage
+          height={{ base: 160, sm: 176 }}
+          width="full"
+          objectFit="cover"
+          src={imageUrl}
+          alt={name}
+        />
+        <Flex position="absolute" top={3} left={3}>
+          <Flex
+            alignItems="center"
+            gap={1.5}
+            bg="whiteAlpha.900"
             py={1}
-            rounded="full"
+            px={2.5}
+            borderRadius="full"
+            boxShadow="sm"
           >
-            {isPreorder ? 'Pre-order' : 'Ready'}
-          </Badge>
-        </Box>
-
-        <Stack align="left" p={4} spacing={1}>
-          <Link href={`/s/${safeVendor.name}`}>
-            <Text color="gray.500" fontSize="xs" textTransform="uppercase" letterSpacing="wide">
-              {safeVendor.name}
+            <Box
+              w={1.5}
+              h={1.5}
+              borderRadius="full"
+              bg={isPreorder ? 'orange.500' : 'green.500'}
+            />
+            <Text fontSize="xs" fontWeight="600" color="gray.700">
+              {availabilityLabel}
             </Text>
-          </Link>
-          <Text fontSize="md" fontWeight="semibold" fontFamily="body" noOfLines={1}>
-            {name}
-          </Text>
-          <Text fontSize="sm" color="green.700" fontWeight="medium">
-            {currency.toIDRFormat(price)}
-          </Text>
-          {isPreorder && product.preorderStart && product.preorderEnd && (
-            <Text fontSize="xs" color="orange.600">
-              {date.formatDateRange(product.preorderStart, product.preorderEnd)}
-            </Text>
-          )}
-        </Stack>
-        <Stack p={3} align="center" justify="center">
-          {cartState === 'default' && qty === 0 && (
-            <Button
-              w="full"
-              size="sm"
-              colorScheme="green"
-              onClick={() => setCartState('setQuantity')}
-            >
-              Tambah
-            </Button>
-          )}
-          {(cartState === 'setQuantity' || qty > 0) && (
-            <InputGroup bg="gray.100" w="full" rounded="xl" size="sm">
-              <Button
-                bg="white"
-                roundedTopRight="0"
-                roundedBottomRight="0"
-                borderWidth="1px"
-                borderColor="green.500"
-                onClick={onRemoveQty}
-              >
-                <MinusIcon color="red.700" />
-              </Button>
-              <Input
-                onChange={(e) => onUpdateQty(Number(e.target.value))}
-                textAlign="center"
-                maxLength={2}
-                value={cartQty}
-                px="4px"
-                rounded="0"
-                type="number"
-                bg="white"
-                borderTopWidth="1px"
-                borderBottomWidth="1px"
-                borderTopColor="green.500"
-                borderBottomColor="green.500"
-              />
-              <Button
-                bg="white"
-                roundedTopLeft="0"
-                roundedBottomLeft="0"
-                borderWidth="1px"
-                borderColor="green.500"
-                onClick={onAddQty}
-              >
-                <AddIcon color="green" />
-              </Button>
-            </InputGroup>
-          )}
-        </Stack>
+          </Flex>
+        </Flex>
       </Box>
-    </Center>
+
+      <Stack p={4} spacing={1.5} flex="1" align="stretch">
+        <Link
+          href={`/s/${safeVendor.name}`}
+          style={{ alignSelf: 'flex-start' }}
+        >
+          <Text
+            fontSize="xs"
+            fontWeight="600"
+            letterSpacing="wider"
+            textTransform="uppercase"
+            color="gray.400"
+            _hover={{ color: 'brand.600' }}
+            transition="color 0.2s"
+          >
+            {safeVendor.name}
+          </Text>
+        </Link>
+        <Text
+          fontSize="md"
+          fontWeight="600"
+          color="gray.800"
+          lineHeight="1.35"
+          noOfLines={2}
+        >
+          {name}
+        </Text>
+        {isPreorder && product.preorderStart && product.preorderEnd && (
+          <Text fontSize="xs" color="gray.500" lineHeight="1.4">
+            {date.formatDateRange(product.preorderStart, product.preorderEnd)}
+          </Text>
+        )}
+        <Text
+          mt="auto"
+          pt={1}
+          fontSize="lg"
+          fontWeight="700"
+          color="brand.700"
+          letterSpacing="-0.01em"
+        >
+          {currency.toIDRFormat(price)}
+        </Text>
+      </Stack>
+
+      <Box p={3} pt={0}>
+        {cartState === 'default' && qty === 0 ? (
+          <Button
+            w="full"
+            bg="brand.600"
+            color="white"
+            fontWeight="600"
+            _hover={{ bg: 'brand.700' }}
+            _active={{ bg: 'brand.800' }}
+            onClick={() => setCartState('setQuantity')}
+          >
+            Tambah
+          </Button>
+        ) : (
+          <Flex gap={2} align="stretch">
+            <Button
+              variant="outline"
+              flexShrink={0}
+              w={11}
+              px={0}
+              color="gray.500"
+              _hover={{
+                bg: 'red.50',
+                color: 'red.500',
+                borderColor: 'red.200'
+              }}
+              _active={{ bg: 'red.100' }}
+              onClick={() => onRemoveQty(product.id)}
+              aria-label="Kurangi jumlah"
+            >
+              <MinusIcon boxSize={3.5} />
+            </Button>
+            <Input
+              variant="outline"
+              className="no-spinner"
+              flex="1"
+              minW={0}
+              value={qty}
+              onChange={(e) => onUpdateQty(product.id, Number(e.target.value))}
+              type="number"
+              textAlign="center"
+              fontWeight="600"
+              fontSize="md"
+              color="gray.800"
+              min={1}
+              maxLength={2}
+              px={1}
+            />
+            <Button
+              variant="outline"
+              flexShrink={0}
+              w={11}
+              px={0}
+              color="brand.700"
+              _hover={{
+                bg: 'green.50',
+                color: 'brand.700',
+                borderColor: 'green.300'
+              }}
+              _active={{ bg: 'green.100' }}
+              onClick={() => onAddQty(product)}
+              aria-label="Tambah jumlah"
+            >
+              <AddIcon boxSize={3.5} />
+            </Button>
+          </Flex>
+        )}
+      </Box>
+    </Box>
   )
 }
 
@@ -150,9 +192,9 @@ type Props = {
   product: IProduct.IProductResponse
   qty: number
   // eslint-disable-next-line no-unused-vars
-  onUpdateQty: (qty: number) => void
-  onAddQty: () => void
-  onRemoveQty: () => void
+  onUpdateQty: (productId: string, qty: number) => void
+  onAddQty: (product: IProduct.IProductResponse) => void
+  onRemoveQty: (productId: string) => void
 }
 
 type CartState = 'default' | 'setQuantity'

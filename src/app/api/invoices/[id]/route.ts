@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/server/auth'
+import { getSession, requireAdmin } from '@/lib/server/auth'
 import { json, db, parseJson } from '@/lib/server/db'
 
 const transformInvoiceRow = (row: {
@@ -35,12 +35,27 @@ const transformInvoiceRow = (row: {
   commission: row.commission ? parseJson(row.commission, null) : undefined
 })
 
-export async function GET(_request: Request, ctx: { params: { id: string } }) {
+export async function GET(request: Request, ctx: { params: { id: string } }) {
+  const session = await getSession(request)
+  if (!session) return json({ error: 'Unauthorized' }, { status: 401 })
+
   const row = await db()
     .prepare('SELECT * FROM invoices WHERE id = ?')
     .bind(ctx.params.id)
     .first<Parameters<typeof transformInvoiceRow>[0]>()
   if (!row) return json({ error: 'Invoice not found' }, { status: 404 })
+
+  // Non-admins can only view invoices belonging to their own vendor.
+  if (session.role !== 'admin') {
+    const vendor = await db()
+      .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+      .bind(session.uid)
+      .first<{ id: string }>()
+    if (!vendor || vendor.id !== row.vendor_id) {
+      return json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   return json({ invoice: transformInvoiceRow(row) })
 }
 

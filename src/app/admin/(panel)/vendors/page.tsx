@@ -1,7 +1,18 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 
-import { Button, Table, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/react'
+import {
+  Button,
+  Select,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useToast
+} from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
@@ -15,26 +26,61 @@ import {
   PageHeader,
   StatusBadge
 } from '@/components/ui'
+import { VENDOR_TYPE_OPTIONS, VendorType } from '@/constants/vendor'
+import { IVendor } from '@/interfaces/vendor'
 
-import { useGetVendors } from './actions'
+import { useGetVendors, useUpdateVendor } from './actions'
 
 export default function VendorsPage() {
-  const { data: vendors, loading: isFetching, error } = useGetVendors()
+  const toast = useToast()
+  const { data: vendors, loading: isFetching, error, refetch } = useGetVendors()
+  const { updateVendor, loading: isUpdating } = useUpdateVendor()
+  const [updatingId, setUpdatingId] = useState('')
+
+  const handleTypeChange = async (vendor: IVendor, type: VendorType) => {
+    setUpdatingId(vendor.id)
+    try {
+      await updateVendor({
+        id: vendor.id,
+        name: vendor.name,
+        userId: vendor.userId || '',
+        type
+      })
+      toast({
+        title: 'Berhasil',
+        description: 'Tipe vendor diperbarui',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    } finally {
+      setUpdatingId('')
+    }
+  }
 
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
-        title="Vendor Management"
+        title="Vendor"
         subtitle="Kelola vendor yang menyediakan produk"
         breadcrumbs={[
-          { label: 'Dashboard', path: '/admin' },
-          { label: 'Vendors' }
+          { label: 'Dasbor', path: '/admin' },
+          { label: 'Vendor' }
         ]}
       />
 
       <Card>
         <CardHeader
-          title="Daftar Vendor"
+          title="Daftar vendor"
           description={`${vendors?.length || 0} vendor terdaftar`}
         />
         <CardBody p={0}>
@@ -47,27 +93,45 @@ export default function VendorsPage() {
             <Table variant="simple">
               <Thead>
                 <Tr>
-                  <Th>Name</Th>
+                  <Th>Nama</Th>
                   <Th>Email</Th>
+                  <Th>Tipe</Th>
                   <Th>Status</Th>
-                  <Th>Created At</Th>
-                  <Th>Actions</Th>
+                  <Th>Dibuat</Th>
+                  <Th>Aksi</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {vendors.map((vendor) => (
-                  <Tr key={vendor.id}>
+                  <Tr key={vendor.id} _hover={{ bg: 'gray.50' }}>
                     <Td>
                       <Text fontWeight="600">{vendor.name}</Text>
                     </Td>
-                    <Td>{vendor.email}</Td>
+                    <Td>{vendor.email || '-'}</Td>
+                    <Td>
+                      <Select
+                        size="sm"
+                        maxW="160px"
+                        value={vendor.type || 'bazaf'}
+                        isDisabled={isUpdating && updatingId === vendor.id}
+                        onChange={(e) =>
+                          handleTypeChange(vendor, e.target.value as VendorType)
+                        }
+                      >
+                        {VENDOR_TYPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Td>
                     <Td>
                       <StatusBadge color={vendor.isActive ? 'green' : 'red'}>
-                        {vendor.isActive ? 'Active' : 'Inactive'}
+                        {vendor.isActive ? 'Aktif' : 'Nonaktif'}
                       </StatusBadge>
                     </Td>
                     <Td>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="text-muted">
                         {format(new Date(vendor.createdAt), 'dd MMM yyyy', {
                           locale: id
                         })}
@@ -76,7 +140,7 @@ export default function VendorsPage() {
                     <Td>
                       <Link href={`/dashboard?vendorId=${vendor.id}`}>
                         <Button size="xs" colorScheme="brand" variant="outline">
-                          View Dashboard
+                          Lihat dashboard
                         </Button>
                       </Link>
                     </Td>

@@ -1,7 +1,6 @@
 import React from 'react'
 
 import {
-  Image,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -16,6 +15,7 @@ import {
   VStack
 } from '@chakra-ui/react'
 
+import ProductImage from '@/components/ProductImage'
 import { IProductOrder } from '@/interfaces/order'
 import { currency } from '@/utils'
 
@@ -47,7 +47,7 @@ export default function ListOfProductModal(props: IListOfProductModalProps) {
                 >
                   <Flex alignSelf={['start']}>
                     <Box boxSize={20} marginRight={5}>
-                      <Image
+                      <ProductImage
                         src={product.imageUrl}
                         alt="Green double couch with wooden legs"
                         sizes="sm"

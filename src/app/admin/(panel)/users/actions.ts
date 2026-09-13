@@ -12,6 +12,8 @@ type RawUser = {
   createdAt: string
   updatedAt: string
   lastSignInAt?: string | null
+  vendorId?: string | null
+  vendorName?: string | null
 }
 
 const transformUser = (u: RawUser): IUser.IUser => ({
@@ -22,7 +24,9 @@ const transformUser = (u: RawUser): IUser.IUser => ({
   phoneNumber: u.phoneNumber ?? null,
   createdAt: u.createdAt ? new Date(u.createdAt) : new Date(0),
   updatedAt: u.updatedAt ? new Date(u.updatedAt) : new Date(0),
-  lastSignInAt: u.lastSignInAt ? new Date(u.lastSignInAt) : null
+  lastSignInAt: u.lastSignInAt ? new Date(u.lastSignInAt) : null,
+  vendorId: u.vendorId ?? null,
+  vendorName: u.vendorName ?? null
 })
 
 export const useGetUsers = () => {
@@ -63,10 +67,8 @@ export const useGetUser = (userId: string) => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ users: RawUser[] }>('/api/users')
-      const user = res.users.find((u) => u.id === userId)
-      if (!user) throw new Error('User not found')
-      setData(transformUser(user))
+      const res = await apiFetch<{ user: RawUser }>(`/api/users/${userId}`)
+      setData(transformUser(res.user))
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -104,4 +106,51 @@ export const useCreateUser = () => {
   }
 
   return { createUser, loading, error }
+}
+
+export const useUpdateUser = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateUser = async (request: IUser.IUpdateUserRequest) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ user: IUser.IUser }>(`/api/users/${request.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(request)
+      })
+      return res.user
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { updateUser, loading, error }
+}
+
+export const useDeleteUser = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const deleteUser = async (id: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' })
+      return { id }
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { deleteUser, loading, error }
 }

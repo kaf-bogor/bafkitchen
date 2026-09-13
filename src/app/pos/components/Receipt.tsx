@@ -36,7 +36,7 @@ export function ReceiptContent({ receipt }: { receipt: IReceiptData }) {
       p={2}
     >
       <Text textAlign="center" fontWeight="bold" fontSize="md">
-        BAF KITCHEN
+        BAZAF
       </Text>
       <Text textAlign="center" mb={2}>
         Struk Pembelian

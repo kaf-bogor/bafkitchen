@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/server/auth'
+import { getSession, requireAdmin } from '@/lib/server/auth'
 import { json, db, parseJson } from '@/lib/server/db'
 import { generateInvoicesForOrder } from '@/lib/server/invoices'
 
@@ -37,8 +37,21 @@ const transformInvoiceRow = (row: {
 })
 
 export async function GET(request: Request) {
+  const session = await getSession(request)
+  if (!session) return json({ error: 'Unauthorized' }, { status: 401 })
+
   const url = new URL(request.url)
-  const vendorId = url.searchParams.get('vendorId')
+  let vendorId = url.searchParams.get('vendorId')
+
+  // Non-admin users can only access invoices belonging to their own vendor.
+  if (session.role !== 'admin') {
+    const vendor = await db()
+      .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+      .bind(session.uid)
+      .first<{ id: string }>()
+    if (!vendor) return json({ invoices: [] })
+    vendorId = vendor.id
+  }
 
   const database = db()
   const results = (

@@ -2,8 +2,9 @@
 
 import React, { memo } from 'react'
 
-import { Badge, Box, Image, Text, VStack } from '@chakra-ui/react'
+import { Badge, Box, Text, VStack } from '@chakra-ui/react'
 
+import ProductImage from '@/components/ProductImage'
 import { IProduct } from '@/interfaces'
 import { currency } from '@/utils'
 
@@ -43,13 +44,12 @@ function ProductTile({ product, cartQty, onAdd }: Props) {
           {cartQty}
         </Badge>
       )}
-      <Image
-        src={product.imageUrl || '/logo.png'}
+      <ProductImage
+        src={product.imageUrl}
         alt={product.name}
         h="110px"
         w="full"
         objectFit="cover"
-        fallbackSrc="/logo.png"
       />
       <VStack align="stretch" p={3} spacing={1}>
         <Text fontSize="sm" fontWeight="semibold" noOfLines={2} minH="40px">

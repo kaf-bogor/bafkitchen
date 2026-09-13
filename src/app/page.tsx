@@ -2,22 +2,69 @@
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react'
 
-import { Box, SimpleGrid, Text, Divider, VStack, Flex } from '@chakra-ui/react'
+import {
+  Box,
+  Flex,
+  Heading,
+  SimpleGrid,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text
+} from '@chakra-ui/react'
+import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import { MdRestaurantMenu } from 'react-icons/md'
 
 import { useGetProducts } from '@/app/admin/(panel)/products/actions'
 import { getVendors } from '@/app/admin/(panel)/vendors/actions'
-import { CardProduct, Layout, VendorFilter } from '@/components/homepage'
-import { useCart } from '@/hooks/useCart'
+import {
+  CardProduct,
+  FilterBar,
+  FloatingCartBar,
+  Layout
+} from '@/components/homepage'
+import { SearchBar } from '@/components/ui'
 import { IProduct } from '@/interfaces'
+import { cartStore } from '@/stores/useCart'
 
 import type { IVendor } from '@/interfaces/vendor'
 
+function EmptyMessage({ text }: { text: string }) {
+  return (
+    <Flex
+      direction="column"
+      align="center"
+      justify="center"
+      py={16}
+      textAlign="center"
+      color="gray.400"
+    >
+      <MdRestaurantMenu size={44} />
+      <Text mt={4} color="gray.500" fontSize="md">
+        {text}
+      </Text>
+    </Flex>
+  )
+}
+
 export default function Home() {
+  const router = useRouter()
   const [query, setQuery] = useState<string>('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  )
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
+  const [tabIndex, setTabIndex] = useState(0)
   const [vendors, setVendors] = useState<IVendor[]>([])
 
-  const { data: allProducts, loading: isFetching, error } = useGetProducts({
+  const {
+    data: allProducts,
+    loading: isFetching,
+    error
+  } = useGetProducts({
     q: query
   })
 
@@ -28,55 +75,136 @@ export default function Home() {
     })()
   }, [])
 
-  const cart = useCart()
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setSelectedCategoryId(params.get('category'))
+    setSelectedVendorId(params.get('vendor'))
+    if (params.get('tab') === 'preorder') setTabIndex(1)
+  }, [])
+
+  const cartProducts = cartStore((state) => state.products)
+  const addProduct = cartStore((state) => state.addProduct)
+  const reduceQuantity = cartStore((state) => state.reduceQuantity)
+  const updateProductQuantity = cartStore((state) => state.updateProductQuantity)
+
+  const qtyById = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const product of cartProducts) map.set(product.id, product.quantity)
+    return map
+  }, [cartProducts])
 
   const handleAddQty = useCallback(
     (product: IProduct.IProductResponse) => {
-      cart.addProduct(IProduct.IProduct.fromData(product))
+      addProduct(IProduct.IProduct.fromData(product))
     },
-    [cart]
+    [addProduct]
   )
 
   const handleRemoveQty = useCallback(
     (productId: string) => {
-      cart.reduceQuantity(productId)
+      reduceQuantity(productId)
     },
-    [cart]
+    [reduceQuantity]
   )
 
   const handleUpdateQty = useCallback(
     (productId: string, qty: number) => {
-      cart.updateProductQuantity(productId, qty)
+      updateProductQuantity(productId, qty)
     },
-    [cart]
+    [updateProductQuantity]
   )
 
-  const products = useMemo(() => {
-    let result = [...(allProducts || [])]
-    if (selectedVendorId) {
-      result = result.filter((p) => p.vendor?.id === selectedVendorId)
+  const products = useMemo(() => [...(allProducts || [])], [allProducts])
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const product of products) {
+      for (const category of product.categories || []) {
+        if (!map.has(category.id)) map.set(category.id, category.name)
+      }
     }
-    return result
-  }, [allProducts, selectedVendorId])
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [products])
+
+  const vendorOptions = useMemo(() => {
+    return [...vendors]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((vendor) => ({ id: vendor.id, name: vendor.name }))
+  }, [vendors])
+
+  const filteredProducts = useMemo(() => {
+    let list = products
+    if (selectedCategoryId) {
+      list = list.filter((p) =>
+        (p.categories || []).some((c) => c.id === selectedCategoryId)
+      )
+    }
+    if (selectedVendorId) {
+      list = list.filter((p) => p.vendor?.id === selectedVendorId)
+    }
+    return list
+  }, [products, selectedCategoryId, selectedVendorId])
 
   const readyProducts = useMemo(
-    () => products.filter((p) => p.availability !== 'preorder'),
-    [products]
+    () => filteredProducts.filter((p) => p.availability !== 'preorder'),
+    [filteredProducts]
   )
 
   const preorderProducts = useMemo(
-    () => products.filter((p) => p.availability === 'preorder'),
-    [products]
+    () => filteredProducts.filter((p) => p.availability === 'preorder'),
+    [filteredProducts]
+  )
+
+  const updateUrl = useCallback(
+    (
+      nextCategory: string | null,
+      nextVendor: string | null,
+      nextTabIndex: number
+    ) => {
+      const params = new URLSearchParams()
+      if (nextCategory) params.set('category', nextCategory)
+      if (nextVendor) params.set('vendor', nextVendor)
+      if (nextTabIndex === 1) params.set('tab', 'preorder')
+      const qs = params.toString()
+      router.replace(qs ? `?${qs}` : '?', { scroll: false })
+    },
+    [router]
+  )
+
+  const handleCategoryChange = useCallback(
+    (id: string | null) => {
+      setSelectedCategoryId(id)
+      updateUrl(id, selectedVendorId, tabIndex)
+    },
+    [selectedVendorId, tabIndex, updateUrl]
+  )
+
+  const handleVendorChange = useCallback(
+    (id: string | null) => {
+      setSelectedVendorId(id)
+      updateUrl(selectedCategoryId, id, tabIndex)
+    },
+    [selectedCategoryId, tabIndex, updateUrl]
+  )
+
+  const handleTabChange = useCallback(
+    (index: number) => {
+      setTabIndex(index)
+      updateUrl(selectedCategoryId, selectedVendorId, index)
+    },
+    [selectedCategoryId, selectedVendorId, updateUrl]
   )
 
   const renderGrid = (items: IProduct.IProductResponse[]) => (
-    <SimpleGrid columns={[2, 2, 3, 4]} gap={[3, 4, 6]}>
+    <SimpleGrid columns={[2, 2, 3, 4]} gap={[3, 4, 5]}>
       {items.map((product) => (
         <CardProduct
-          qty={cart.getTotalQuantity ? cart.getTotalQuantity(product.id) : 0}
-          onUpdateQty={(qty) => handleUpdateQty(product.id, qty)}
-          onAddQty={() => handleAddQty(product)}
-          onRemoveQty={() => handleRemoveQty(product.id)}
+          qty={qtyById.get(product.id) || 0}
+          onUpdateQty={handleUpdateQty}
+          onAddQty={handleAddQty}
+          onRemoveQty={handleRemoveQty}
           product={product}
           key={product.id}
         />
@@ -84,83 +212,105 @@ export default function Home() {
     </SimpleGrid>
   )
 
-  return (
-    <Layout isFetching={isFetching} error={error as Error} onSearch={setQuery}>
-      <VStack align="stretch" gap={4} w="full">
-        <VendorFilter
-          vendors={vendors}
-          selectedVendorId={selectedVendorId}
-          onChange={setSelectedVendorId}
-        />
+  const filterKey = `${selectedCategoryId || 'all'}-${selectedVendorId || 'all'}-${tabIndex}`
 
-        {!query && products.length > 0 && (
-          <Flex
-            gap={2}
-            flexWrap="wrap"
-            borderWidth="1px"
-            rounded="xl"
-            p={2}
-            bg="white"
-            w="full"
-          >
+  return (
+    <Layout isFetching={isFetching} error={error as Error}>
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        gap={3}
+        align={{ base: 'stretch', md: 'center' }}
+        mb={5}
+      >
+        <Box flex="1" minW={0}>
+          <FilterBar
+            categories={categoryOptions}
+            vendors={vendorOptions}
+            selectedCategoryId={selectedCategoryId}
+            selectedVendorId={selectedVendorId}
+            onCategoryChange={handleCategoryChange}
+            onVendorChange={handleVendorChange}
+          />
+        </Box>
+        <SearchBar
+          onSearch={setQuery}
+          placeholder="Cari produk atau vendor"
+          w={{ base: 'full', md: '18rem' }}
+          flexShrink={0}
+        />
+      </Flex>
+
+      {query ? (
+        <Box>
+          <Flex align="baseline" justify="space-between" mb={5}>
+            <Heading
+              as="h2"
+              fontSize={{ base: 'lg', md: 'xl' }}
+              fontWeight="700"
+              letterSpacing="-0.01em"
+              color="gray.900"
+              noOfLines={1}
+            >
+              Hasil “{query}”
+            </Heading>
             <Text
               fontSize="sm"
-              fontWeight="bold"
-              color="green.700"
-              px={2}
-              py={1}
-              rounded="lg"
-              bg="green.50"
+              fontWeight="500"
+              color="gray.400"
+              flexShrink={0}
             >
-              Ready ({readyProducts.length})
-            </Text>
-            <Text
-              fontSize="sm"
-              fontWeight="bold"
-              color="orange.600"
-              px={2}
-              py={1}
-              rounded="lg"
-              bg="orange.50"
-            >
-              Pre-order ({preorderProducts.length})
+              {filteredProducts.length} produk
             </Text>
           </Flex>
-        )}
-
-        {query ? (
-          products.length ? (
-            renderGrid(products)
+          {filteredProducts.length ? (
+            renderGrid(filteredProducts)
           ) : (
-            <Text>Produk tidak ditemukan</Text>
-          )
-        ) : (
-          <VStack align="stretch" gap={8} w="full">
-            {readyProducts.length > 0 && (
-              <Box>
-                <Text fontSize="lg" fontWeight="bold" mb={3}>
-                  Siap Saji
-                </Text>
-                {renderGrid(readyProducts)}
-              </Box>
-            )}
+            <EmptyMessage text="Produk tidak ditemukan" />
+          )}
+        </Box>
+      ) : (
+        <motion.div
+          key={filterKey}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+          <Tabs
+            index={tabIndex}
+            onChange={handleTabChange}
+            variant="softRounded"
+            isLazy
+          >
+            <TabList mb={5} borderBottom="none" gap={1}>
+              <Tab px={4} py={2}>
+                Tersedia ({readyProducts.length})
+              </Tab>
+              <Tab px={4} py={2}>
+                Pre-order ({preorderProducts.length})
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel px={0}>
+                {readyProducts.length ? (
+                  renderGrid(readyProducts)
+                ) : (
+                  <EmptyMessage text="Belum ada produk tersedia." />
+                )}
+              </TabPanel>
+              <TabPanel px={0}>
+                {preorderProducts.length ? (
+                  renderGrid(preorderProducts)
+                ) : (
+                  <EmptyMessage text="Belum ada produk pre-order." />
+                )}
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </motion.div>
+      )}
 
-            {preorderProducts.length > 0 && (
-              <Box>
-                <Divider mb={6} />
-                <Text fontSize="lg" fontWeight="bold" mb={3}>
-                  Pre-Order
-                </Text>
-                {renderGrid(preorderProducts)}
-              </Box>
-            )}
-
-            {products.length === 0 && (
-              <Text color="gray.500">Belum ada produk tersedia.</Text>
-            )}
-          </VStack>
-        )}
-      </VStack>
+      <Box h={24} />
+      <FloatingCartBar />
     </Layout>
   )
 }

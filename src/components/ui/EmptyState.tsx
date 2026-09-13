@@ -16,18 +16,19 @@ export default function EmptyState({
       justify="center"
       py={16}
       px={6}
-      bg="gray.50"
+      bg="white"
       borderRadius="xl"
-      border="1px dashed"
-      borderColor="gray.300"
+      border="1px solid"
+      borderColor="gray.100"
     >
       <VStack spacing={3} textAlign="center" maxW="sm">
         <Flex
-          bg="white"
+          bg="gray.50"
           p={4}
           borderRadius="full"
-          boxShadow="sm"
           color="gray.400"
+          border="1px solid"
+          borderColor="gray.100"
         >
           <Icon as={icon || MdInbox} boxSize={7} />
         </Flex>
@@ -35,7 +36,7 @@ export default function EmptyState({
           {title}
         </Text>
         {description && (
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color="gray.500" lineHeight="1.6">
             {description}
           </Text>
         )}

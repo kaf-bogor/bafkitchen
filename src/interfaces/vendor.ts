@@ -2,6 +2,7 @@ export interface IVendor {
   id: string
   name: string
   email: string
+  type?: 'bafkitchen' | 'bazaf' | 'both'
   userId?: string
   isActive: boolean
   createdAt: string
@@ -21,12 +22,14 @@ export interface IVendor {
 export interface ICreateVendorRequest {
   name: string
   email: string
+  type?: 'bafkitchen' | 'bazaf' | 'both'
 }
 
 export interface IUpdateVendorRequest {
   id: string
   name: string
   userId: string
+  type?: 'bafkitchen' | 'bazaf' | 'both'
 }
 
 export interface ISubmitVendorFormRequest {

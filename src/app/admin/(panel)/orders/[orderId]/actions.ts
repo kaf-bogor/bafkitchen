@@ -29,7 +29,7 @@ const fetchOrder = async (orderId: string): Promise<IOrderType> => {
   return {
     ...data,
     id: data.id,
-    orderNumber: data.orderNumber || `BAF-${data.id.slice(-8)}`,
+    orderNumber: data.orderNumber || `BZ-${data.id.slice(-8)}`,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString()
   } as IOrderType
@@ -58,15 +58,19 @@ const fetchOrderActivities = async (orderId: string): Promise<IOrderActivity[]> 
 const updateOrderStatus = async ({
   orderId,
   status,
-  notes
+  notes,
+  proofUrl,
+  proofKey
 }: {
   orderId: string
   status: string
   notes?: string
+  proofUrl?: string
+  proofKey?: string
 }) => {
   await apiFetch(`/api/orders/${orderId}/status`, {
     method: 'PUT',
-    body: JSON.stringify({ status, notes })
+    body: JSON.stringify({ status, notes, proofUrl, proofKey })
   })
   return { success: true }
 }
@@ -139,6 +143,8 @@ export const useUpdateOrderStatus = () => {
     userId?: string
     userEmail?: string
     userName?: string
+    proofUrl?: string
+    proofKey?: string
   }) => {
     setLoading(true)
     setError(null)
@@ -155,4 +161,40 @@ export const useUpdateOrderStatus = () => {
   }
 
   return { updateOrderStatus: updateOrderStatusMutation, loading, error }
+}
+
+export const useUpdatePaymentProof = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updatePaymentProof = async (request: {
+    orderId: string
+    proofUrl: string
+    proofKey?: string
+  }) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{
+        success: boolean
+        paymentProofUrl: string
+        paymentProofKey: string
+      }>(`/api/orders/${request.orderId}/payment-proof`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          proofUrl: request.proofUrl,
+          proofKey: request.proofKey
+        })
+      })
+      return res
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { updatePaymentProof, loading, error }
 }

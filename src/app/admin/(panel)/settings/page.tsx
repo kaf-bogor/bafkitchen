@@ -36,7 +36,7 @@ export default function SettingsPage() {
 
   const [formData, setFormData] = useState({
     admin_phone_number: '',
-    app_name: 'BAF Kitchen',
+    app_name: 'Bazaf',
     app_domain: ''
   })
 

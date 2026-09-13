@@ -6,7 +6,7 @@ import {
   ICreateProductRequest
 } from '@/interfaces/product'
 import { apiFetch } from '@/utils/api'
-import { uploadToFirebase } from '@/utils/auth'
+import { uploadMedia } from '@/utils/auth'
 
 export const useGetProduct = (productId: string) => {
   const [data, setData] = useState<IProductResponse | null>(null)
@@ -48,7 +48,7 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
     try {
       let url = '/api/products'
       if (params?.categoryIds && params.categoryIds.length > 0) {
-        const ids = params.categoryIds.slice(0, 10) // keep parity with Firestore limit
+        const ids = params.categoryIds.slice(0, 10)
         url = `/api/products?categoryIds=${ids.map(encodeURIComponent).join(',')}`
       }
       const res = await apiFetch<{ products: IProductResponse[] }>(url)
@@ -115,13 +115,16 @@ export const useCreateProducts = () => {
       let imageUrl = ''
       let imageKey = ''
       if (product.image) {
-        const upload = await uploadToFirebase(product.image)
+        const upload = await uploadMedia(product.image)
         imageUrl = upload.downloadURL
         imageKey = upload.fullPath
       }
 
       const payload = {
         name: product.name,
+        sku: product.sku ?? '',
+        unit: product.unit ?? 'pcs',
+        isActive: product.isActive ?? true,
         priceBase: product.priceBase,
         price: product.price,
         stock: product.stock ?? 0,
@@ -132,7 +135,17 @@ export const useCreateProducts = () => {
         imageKey,
         availability: product.availability ?? 'ready',
         preorderStart: product.preorderStart ?? null,
-        preorderEnd: product.preorderEnd ?? null
+        preorderEnd: product.preorderEnd ?? null,
+        channels: product.channels ?? ['pos'],
+        availabilityType: product.availabilityType ?? 'always',
+        weeklyDays: product.weeklyDays ?? [],
+        specificDates: product.specificDates ?? [],
+        preorderLeadDays: product.preorderLeadDays ?? null,
+        preorderCutoffTime: product.preorderCutoffTime ?? null,
+        preorderMinQty: product.preorderMinQty ?? null,
+        preorderMaxQty: product.preorderMaxQty ?? null,
+        preorderCapacity: product.preorderCapacity ?? null,
+        fulfillmentType: product.fulfillmentType ?? 'takeaway'
       }
       const res = await apiFetch<{ product: IProductResponse }>('/api/products', {
         method: 'POST',
@@ -162,13 +175,16 @@ export const useUpdateProducts = () => {
       let imageUrl = product.imageUrl ?? ''
       let imageKey = ''
       if (product.image) {
-        const upload = await uploadToFirebase(product.image)
+        const upload = await uploadMedia(product.image)
         imageUrl = upload.downloadURL
         imageKey = upload.fullPath
       }
 
       const payload = {
         name: product.name,
+        sku: product.sku ?? '',
+        unit: product.unit ?? 'pcs',
+        isActive: product.isActive ?? true,
         priceBase: product.priceBase,
         price: product.price,
         stock: product.stock ?? 0,
@@ -179,7 +195,17 @@ export const useUpdateProducts = () => {
         imageKey,
         availability: product.availability ?? 'ready',
         preorderStart: product.preorderStart ?? null,
-        preorderEnd: product.preorderEnd ?? null
+        preorderEnd: product.preorderEnd ?? null,
+        channels: product.channels ?? ['pos'],
+        availabilityType: product.availabilityType ?? 'always',
+        weeklyDays: product.weeklyDays ?? [],
+        specificDates: product.specificDates ?? [],
+        preorderLeadDays: product.preorderLeadDays ?? null,
+        preorderCutoffTime: product.preorderCutoffTime ?? null,
+        preorderMinQty: product.preorderMinQty ?? null,
+        preorderMaxQty: product.preorderMaxQty ?? null,
+        preorderCapacity: product.preorderCapacity ?? null,
+        fulfillmentType: product.fulfillmentType ?? 'takeaway'
       }
       const res = await apiFetch<{ product: IProductResponse }>(
         `/api/products/${product.id}`,
@@ -198,6 +224,37 @@ export const useUpdateProducts = () => {
   }
 
   return { updateProduct, loading, error }
+}
+
+export const useUpdateProductApproval = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateProductApproval = async (
+    id: string,
+    status: 'pending' | 'approved' | 'rejected'
+  ) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ id: string; approvalStatus: string }>(
+        `/api/products/${id}/approval`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ status })
+        }
+      )
+      return res
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { updateProductApproval, loading, error }
 }
 
 export interface IFetchProductRequest {

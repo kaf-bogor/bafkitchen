@@ -9,6 +9,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   const body = (await request.json().catch(() => null)) as {
     status?: string
     notes?: string
+    proofUrl?: string
+    proofKey?: string
   } | null
 
   const newStatus = body?.status
@@ -34,18 +36,37 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     userId: auth.uid,
     userEmail: auth.email,
     userName: auth.name ?? auth.email,
-    action: `Order status updated from "${previousStatus}" to "${newStatus}"`,
+    action: 'Status pesanan diperbarui',
     fromStatus: previousStatus,
     toStatus: newStatus,
     notes: body?.notes || '',
+    proofUrl: body?.proofUrl?.trim() || '',
+    proofKey: body?.proofKey?.trim() || '',
     timestamp: ts,
     createdAt: ts
   }
 
-  await database
-    .prepare('UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?')
-    .bind(newStatus, JSON.stringify([...activities, newActivity]), ts, ctx.params.id)
-    .run()
+  const proofUrl = body?.proofUrl?.trim()
+  if (proofUrl) {
+    await database
+      .prepare(
+        'UPDATE orders SET status = ?, activities = ?, payment_proof_url = ?, payment_proof_key = ?, updated_at = ? WHERE id = ?'
+      )
+      .bind(
+        newStatus,
+        JSON.stringify([...activities, newActivity]),
+        proofUrl,
+        body?.proofKey?.trim() || null,
+        ts,
+        ctx.params.id
+      )
+      .run()
+  } else {
+    await database
+      .prepare('UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?')
+      .bind(newStatus, JSON.stringify([...activities, newActivity]), ts, ctx.params.id)
+      .run()
+  }
 
   let invoices: Record<string, unknown>[] | undefined
   if (newStatus === 'Invoice Issued') {

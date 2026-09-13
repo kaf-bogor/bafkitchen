@@ -1,12 +1,22 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 
-import { Button, ButtonGroup, Table, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react'
+import {
+  Button,
+  ButtonGroup,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  useToast
+} from '@chakra-ui/react'
 import Link from 'next/link'
 
-import { useGetUsers } from '@/app/admin/(panel)/users/actions'
-import { Layout } from '@/components'
+import { useDeleteUser, useGetUsers } from '@/app/admin/(panel)/users/actions'
+import { DeleteAlert, Layout } from '@/components'
 import { Card, CardBody, CardHeader, EmptyState, PageHeader, StatusBadge } from '@/components/ui'
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
@@ -16,7 +26,34 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default function User() {
-  const { data: users, loading: isFetching, error } = useGetUsers()
+  const toast = useToast()
+  const { data: users, loading: isFetching, error, refetch } = useGetUsers()
+  const { deleteUser, loading: isDeleting } = useDeleteUser()
+
+  const [selectedId, setSelectedId] = useState('')
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteUser(id)
+      toast({
+        title: 'Berhasil',
+        description: 'Pengguna berhasil dihapus',
+        status: 'success',
+        duration: 5000,
+        isClosable: true
+      })
+      setSelectedId('')
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
 
   const sortByCreatedAt = (a: any, b: any) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1
@@ -57,6 +94,7 @@ export default function User() {
                   <Th>Nama</Th>
                   <Th>Email</Th>
                   <Th>Peran</Th>
+                  <Th>Vendor</Th>
                   <Th>No. telepon</Th>
                   <Th>Aksi</Th>
                 </Tr>
@@ -74,15 +112,29 @@ export default function User() {
                       <Td>
                         <StatusBadge color={role.color}>{role.label}</StatusBadge>
                       </Td>
+                      <Td>{user.vendorName || '-'}</Td>
                       <Td>{user.phoneNumber || '-'}</Td>
                       <Td>
                         <ButtonGroup gap={2}>
+                          {user.vendorId && (
+                            <Link href={`/dashboard?vendorId=${user.vendorId}`}>
+                              <Button colorScheme="purple" size="sm" variant="outline">
+                                Impersonate
+                              </Button>
+                            </Link>
+                          )}
                           <Link href={`/admin/users/${user.id}/edit`}>
                             <Button colorScheme="brand" size="sm" variant="outline">
                               Ubah
                             </Button>
                           </Link>
-                          <Button colorScheme="red" size="sm" variant="outline">
+                          <Button
+                            colorScheme="red"
+                            size="sm"
+                            variant="outline"
+                            isLoading={isDeleting && selectedId === user.id}
+                            onClick={() => setSelectedId(user.id)}
+                          >
                             Hapus
                           </Button>
                         </ButtonGroup>
@@ -95,6 +147,14 @@ export default function User() {
           )}
         </CardBody>
       </Card>
+
+      <DeleteAlert
+        isOpen={!!selectedId}
+        onClose={() => setSelectedId('')}
+        onSubmit={handleDelete}
+        title="Hapus pengguna"
+        id={selectedId}
+      />
     </Layout>
   )
 }

@@ -15,18 +15,14 @@ export const orderInputForm = z.object({
     .refine((value) => value.startsWith('+62') || value.startsWith('08'), {
       message: 'Nomor telepon harus diawali dengan +62 atau 08'
     }),
-  namaSantri: z
-    .string({ required_error: 'Nama santri harus diisi' })
-    .min(2, 'Nama santri terlalu pendek')
-    .max(50, 'Nama santri terlalu panjang'),
-  kelas: z
-    .string({ required_error: 'Kelas harus diisi' })
-    .min(1, 'Kelas harus diisi'),
   notes: z.string().optional()
 })
 
 export const adminProductForm = z.object({
   name: z.string({ required_error: 'Nama diperlukan' }),
+  sku: z.string().optional(),
+  unit: z.string().optional().default('pcs'),
+  isActive: z.boolean().optional(),
   priceBase: z.number({ required_error: 'Harga diperlukan' }),
   price: z.number({ required_error: 'Harga diperlukan' }),
   stock: z
@@ -43,6 +39,16 @@ export const adminProductForm = z.object({
   availability: z.enum(['ready', 'preorder']).optional().default('ready'),
   preorderStart: z.string().nullable().optional(),
   preorderEnd: z.string().nullable().optional(),
+  channels: z.array(z.string()).optional(),
+  availabilityType: z.string().optional(),
+  weeklyDays: z.array(z.number()).optional(),
+  specificDates: z.array(z.string()).optional(),
+  preorderLeadDays: z.number().nullable().optional(),
+  preorderCutoffTime: z.string().nullable().optional(),
+  preorderMinQty: z.number().nullable().optional(),
+  preorderMaxQty: z.number().nullable().optional(),
+  preorderCapacity: z.number().nullable().optional(),
+  fulfillmentType: z.string().optional(),
   image: z.any().optional()
 })
 
@@ -52,7 +58,9 @@ export const adminUserForm = z.object({
     .string({ required_error: 'Email wajib diisi' })
     .email('Alamat email tidak valid'),
   password: z
-    .string({ required_error: 'Kata sandi wajib diisi' })
-    .min(6, 'Kata sandi harus terdiri dari minimal 6 karakter'),
+    .string()
+    .min(6, 'Kata sandi harus terdiri dari minimal 6 karakter')
+    .optional()
+    .or(z.literal('')),
   role: z.string({ required_error: 'Peran wajib diisi' })
 })

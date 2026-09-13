@@ -3,13 +3,7 @@
 import React, { ReactNode, useEffect } from 'react'
 
 import { HamburgerIcon } from '@chakra-ui/icons'
-import {
-  Box,
-  Flex,
-  IconButton,
-  useColorModeValue,
-  useDisclosure
-} from '@chakra-ui/react'
+import { Box, Flex, IconButton, useColorModeValue, useDisclosure } from '@chakra-ui/react'
 import { usePathname } from 'next/navigation'
 
 import { useAuth } from '@/app/UserProvider'
@@ -93,24 +87,31 @@ export default function DashboardShell({
           bg="white"
           borderBottom="1px solid"
           borderColor="gray.200"
-          h="64px"
-          px={{ base: 3, md: 6 }}
-          align="center"
-          justify="space-between"
           position="sticky"
           top="0"
           zIndex={9}
         >
-          <Box display={{ base: 'block', md: 'none' }}>
-            <IconButton
-              icon={<HamburgerIcon />}
-              aria-label="Open Menu"
-              variant="ghost"
-              onClick={onOpen}
-            />
-          </Box>
-          <Box display={{ base: 'none', md: 'block' }} />
-          <UserMenu />
+          <Flex
+            h="64px"
+            w="full"
+            maxW="1400px"
+            mx="auto"
+            px={{ base: 3, md: 6 }}
+            align="center"
+            justify="space-between"
+          >
+            <Box display={{ base: 'block', md: 'none' }}>
+              <IconButton
+                icon={<HamburgerIcon />}
+                aria-label="Open Menu"
+                variant="ghost"
+                color="gray.600"
+                onClick={onOpen}
+              />
+            </Box>
+            <Box display={{ base: 'none', md: 'block' }} />
+            <UserMenu />
+          </Flex>
         </Flex>
 
         <Box px={{ base: 3, md: 6 }} py={5} maxW="1400px" mx="auto">

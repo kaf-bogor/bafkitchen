@@ -8,7 +8,6 @@ import {
   Button,
   Flex,
   HStack,
-  Image,
   Text
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
@@ -17,6 +16,7 @@ import Link from 'next/link'
 import { FaHistory, FaPause, FaChartLine, FaArrowLeft } from 'react-icons/fa'
 
 import { useAuth } from '@/app/UserProvider'
+import { Brand } from '@/components/ui'
 import { usePosCart } from '@/hooks/usePosCart'
 
 export default function TopBar({
@@ -46,14 +46,12 @@ export default function TopBar({
       flexShrink={0}
     >
       <HStack spacing={4}>
-        <Link href="/admin">
-          <HStack spacing={2}>
-            <Image src="/logo.png" alt="BAF Kitchen" height="36px" />
-            <Badge colorScheme="green" fontSize="sm" px={2} py={1} rounded="md">
-              KASIR
-            </Badge>
-          </HStack>
-        </Link>
+        <HStack spacing={2}>
+          <Brand href="/admin" />
+          <Badge colorScheme="green" fontSize="sm" px={2} py={1} rounded="md">
+            KASIR
+          </Badge>
+        </HStack>
         <Box display={{ base: 'none', md: 'block' }}>
           <Text fontSize="sm" fontWeight="medium" color="gray.700">
             {format(now, 'EEEE, dd MMMM yyyy', { locale: id }).replace(

@@ -14,14 +14,20 @@ import {
   Text,
   useColorModeValue
 } from '@chakra-ui/react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AiOutlineDashboard, AiOutlineLogout } from 'react-icons/ai'
 
 import { useAuth } from '@/app/UserProvider'
 import { ADMIN_LOGIN_PATH } from '@/constants/auth'
 import { handleLogout } from '@/utils/auth'
 
-export default function UserMenu() {
-  const { user } = useAuth()
+export default function UserMenu({
+  redirectTo = ADMIN_LOGIN_PATH
+}: {
+  redirectTo?: string
+}) {
+  const { user, refetch } = useAuth()
   const router = useRouter()
   const hoverBg = useColorModeValue('gray.100', 'gray.700')
   const name = user?.displayName || user?.email || 'User'
@@ -51,16 +57,27 @@ export default function UserMenu() {
           </Box>
         </HStack>
       </MenuButton>
-      <MenuList borderRadius="lg" shadow="lg" minW="200px">
+      <MenuList borderRadius="lg" shadow="dropdown" minW="200px">
+        {user.role === 'admin' && (
+          <MenuItem
+            as={Link}
+            href="/admin"
+            icon={<AiOutlineDashboard size={16} />}
+          >
+            Dashboard admin
+          </MenuItem>
+        )}
         <MenuItem
+          icon={<AiOutlineLogout size={16} />}
+          color="red.500"
           onClick={() =>
             handleLogout({
               onLogout() {
-                router.replace(ADMIN_LOGIN_PATH)
+                refetch()
+                router.replace(redirectTo)
               }
             })
           }
-          color="red.500"
         >
           Logout
         </MenuItem>

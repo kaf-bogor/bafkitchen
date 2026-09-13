@@ -24,6 +24,7 @@ import {
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 import { useAuth } from '@/app/UserProvider'
 import Layout from '@/components/Layout'
@@ -51,13 +52,15 @@ import { useGetVendors } from '../vendors/actions'
 
 export default function Home() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const { data: orders, loading: isFetching, error } = getOrders(!!user)
   const { data: vendorsData } = useGetVendors()
 
   // Filter states
-  const [dateFilter, setDateFilter] = useState('all')
-  const [customDateStart, setCustomDateStart] = useState('')
-  const [customDateEnd, setCustomDateEnd] = useState('')
+  const initialDate = searchParams.get('fulfillmentDate')
+  const [dateFilter, setDateFilter] = useState(initialDate ? 'custom' : 'all')
+  const [customDateStart, setCustomDateStart] = useState(initialDate || '')
+  const [customDateEnd, setCustomDateEnd] = useState(initialDate || '')
   const [vendorFilter, setVendorFilter] = useState('')
   const [productFilter, setProductFilter] = useState('')
   const [sortBy, setSortBy] = useState('date')

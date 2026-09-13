@@ -183,7 +183,7 @@ export default function HomeDashboard() {
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
         title="Dasbor"
-        subtitle="Ringkasan performa penjualan BAF Kitchen"
+        subtitle="Ringkasan performa penjualan Bazaf"
         breadcrumbs={[{ label: 'Dasbor' }]}
         actions={
           <Link href="/admin/products/add">

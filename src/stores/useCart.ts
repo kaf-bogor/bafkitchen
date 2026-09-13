@@ -17,6 +17,7 @@ export interface CartActions {
   getProducts: () => IProductCart[]
   getTotalPrice: () => number
   updateProductQuantity: (productId: string, num: number) => void
+  updateProductNote: (productId: string, note: string) => void
 }
 
 export const cartStore = create<CartState & CartActions>()(
@@ -70,10 +71,16 @@ export const cartStore = create<CartState & CartActions>()(
         products: state.products.map(p => 
           p.id === productId ? { ...p, quantity: num } : p
         )
+      })),
+
+      updateProductNote: (productId, note) => set((state) => ({
+        products: state.products.map(p =>
+          p.id === productId ? { ...p, notes: note } : p
+        )
       }))
     }),
     {
-      name: 'cart-bafkitchen'
+      name: 'cart-bazaf'
     }
   )
 )

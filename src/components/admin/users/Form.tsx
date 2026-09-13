@@ -34,9 +34,6 @@ export default function UserForm({
       },
       validationSchema: toFormikValidationSchema(schema.adminUserForm),
       onSubmit: (values) => {
-        console.log('Form submitted')
-
-        console.log(onCreate, onUpdate)
         if (onCreate) {
           onCreate(values)
         }
@@ -45,8 +42,6 @@ export default function UserForm({
         }
       }
     })
-
-  console.log(errors)
 
   return (
     <form onSubmit={handleSubmit}>
@@ -109,7 +104,7 @@ export default function UserForm({
             mr={3}
             type="submit"
             isLoading={isPending}
-            colorScheme="blue"
+            colorScheme="brand"
           >
             Save
           </Button>

@@ -1,7 +1,4 @@
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
-
 import { apiFetch } from '@/utils/api'
-import { auth } from '@/utils/firebase'
 
 export interface AuthUser {
   uid: string
@@ -10,6 +7,8 @@ export interface AuthUser {
   photoURL: string | null
   phoneNumber: string | null
   role: string
+  vendorId?: string | null
+  vendorName?: string | null
 }
 
 export const fetchCurrentUser = async (): Promise<AuthUser | null> => {
@@ -35,29 +34,6 @@ export const handleLogout = async ({
   }
 }
 
-export const handleGoogleLogin = async ({
-  onError,
-  onSuccess
-}: {
-  onError: (error: string | null) => void
-  onSuccess: (user: AuthUser) => void
-}) => {
-  try {
-    const result = await signInWithPopup(auth, new GoogleAuthProvider())
-    const credential = GoogleAuthProvider.credentialFromResult(result)
-    const googleToken = credential?.idToken
-    if (!googleToken) throw new Error('No Google credential returned')
-
-    const apiResult = await apiFetch<{ user: AuthUser }>('/api/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ googleToken })
-    })
-    onSuccess(apiResult.user)
-  } catch (error) {
-    onError((error as Error).message)
-  }
-}
-
 export const handleEmailPasswordAuth = async ({
   isSignUp,
   email,
@@ -80,29 +56,12 @@ export const handleEmailPasswordAuth = async ({
   }
 }
 
-// Kept as a compatibility shim — user documents are now created server-side
-// during authentication, so there is nothing left to persist on the client.
-export const saveUserToFirestore = async (
-  _role: 'customer' | 'admin',
-  user: AuthUser,
-  options?: {
-    onError?: (error: Error | string) => void
-    onSuccess?: (user: AuthUser) => void
-  }
-) => {
-  try {
-    options?.onSuccess?.(user)
-  } catch (error) {
-    options?.onError?.(error as Error)
-  }
-}
-
-export interface IFirebaseUploadResponse {
+export interface IUploadResponse {
   downloadURL: string
   fullPath: string
 }
 
-export const uploadToFirebase = async (image: File): Promise<IFirebaseUploadResponse> => {
+export const uploadMedia = async (image: File): Promise<IUploadResponse> => {
   const form = new FormData()
   form.append('file', image)
   const result = await apiFetch<{ url: string; key: string }>('/api/media/upload', {
@@ -113,8 +72,4 @@ export const uploadToFirebase = async (image: File): Promise<IFirebaseUploadResp
     downloadURL: result.url,
     fullPath: result.key
   }
-}
-
-export const removeImageFromFirebase = async (_imageUrl: string) => {
-  // Object deletion is handled server-side when a product is replaced or deleted.
 }

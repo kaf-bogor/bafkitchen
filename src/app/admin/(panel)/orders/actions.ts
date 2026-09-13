@@ -17,7 +17,7 @@ const transformOrderData = (order: OrderApiShape): IOrder.IOrder =>
   ({
     ...order,
     id: order.id,
-    orderNumber: order.orderNumber || `BAF-${order.id.slice(-8)}`,
+    orderNumber: order.orderNumber || `BZ-${order.id.slice(-8)}`,
     createdAt: order.createdAt || new Date().toISOString(),
     updatedAt: order.updatedAt || new Date().toISOString()
   }) as IOrder.IOrder

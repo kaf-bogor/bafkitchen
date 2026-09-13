@@ -37,7 +37,7 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     )
     .bind(
       body?.admin_phone_number ?? row?.admin_phone_number ?? '',
-      body?.app_name ?? row?.app_name ?? 'BAF Kitchen',
+      body?.app_name ?? row?.app_name ?? 'Bazaf',
       body?.app_domain ?? row?.app_domain ?? '',
       ts,
       ctx.params.id
@@ -48,7 +48,7 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     settings: {
       id: ctx.params.id,
       admin_phone_number: body?.admin_phone_number ?? row?.admin_phone_number ?? '',
-      app_name: body?.app_name ?? row?.app_name ?? 'BAF Kitchen',
+      app_name: body?.app_name ?? row?.app_name ?? 'Bazaf',
       app_domain: body?.app_domain ?? row?.app_domain ?? '',
       created_at: row?.created_at ?? '',
       updated_at: ts
