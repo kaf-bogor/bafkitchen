@@ -2,20 +2,19 @@
 import React, { useState } from 'react'
 
 import {
-  Button,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Select,
-  Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   useToast
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
+import { FiMoreVertical } from 'react-icons/fi'
 
 import { Layout } from '@/components'
 import {
@@ -24,7 +23,9 @@ import {
   CardHeader,
   EmptyState,
   PageHeader,
-  StatusBadge
+  ResponsiveTable,
+  StatusBadge,
+  type ResponsiveColumn
 } from '@/components/ui'
 import { VENDOR_TYPE_OPTIONS, VendorType } from '@/constants/vendor'
 import { IVendor } from '@/interfaces/vendor'
@@ -67,6 +68,69 @@ export default function VendorsPage() {
     }
   }
 
+  const renderActions = (vendor: IVendor) => (
+    <Menu placement="bottom-end">
+      <MenuButton
+        as={IconButton}
+        aria-label="Aksi"
+        icon={<FiMoreVertical />}
+        variant="ghost"
+        size="sm"
+      />
+      <MenuList>
+        <MenuItem as={Link} href={`/dashboard?vendorId=${vendor.id}`}>
+          Lihat dashboard
+        </MenuItem>
+      </MenuList>
+    </Menu>
+  )
+
+  const columns: ResponsiveColumn<IVendor>[] = [
+    {
+      key: 'name',
+      header: 'Nama',
+      render: (vendor) => <Text fontWeight="600">{vendor.name}</Text>
+    },
+    { key: 'email', header: 'Email', render: (vendor) => vendor.email || '-' },
+    {
+      key: 'type',
+      header: 'Tipe',
+      render: (vendor) => (
+        <Select
+          size="sm"
+          maxW="160px"
+          value={vendor.type || 'bazaf'}
+          isDisabled={isUpdating && updatingId === vendor.id}
+          onChange={(e) => handleTypeChange(vendor, e.target.value as VendorType)}
+        >
+          {VENDOR_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (vendor) => (
+        <StatusBadge color={vendor.isActive ? 'green' : 'red'}>
+          {vendor.isActive ? 'Aktif' : 'Nonaktif'}
+        </StatusBadge>
+      )
+    },
+    {
+      key: 'created',
+      header: 'Dibuat',
+      render: (vendor) => (
+        <Text fontSize="sm" color="text-muted">
+          {format(new Date(vendor.createdAt), 'dd MMM yyyy', { locale: id })}
+        </Text>
+      )
+    }
+  ]
+
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
@@ -84,71 +148,20 @@ export default function VendorsPage() {
           description={`${vendors?.length || 0} vendor terdaftar`}
         />
         <CardBody p={0}>
-          {!vendors?.length ? (
-            <EmptyState
-              title="Belum ada vendor"
-              description="Tambahkan vendor untuk mulai mengelola produk dan order."
-            />
-          ) : (
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Nama</Th>
-                  <Th>Email</Th>
-                  <Th>Tipe</Th>
-                  <Th>Status</Th>
-                  <Th>Dibuat</Th>
-                  <Th>Aksi</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {vendors.map((vendor) => (
-                  <Tr key={vendor.id} _hover={{ bg: 'gray.50' }}>
-                    <Td>
-                      <Text fontWeight="600">{vendor.name}</Text>
-                    </Td>
-                    <Td>{vendor.email || '-'}</Td>
-                    <Td>
-                      <Select
-                        size="sm"
-                        maxW="160px"
-                        value={vendor.type || 'bazaf'}
-                        isDisabled={isUpdating && updatingId === vendor.id}
-                        onChange={(e) =>
-                          handleTypeChange(vendor, e.target.value as VendorType)
-                        }
-                      >
-                        {VENDOR_TYPE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </Td>
-                    <Td>
-                      <StatusBadge color={vendor.isActive ? 'green' : 'red'}>
-                        {vendor.isActive ? 'Aktif' : 'Nonaktif'}
-                      </StatusBadge>
-                    </Td>
-                    <Td>
-                      <Text fontSize="sm" color="text-muted">
-                        {format(new Date(vendor.createdAt), 'dd MMM yyyy', {
-                          locale: id
-                        })}
-                      </Text>
-                    </Td>
-                    <Td>
-                      <Link href={`/dashboard?vendorId=${vendor.id}`}>
-                        <Button size="xs" colorScheme="brand" variant="outline">
-                          Lihat dashboard
-                        </Button>
-                      </Link>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          )}
+          <ResponsiveTable
+            columns={columns}
+            rows={vendors || []}
+            getRowKey={(vendor) => vendor.id}
+            mobileTitleKey="name"
+            mobileSubtitleKey="email"
+            actions={renderActions}
+            emptyState={
+              <EmptyState
+                title="Belum ada vendor"
+                description="Tambahkan vendor untuk mulai mengelola produk dan order."
+              />
+            }
+          />
         </CardBody>
       </Card>
     </Layout>

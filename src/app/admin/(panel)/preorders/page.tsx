@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react'
 
 import { ViewIcon } from '@chakra-ui/icons'
 import {
-  Box,
   Button,
   ButtonGroup,
   Flex,
@@ -14,14 +13,8 @@ import {
   TabList,
   TabPanel,
   TabPanels,
-  Table,
   Tabs,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr
+  Text
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
@@ -34,10 +27,13 @@ import {
   CardBody,
   EmptyState,
   PageHeader,
+  ResponsiveTable,
   StatCard,
-  StatusBadge
+  StatusBadge,
+  type ResponsiveColumn
 } from '@/components/ui'
 import { mapOrderStatusToColor, mapOrderStatusToMessage } from '@/constants/order'
+import { IOrder } from '@/interfaces'
 import { currency } from '@/utils'
 
 import { useGetOrders } from '../orders/actions'
@@ -103,6 +99,63 @@ export default function PreOrdersPage() {
   const totalPages = Math.ceil(filtered.length / perPage)
   const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage)
 
+  const columns: ResponsiveColumn<IOrder.IOrder>[] = [
+    {
+      key: 'order',
+      header: 'No. Order',
+      render: (order) => <Text fontWeight="600">{order.orderNumber}</Text>
+    },
+    {
+      key: 'customer',
+      header: 'Pelanggan',
+      render: (order) => order.customer?.name || '-'
+    },
+    {
+      key: 'fulfillment',
+      header: 'Tanggal pemenuhan',
+      mobileLabel: 'Pemenuhan',
+      render: (order) =>
+        order.fulfillmentDate
+          ? format(new Date(order.fulfillmentDate), 'dd MMM yyyy', { locale: id })
+          : '-'
+    },
+    {
+      key: 'qty',
+      header: 'Jumlah',
+      render: (order) =>
+        (order.productOrders || []).reduce((s, po) => s + (po.quantity || 0), 0)
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      isNumeric: true,
+      render: (order) => (
+        <Text fontWeight="600">{currency.toIDRFormat(order.total)}</Text>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (order) => (
+        <StatusBadge color={mapOrderStatusToColor[order.status]}>
+          {mapOrderStatusToMessage[order.status] || order.status}
+        </StatusBadge>
+      )
+    }
+  ]
+
+  const renderActions = (order: IOrder.IOrder) => (
+    <Link href={`/admin/orders/${order.id}`} passHref>
+      <IconButton
+        aria-label="Lihat detail"
+        icon={<ViewIcon />}
+        size="sm"
+        colorScheme="brand"
+        variant="outline"
+      />
+    </Link>
+  )
+
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
@@ -151,59 +204,14 @@ export default function PreOrdersPage() {
                   />
                 ) : (
                   <>
-                    <Box overflowX="auto">
-                      <Table variant="simple">
-                        <Thead>
-                          <Tr>
-                            <Th>No. Order</Th>
-                            <Th>Pelanggan</Th>
-                            <Th>Tanggal pemenuhan</Th>
-                            <Th>Jumlah</Th>
-                            <Th>Total</Th>
-                            <Th>Status</Th>
-                            <Th>Aksi</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {paginated.map((order) => (
-                            <Tr key={order.id} _hover={{ bg: 'gray.50' }}>
-                              <Td fontWeight="600">{order.orderNumber}</Td>
-                              <Td>{order.customer?.name || '-'}</Td>
-                              <Td>
-                                {order.fulfillmentDate
-                                  ? format(new Date(order.fulfillmentDate), 'dd MMM yyyy', {
-                                      locale: id
-                                    })
-                                  : '-'}
-                              </Td>
-                              <Td>
-                                {(order.productOrders || []).reduce(
-                                  (s, po) => s + (po.quantity || 0),
-                                  0
-                                )}
-                              </Td>
-                              <Td fontWeight="600">{currency.toIDRFormat(order.total)}</Td>
-                              <Td>
-                                <StatusBadge color={mapOrderStatusToColor[order.status]}>
-                                  {mapOrderStatusToMessage[order.status] || order.status}
-                                </StatusBadge>
-                              </Td>
-                              <Td>
-                                <Link href={`/admin/orders/${order.id}`} passHref>
-                                  <IconButton
-                                    aria-label="Lihat detail"
-                                    icon={<ViewIcon />}
-                                    size="sm"
-                                    colorScheme="brand"
-                                    variant="outline"
-                                  />
-                                </Link>
-                              </Td>
-                            </Tr>
-                          ))}
-                        </Tbody>
-                      </Table>
-                    </Box>
+                    <ResponsiveTable
+                      columns={columns}
+                      rows={paginated}
+                      getRowKey={(order) => order.id}
+                      mobileTitleKey="order"
+                      mobileSubtitleKey="customer"
+                      actions={renderActions}
+                    />
 
                     {totalPages > 1 && (
                       <Flex justify="center" mt={6} mb={4}>

@@ -10,7 +10,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  Box,
   Button,
   ButtonGroup,
   Flex,
@@ -27,13 +26,7 @@ import {
   MenuList,
   Select,
   SimpleGrid,
-  Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   useDisclosure,
   useToast
 } from '@chakra-ui/react'
@@ -48,9 +41,12 @@ import {
   CardBody,
   CardHeader,
   EmptyState,
+  MobileFilterSheet,
   PageHeader,
   Price,
-  StatusBadge
+  ResponsiveTable,
+  StatusBadge,
+  type ResponsiveColumn
 } from '@/components/ui'
 import {
   invoiceStatusColors,
@@ -253,6 +249,231 @@ export default function InvoicesPage() {
     return pages
   }
 
+  const renderInvoiceActions = (invoice: IInvoice) => (
+    <Menu placement="bottom-end">
+      <MenuButton
+        as={IconButton}
+        aria-label="Aksi"
+        icon={<FiMoreVertical />}
+        variant="ghost"
+        size="sm"
+        isLoading={updatingId === invoice.id}
+      />
+      <MenuList>
+        <MenuItem as={Link} href={`/admin/invoices/${invoice.id}`}>
+          Rincian
+        </MenuItem>
+        {invoice.status === EInvoiceStatus.ISSUED && (
+          <MenuItem
+            onClick={() => {
+              setPendingInvoice(invoice)
+              settleDialog.onOpen()
+            }}
+          >
+            Tandai lunas
+          </MenuItem>
+        )}
+      </MenuList>
+    </Menu>
+  )
+
+  const columns: ResponsiveColumn<IInvoice>[] = [
+    {
+      key: 'invoice',
+      header: 'No. Invoice',
+      render: (invoice) => (
+        <Text fontWeight="600">{invoice.invoiceNumber}</Text>
+      )
+    },
+    {
+      key: 'issued',
+      header: 'Tanggal terbit',
+      render: (invoice) => (
+        <Text fontSize="sm">
+          {format(new Date(invoice.issuedDate), 'dd MMM yyyy', { locale: id })}
+        </Text>
+      )
+    },
+    {
+      key: 'vendor',
+      header: 'Vendor',
+      render: (invoice) => invoice.vendorName
+    },
+    {
+      key: 'order',
+      header: 'No. Order',
+      mobileLabel: 'Order',
+      render: (invoice) => (
+        <Link href={`/admin/orders/${invoice.orderId}`}>
+          {invoice.orderId.substring(0, 8)}...
+        </Link>
+      )
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      isNumeric: true,
+      render: (invoice) => <Price value={invoice.totalAmount} size="sm" />
+    },
+    {
+      key: 'due',
+      header: 'Jatuh tempo',
+      render: (invoice) => {
+        const isDueToday =
+          new Date(invoice.dueDate).toDateString() === new Date().toDateString()
+        const isOverdue =
+          new Date(invoice.dueDate) < new Date() &&
+          invoice.status !== EInvoiceStatus.SETTLED
+        return (
+          <HStack spacing={2} flexWrap="nowrap" justify="flex-end">
+            <Text
+              fontSize="sm"
+              color={
+                isDueToday ? 'orange.500' : isOverdue ? 'red.500' : 'text-body'
+              }
+              fontWeight={isDueToday || isOverdue ? '600' : 'normal'}
+            >
+              {format(new Date(invoice.dueDate), 'dd MMM yyyy', { locale: id })}
+            </Text>
+            {isOverdue && (
+              <StatusBadge color="red" px={2} py={0.5} fontSize="2xs">
+                Terlambat
+              </StatusBadge>
+            )}
+            {isDueToday && (
+              <StatusBadge color="orange" px={2} py={0.5} fontSize="2xs">
+                Hari ini
+              </StatusBadge>
+            )}
+          </HStack>
+        )
+      }
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (invoice) => (
+        <StatusBadge color={invoiceStatusColors[invoice.status]}>
+          {invoiceStatusMessages[invoice.status]}
+        </StatusBadge>
+      )
+    }
+  ]
+
+  const activeFilterCount = [
+    statusFilter,
+    vendorFilter,
+    dateFilter !== 'all' ? dateFilter : ''
+  ].filter(Boolean).length
+
+  const filterFields = (
+    <>
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+        <FormControl>
+          <FormLabel fontSize="sm">Pencarian</FormLabel>
+          <InputGroup size="sm">
+            <InputLeftElement pointerEvents="none">
+              <Search2Icon color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="No. invoice / vendor"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                resetPage()
+              }}
+            />
+          </InputGroup>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel fontSize="sm">Filter status</FormLabel>
+          <Select
+            size="sm"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              resetPage()
+            }}
+          >
+            <option value="">Semua status</option>
+            {Object.values(EInvoiceStatus).map((status) => (
+              <option key={status} value={status}>
+                {invoiceStatusMessages[status]}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel fontSize="sm">Filter vendor</FormLabel>
+          <Select
+            size="sm"
+            placeholder="Semua vendor"
+            value={vendorFilter}
+            onChange={(e) => {
+              setVendorFilter(e.target.value)
+              resetPage()
+            }}
+          >
+            {vendorOptions.map((vendor) => (
+              <option key={vendor.id} value={vendor.id}>
+                {vendor.name}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel fontSize="sm">Filter tanggal</FormLabel>
+          <Select
+            size="sm"
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value)
+              resetPage()
+            }}
+          >
+            <option value="all">Semua waktu</option>
+            <option value="today">Hari ini</option>
+            <option value="week">7 hari terakhir</option>
+            <option value="month">Bulan ini</option>
+            <option value="custom">Rentang kustom</option>
+          </Select>
+        </FormControl>
+      </SimpleGrid>
+
+      {dateFilter === 'custom' && (
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
+          <FormControl>
+            <FormLabel fontSize="sm">Tanggal mulai</FormLabel>
+            <Input
+              type="date"
+              size="sm"
+              value={customDateStart}
+              onChange={(e) => {
+                setCustomDateStart(e.target.value)
+                resetPage()
+              }}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel fontSize="sm">Tanggal selesai</FormLabel>
+            <Input
+              type="date"
+              size="sm"
+              value={customDateEnd}
+              onChange={(e) => {
+                setCustomDateEnd(e.target.value)
+                resetPage()
+              }}
+            />
+          </FormControl>
+        </SimpleGrid>
+      )}
+    </>
+  )
+
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
@@ -281,114 +502,17 @@ export default function InvoicesPage() {
         }
       />
 
-      {/* Filters */}
-      <Card mb={5}>
-        <CardBody>
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-            <FormControl>
-              <FormLabel fontSize="sm">Pencarian</FormLabel>
-              <InputGroup size="sm">
-                <InputLeftElement pointerEvents="none">
-                  <Search2Icon color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  placeholder="No. invoice / vendor"
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value)
-                    resetPage()
-                  }}
-                />
-              </InputGroup>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel fontSize="sm">Filter status</FormLabel>
-              <Select
-                size="sm"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value)
-                  resetPage()
-                }}
-              >
-                <option value="">Semua status</option>
-                {Object.values(EInvoiceStatus).map((status) => (
-                  <option key={status} value={status}>
-                    {invoiceStatusMessages[status]}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel fontSize="sm">Filter vendor</FormLabel>
-              <Select
-                size="sm"
-                placeholder="Semua vendor"
-                value={vendorFilter}
-                onChange={(e) => {
-                  setVendorFilter(e.target.value)
-                  resetPage()
-                }}
-              >
-                {vendorOptions.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel fontSize="sm">Filter tanggal</FormLabel>
-              <Select
-                size="sm"
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value)
-                  resetPage()
-                }}
-              >
-                <option value="all">Semua waktu</option>
-                <option value="today">Hari ini</option>
-                <option value="week">7 hari terakhir</option>
-                <option value="month">Bulan ini</option>
-                <option value="custom">Rentang kustom</option>
-              </Select>
-            </FormControl>
-          </SimpleGrid>
-
-          {dateFilter === 'custom' && (
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-              <FormControl>
-                <FormLabel fontSize="sm">Tanggal mulai</FormLabel>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={customDateStart}
-                  onChange={(e) => {
-                    setCustomDateStart(e.target.value)
-                    resetPage()
-                  }}
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm">Tanggal selesai</FormLabel>
-                <Input
-                  type="date"
-                  size="sm"
-                  value={customDateEnd}
-                  onChange={(e) => {
-                    setCustomDateEnd(e.target.value)
-                    resetPage()
-                  }}
-                />
-              </FormControl>
-            </SimpleGrid>
-          )}
-        </CardBody>
+      {/* Filters (desktop) */}
+      <Card mb={5} display={{ base: 'none', md: 'block' }}>
+        <CardBody>{filterFields}</CardBody>
       </Card>
+
+      {/* Filters (mobile) */}
+      <Flex display={{ base: 'flex', md: 'none' }} mb={4}>
+        <MobileFilterSheet activeCount={activeFilterCount}>
+          {filterFields}
+        </MobileFilterSheet>
+      </Flex>
 
       {/* Table */}
       <Card>
@@ -397,138 +521,20 @@ export default function InvoicesPage() {
           description={`${filteredInvoices.length} invoice`}
         />
         <CardBody p={0}>
-          {!isFetching && filteredInvoices.length === 0 ? (
-            <EmptyState
-              title="Tidak ada invoice"
-              description="Belum ada invoice yang cocok dengan filter saat ini."
-            />
-          ) : (
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>No. Invoice</Th>
-                    <Th>Tanggal terbit</Th>
-                    <Th>Vendor</Th>
-                    <Th>No. Order</Th>
-                    <Th isNumeric>Total</Th>
-                    <Th>Jatuh tempo</Th>
-                    <Th>Status</Th>
-                    <Th textAlign="right">Aksi</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {paginatedInvoices.map((invoice) => {
-                    const isDueToday =
-                      new Date(invoice.dueDate).toDateString() ===
-                      new Date().toDateString()
-                    const isOverdue =
-                      new Date(invoice.dueDate) < new Date() &&
-                      invoice.status !== EInvoiceStatus.SETTLED
-
-                    return (
-                      <Tr key={invoice.id} _hover={{ bg: 'gray.50' }}>
-                        <Td>
-                          <Text fontWeight="600">
-                            {invoice.invoiceNumber}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Text fontSize="sm">
-                            {format(new Date(invoice.issuedDate), 'dd MMM yyyy', {
-                              locale: id
-                            })}
-                          </Text>
-                        </Td>
-                        <Td>{invoice.vendorName}</Td>
-                        <Td>
-                          <Link href={`/admin/orders/${invoice.orderId}`}>
-                            {invoice.orderId.substring(0, 8)}...
-                          </Link>
-                        </Td>
-                        <Td isNumeric>
-                          <Price value={invoice.totalAmount} size="sm" />
-                        </Td>
-                        <Td>
-                          <HStack spacing={2} flexWrap="nowrap">
-                            <Text
-                              fontSize="sm"
-                              color={
-                                isDueToday
-                                  ? 'orange.500'
-                                  : isOverdue
-                                    ? 'red.500'
-                                    : 'text-body'
-                              }
-                              fontWeight={isDueToday || isOverdue ? '600' : 'normal'}
-                            >
-                              {format(new Date(invoice.dueDate), 'dd MMM yyyy', {
-                                locale: id
-                              })}
-                            </Text>
-                            {isOverdue && (
-                              <StatusBadge
-                                color="red"
-                                px={2}
-                                py={0.5}
-                                fontSize="2xs"
-                              >
-                                Terlambat
-                              </StatusBadge>
-                            )}
-                            {isDueToday && (
-                              <StatusBadge
-                                color="orange"
-                                px={2}
-                                py={0.5}
-                                fontSize="2xs"
-                              >
-                                Hari ini
-                              </StatusBadge>
-                            )}
-                          </HStack>
-                        </Td>
-                        <Td>
-                          <StatusBadge
-                            color={invoiceStatusColors[invoice.status]}
-                          >
-                            {invoiceStatusMessages[invoice.status]}
-                          </StatusBadge>
-                        </Td>
-                        <Td textAlign="right">
-                          <Menu placement="bottom-end">
-                            <MenuButton
-                              as={IconButton}
-                              aria-label="Aksi"
-                              icon={<FiMoreVertical />}
-                              variant="ghost"
-                              size="sm"
-                              isLoading={updatingId === invoice.id}
-                            />
-                            <MenuList>
-                              <MenuItem as={Link} href={`/admin/invoices/${invoice.id}`}>
-                                Rincian
-                              </MenuItem>
-                              {invoice.status === EInvoiceStatus.ISSUED && (
-                                <MenuItem
-                                  onClick={() => {
-                                    setPendingInvoice(invoice)
-                                    settleDialog.onOpen()
-                                  }}
-                                >
-                                  Tandai lunas
-                                </MenuItem>
-                              )}
-                            </MenuList>
-                          </Menu>
-                        </Td>
-                      </Tr>
-                    )
-                  })}
-                </Tbody>
-              </Table>
-            </Box>
-          )}
+          <ResponsiveTable
+            columns={columns}
+            rows={paginatedInvoices}
+            getRowKey={(invoice) => invoice.id}
+            mobileTitleKey="invoice"
+            mobileSubtitleKey="vendor"
+            actions={renderInvoiceActions}
+            emptyState={
+              <EmptyState
+                title="Tidak ada invoice"
+                description="Belum ada invoice yang cocok dengan filter saat ini."
+              />
+            }
+          />
         </CardBody>
       </Card>
 

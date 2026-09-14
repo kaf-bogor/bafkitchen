@@ -11,15 +11,13 @@ import {
   FormLabel,
   IconButton,
   Input,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Select,
   SimpleGrid,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr
+  Text
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
@@ -32,14 +30,17 @@ import {
   Card,
   CardBody,
   EmptyState,
+  MobileFilterSheet,
   PageHeader,
-  StatusBadge
+  ResponsiveTable,
+  StatusBadge,
+  type ResponsiveColumn
 } from '@/components/ui'
 import {
   mapOrderStatusToColor,
   mapOrderStatusToMessage
 } from '@/constants/order'
-import { IProductOrder } from '@/interfaces/order'
+import { IOrder, IProductOrder } from '@/interfaces/order'
 import { currency } from '@/utils'
 import { exportOrdersToCSV, exportDetailedOrdersToCSV } from '@/utils/exportCSV'
 import {
@@ -271,6 +272,184 @@ export default function Home() {
     }, 1000)
   }
 
+  const columns: ResponsiveColumn<IOrder>[] = [
+    {
+      key: 'order',
+      header: 'No. Order',
+      render: (order) => (
+        <Text fontWeight="600">{order.orderNumber || order.id}</Text>
+      )
+    },
+    {
+      key: 'date',
+      header: (
+        <Box as="span" cursor="pointer" onClick={() => handleSort('date')}>
+          Tanggal dibuat{getSortIcon('date')}
+        </Box>
+      ),
+      mobileLabel: 'Tanggal',
+      render: (order) => (
+        <>
+          <Text fontSize="sm">
+            {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: id })}
+          </Text>
+          <Text fontSize="xs" color="gray.500">
+            {format(new Date(order.createdAt), 'HH:mm', { locale: id })}
+          </Text>
+        </>
+      )
+    },
+    {
+      key: 'vendor',
+      header: 'Vendor',
+      render: (order) =>
+        order.vendors && order.vendors.length > 0
+          ? order.vendors.map((vendor) => vendor.name).join(', ')
+          : 'Tanpa vendor'
+    },
+    {
+      key: 'customer',
+      header: 'Nama pelanggan',
+      render: (order) => order.customer?.name || 'Tidak diketahui'
+    },
+    {
+      key: 'phone',
+      header: 'No. telepon',
+      render: (order) => order.customer?.phoneNumber || '-'
+    },
+    {
+      key: 'qty',
+      header: 'Jumlah',
+      render: (order) => getTotalQuantity(order.productOrders || [])
+    },
+    {
+      key: 'total',
+      header: (
+        <Box as="span" cursor="pointer" onClick={() => handleSort('total')}>
+          Total{getSortIcon('total')}
+        </Box>
+      ),
+      isNumeric: true,
+      render: (order) => (
+        <Text fontWeight="600">
+          {currency.toIDRFormat(getTotalPrice(order.productOrders || []))}
+        </Text>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (order) => (
+        <StatusBadge color={mapOrderStatusToColor[order.status]}>
+          {mapOrderStatusToMessage[order.status] || order.status}
+        </StatusBadge>
+      )
+    }
+  ]
+
+  const renderActions = (order: IOrder) => (
+    <Link href={`/admin/orders/${order.id}`} passHref>
+      <IconButton
+        aria-label="Lihat detail order"
+        icon={<ViewIcon />}
+        size="sm"
+        colorScheme="brand"
+        variant="outline"
+      />
+    </Link>
+  )
+
+  const activeFilterCount = [
+    dateFilter !== 'all' ? dateFilter : '',
+    productFilter,
+    vendorFilter
+  ].filter(Boolean).length
+
+  const filterFields = (
+    <>
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+        <FormControl>
+          <FormLabel fontSize="sm">Filter tanggal</FormLabel>
+          <Select
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            size="sm"
+          >
+            <option value="all">Semua waktu</option>
+            <option value="today">Hari ini</option>
+            <option value="week">7 hari terakhir</option>
+            <option value="month">Bulan ini</option>
+            <option value="custom">Rentang kustom</option>
+          </Select>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel fontSize="sm">Filter produk</FormLabel>
+          <Select
+            placeholder="Semua produk"
+            value={productFilter}
+            onChange={(e) => {
+              setProductFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            size="sm"
+          >
+            {uniqueProducts.map((product) => (
+              <option key={String(product)} value={String(product)}>
+                {String(product)}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl>
+          <FormLabel fontSize="sm">Filter vendor</FormLabel>
+          <Select
+            placeholder="Semua vendor"
+            value={vendorFilter}
+            onChange={(e) => {
+              setVendorFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            size="sm"
+          >
+            {vendors.map((vendor) => (
+              <option key={vendor} value={vendor}>
+                {vendor}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      </SimpleGrid>
+
+      {dateFilter === 'custom' && (
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
+          <FormControl>
+            <FormLabel fontSize="sm">Tanggal mulai</FormLabel>
+            <Input
+              type="date"
+              value={customDateStart}
+              onChange={(e) => setCustomDateStart(e.target.value)}
+              size="sm"
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel fontSize="sm">Tanggal selesai</FormLabel>
+            <Input
+              type="date"
+              value={customDateEnd}
+              onChange={(e) => setCustomDateEnd(e.target.value)}
+              size="sm"
+            />
+          </FormControl>
+        </SimpleGrid>
+      )}
+    </>
+  )
+
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       <PageHeader
@@ -281,106 +460,40 @@ export default function Home() {
           { label: 'Order' }
         ]}
         actions={
-          <ButtonGroup size="sm" variant="outline">
-            <Button onClick={handleExportCSV}>CSV Ringkasan</Button>
-            <Button onClick={handleExportDetailedCSV}>CSV Detail</Button>
-            <Button onClick={handleExportGoogleSheets} colorScheme="green">
-              Sheets Ringkasan
-            </Button>
-            <Button
-              onClick={handleExportDetailedGoogleSheets}
-              colorScheme="green"
+          <Menu>
+            <MenuButton
+              as={Button}
+              size="sm"
+              variant="outline"
+              colorScheme="brand"
             >
-              Sheets Detail
-            </Button>
-          </ButtonGroup>
+              Export
+            </MenuButton>
+            <MenuList>
+              <MenuItem onClick={handleExportCSV}>CSV Ringkasan</MenuItem>
+              <MenuItem onClick={handleExportDetailedCSV}>CSV Detail</MenuItem>
+              <MenuItem onClick={handleExportGoogleSheets}>
+                Sheets Ringkasan
+              </MenuItem>
+              <MenuItem onClick={handleExportDetailedGoogleSheets}>
+                Sheets Detail
+              </MenuItem>
+            </MenuList>
+          </Menu>
         }
       />
 
-      <Card mb={5}>
-        <CardBody>
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-            <FormControl>
-              <FormLabel fontSize="sm">Filter tanggal</FormLabel>
-              <Select
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                size="sm"
-              >
-                <option value="all">Semua waktu</option>
-                <option value="today">Hari ini</option>
-                <option value="week">7 hari terakhir</option>
-                <option value="month">Bulan ini</option>
-                <option value="custom">Rentang kustom</option>
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel fontSize="sm">Filter produk</FormLabel>
-              <Select
-                placeholder="Semua produk"
-                value={productFilter}
-                onChange={(e) => {
-                  setProductFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                size="sm"
-              >
-                {uniqueProducts.map((product) => (
-                  <option key={String(product)} value={String(product)}>
-                    {String(product)}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel fontSize="sm">Filter vendor</FormLabel>
-              <Select
-                placeholder="Semua vendor"
-                value={vendorFilter}
-                onChange={(e) => {
-                  setVendorFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-                size="sm"
-              >
-                {vendors.map((vendor) => (
-                  <option key={vendor} value={vendor}>
-                    {vendor}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-          </SimpleGrid>
-
-          {dateFilter === 'custom' && (
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mt={4}>
-              <FormControl>
-                <FormLabel fontSize="sm">Tanggal mulai</FormLabel>
-                <Input
-                  type="date"
-                  value={customDateStart}
-                  onChange={(e) => setCustomDateStart(e.target.value)}
-                  size="sm"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm">Tanggal selesai</FormLabel>
-                <Input
-                  type="date"
-                  value={customDateEnd}
-                  onChange={(e) => setCustomDateEnd(e.target.value)}
-                  size="sm"
-                />
-              </FormControl>
-            </SimpleGrid>
-          )}
-        </CardBody>
+      {/* Filters (desktop) */}
+      <Card mb={5} display={{ base: 'none', md: 'block' }}>
+        <CardBody>{filterFields}</CardBody>
       </Card>
+
+      {/* Filters (mobile) */}
+      <Flex display={{ base: 'flex', md: 'none' }} mb={4}>
+        <MobileFilterSheet activeCount={activeFilterCount}>
+          {filterFields}
+        </MobileFilterSheet>
+      </Flex>
 
       <Card>
         <CardBody p={0}>
@@ -391,79 +504,14 @@ export default function Home() {
             />
           ) : (
             <>
-              <Box overflowX="auto">
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>No. Order</Th>
-                      <Th cursor="pointer" onClick={() => handleSort('date')}>
-                        Tanggal dibuat{getSortIcon('date')}
-                      </Th>
-                      <Th>Vendor</Th>
-                      <Th>Nama pelanggan</Th>
-                      <Th>No. telepon</Th>
-                      <Th>Jumlah</Th>
-                      <Th cursor="pointer" onClick={() => handleSort('total')}>
-                        Total{getSortIcon('total')}
-                      </Th>
-                      <Th>Status</Th>
-                      <Th>Aksi</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {paginatedOrders.map((order) => (
-                      <Tr key={order.id} _hover={{ bg: 'gray.50' }}>
-                        <Td>
-                          <Text fontWeight="600">
-                            {order.orderNumber || order.id}
-                          </Text>
-                        </Td>
-                        <Td>
-                          <Text fontSize="sm">
-                            {format(new Date(order.createdAt), 'dd MMM yyyy', {
-                              locale: id
-                            })}
-                          </Text>
-                          <Text fontSize="xs" color="gray.500">
-                            {format(new Date(order.createdAt), 'HH:mm', {
-                              locale: id
-                            })}
-                          </Text>
-                        </Td>
-                        <Td>
-                          {order.vendors && order.vendors.length > 0
-                            ? order.vendors.map((vendor) => vendor.name).join(', ')
-                            : 'Tanpa vendor'}
-                        </Td>
-                        <Td>{order.customer?.name || 'Tidak diketahui'}</Td>
-                        <Td>{order.customer?.phoneNumber || '-'}</Td>
-                        <Td>{getTotalQuantity(order.productOrders || [])}</Td>
-                        <Td fontWeight="600">
-                          {currency.toIDRFormat(
-                            getTotalPrice(order.productOrders || [])
-                          )}
-                        </Td>
-                        <Td>
-                          <StatusBadge color={mapOrderStatusToColor[order.status]}>
-                            {mapOrderStatusToMessage[order.status] || order.status}
-                          </StatusBadge>
-                        </Td>
-                        <Td>
-                          <Link href={`/admin/orders/${order.id}`} passHref>
-                            <IconButton
-                              aria-label="Lihat detail order"
-                              icon={<ViewIcon />}
-                              size="sm"
-                              colorScheme="brand"
-                              variant="outline"
-                            />
-                          </Link>
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </Box>
+              <ResponsiveTable
+                columns={columns}
+                rows={paginatedOrders}
+                getRowKey={(order) => order.id}
+                mobileTitleKey="order"
+                mobileSubtitleKey="customer"
+                actions={renderActions}
+              />
 
               {totalPages > 1 && (
                 <Flex justify="center" mt={6} mb={4}>

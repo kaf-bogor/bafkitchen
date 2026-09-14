@@ -8,13 +8,7 @@ import {
   Flex,
   Icon,
   SimpleGrid,
-  Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   VStack
 } from '@chakra-ui/react'
 import {
@@ -49,8 +43,10 @@ import {
   CardHeader,
   EmptyState,
   PageHeader,
+  ResponsiveTable,
   StatCard,
-  StatusBadge
+  StatusBadge,
+  type ResponsiveColumn
 } from '@/components/ui'
 import { mapOrderStatusToColor, mapOrderStatusToMessage } from '@/constants/order'
 import { toIDRFormat } from '@/utils/currency'
@@ -177,6 +173,42 @@ export default function HomeDashboard() {
     { key: 'today', label: 'Hari ini' },
     { key: '7d', label: '7 hari' },
     { key: '30d', label: '30 hari' }
+  ]
+
+  const recentOrderColumns: ResponsiveColumn<any>[] = [
+    {
+      key: 'order',
+      header: 'No. Order',
+      render: (order) => <Text fontWeight="600">{order.orderNumber}</Text>
+    },
+    {
+      key: 'customer',
+      header: 'Pelanggan',
+      render: (order) => order.customer?.name || '-'
+    },
+    {
+      key: 'date',
+      header: 'Tanggal',
+      render: (order) =>
+        format(new Date(order.createdAt), 'dd MMM yyyy HH:mm', { locale: id })
+    },
+    {
+      key: 'total',
+      header: 'Total',
+      isNumeric: true,
+      render: (order) => (
+        <Text fontWeight="600">{toIDRFormat(order.total)}</Text>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (order) => (
+        <StatusBadge color={mapOrderStatusToColor[order.status]}>
+          {mapOrderStatusToMessage[order.status] || order.status}
+        </StatusBadge>
+      )
+    }
   ]
 
   return (
@@ -326,45 +358,19 @@ export default function HomeDashboard() {
           }
         />
         <CardBody p={0}>
-          {recentOrders.length === 0 ? (
-            <EmptyState
-              title="Belum ada order"
-              description="Order yang masuk akan tampil di sini."
-            />
-          ) : (
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>No. Order</Th>
-                    <Th>Pelanggan</Th>
-                    <Th>Tanggal</Th>
-                    <Th>Total</Th>
-                    <Th>Status</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {recentOrders.map((order) => (
-                    <Tr key={order.id}>
-                      <Td fontWeight="600">{order.orderNumber}</Td>
-                      <Td>{order.customer?.name || '-'}</Td>
-                      <Td>
-                        {format(new Date(order.createdAt), 'dd MMM yyyy HH:mm', {
-                          locale: id
-                        })}
-                      </Td>
-                      <Td fontWeight="600">{toIDRFormat(order.total)}</Td>
-                      <Td>
-                        <StatusBadge color={mapOrderStatusToColor[order.status]}>
-                          {mapOrderStatusToMessage[order.status] || order.status}
-                        </StatusBadge>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
-          )}
+          <ResponsiveTable
+            columns={recentOrderColumns}
+            rows={recentOrders}
+            getRowKey={(order) => order.id}
+            mobileTitleKey="order"
+            mobileSubtitleKey="customer"
+            emptyState={
+              <EmptyState
+                title="Belum ada order"
+                description="Order yang masuk akan tampil di sini."
+              />
+            }
+          />
         </CardBody>
       </Card>
     </Layout>
