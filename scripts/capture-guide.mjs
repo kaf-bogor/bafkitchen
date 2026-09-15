@@ -20,7 +20,9 @@
  * Env: GUIDE_BASE_URL, GUIDE_HEADLESS=1, GUIDE_LOGIN=1, GUIDE_PROFILE
  */
 import { chromium } from 'playwright'
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline'
 
@@ -48,6 +50,34 @@ const waitForEnter = (msg) =>
     })
   })
 
+async function killDevOverlay(context) {
+  // The vinext dev error overlay intercepts pointer events even when empty
+  // (triggered by a dev-only hydration warning). Hide it aggressively.
+  await context.addInitScript(() => {
+    const hide = () => {
+      const el = document.getElementById('__vinext_dev_error_overlay_root')
+      if (el) {
+        el.style.setProperty('display', 'none', 'important')
+        el.style.setProperty('pointer-events', 'none', 'important')
+      }
+    }
+    const start = () => {
+      hide()
+      try {
+        new MutationObserver(hide).observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+          attributes: true
+        })
+      } catch {
+        // ignore
+      }
+    }
+    if (document.documentElement) start()
+    document.addEventListener('DOMContentLoaded', start)
+  })
+}
+
 async function launchBrowser() {
   try {
     return await chromium.launch({ headless: HEADLESS, channel: 'chrome' })
@@ -63,6 +93,7 @@ async function createDemoSession() {
     viewport: DESKTOP,
     deviceScaleFactor: 2
   })
+  await killDevOverlay(context)
   await context.addCookies([
     { name: 'bazaf_demo', value: '1', domain: 'localhost', path: '/' }
   ])
@@ -77,6 +108,7 @@ async function createLoginSession() {
     viewport: DESKTOP,
     deviceScaleFactor: 2
   })
+  await killDevOverlay(context)
   const page = context.pages()[0] || (await context.newPage())
   await page.goto(`${BASE}/admin/login`, { waitUntil: 'domcontentloaded' })
   await waitForEnter(
@@ -95,6 +127,67 @@ async function shot(page, file) {
 async function go(page, url) {
   await page.goto(`${BASE}${url}`, { waitUntil: 'networkidle', timeout: 45000 })
   await page.waitForTimeout(900)
+  await page
+    .evaluate(() => {
+      const el = document.getElementById('__vinext_dev_error_overlay_root')
+      if (el) {
+        el.style.setProperty('display', 'none', 'important')
+        el.style.setProperty('pointer-events', 'none', 'important')
+      }
+    })
+    .catch(() => {})
+}
+
+function findFfmpeg() {
+  const cache = path.join(os.homedir(), 'Library/Caches/ms-playwright')
+  try {
+    for (const dir of fs.readdirSync(cache)) {
+      if (!dir.startsWith('ffmpeg-')) continue
+      for (const name of ['ffmpeg-mac', 'ffmpeg-linux', 'ffmpeg.exe', 'ffmpeg']) {
+        const p = path.join(cache, dir, name)
+        if (fs.existsSync(p)) return p
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return 'ffmpeg'
+}
+
+function trimVideo(file, seconds) {
+  try {
+    const ffmpeg = findFfmpeg()
+    const tmp = `${file}.trim.webm`
+    execFileSync(
+      ffmpeg,
+      ['-y', '-ss', String(seconds), '-i', file, '-c', 'copy', tmp],
+      { stdio: 'ignore' }
+    )
+    fs.renameSync(tmp, file)
+    log('trimmed', path.relative(process.cwd(), file))
+  } catch (err) {
+    log('WARN gagal trim', file, '-', err.message)
+  }
+}
+
+async function warmUp(page) {
+  const urls = [
+    '/admin',
+    '/pos',
+    '/admin/orders',
+    '/admin/products',
+    '/admin/invoices',
+    '/dashboard',
+    '/',
+    '/cart'
+  ]
+  for (const url of urls) {
+    try {
+      await go(page, url)
+    } catch (err) {
+      log('WARN warmup', url, '-', err.message)
+    }
+  }
 }
 
 async function captureScreenshots(session) {
@@ -222,12 +315,18 @@ async function recordClip(browser, name, fn) {
     viewport: { width: 1280, height: 720 },
     recordVideo: { dir, size: { width: 1280, height: 720 } }
   })
+  await killDevOverlay(context)
   await context.addCookies([
     { name: 'bazaf_demo', value: '1', domain: 'localhost', path: '/' }
   ])
   const page = await context.newPage()
+  const started = Date.now()
+  let readyAt = null
+  const mark = () => {
+    if (readyAt === null) readyAt = Date.now() - started
+  }
   try {
-    await fn(page)
+    await fn(page, mark)
   } catch (err) {
     log('WARN gagal rekam', name, '-', err.message)
   }
@@ -238,12 +337,26 @@ async function recordClip(browser, name, fn) {
     fs.mkdirSync(path.dirname(target), { recursive: true })
     await video.saveAs(target)
     log('saved video', path.relative(process.cwd(), target))
+    // Trim the (long) dev-server loading intro; keep a little lead-in.
+    const seconds = readyAt ? Math.max(readyAt / 1000 - 1.5, 0) : 1.5
+    if (seconds > 0.3) trimVideo(target, seconds)
   }
   await context.close()
 }
 
 async function captureVideos(browser) {
-  await recordClip(browser, 'pelanggan/checkout', async (page) => {
+  // Warm up so the dev server has compiled the routes we will record.
+  const warmContext = await browser.newContext({ viewport: DESKTOP })
+  await killDevOverlay(warmContext)
+  await warmContext.addCookies([
+    { name: 'bazaf_demo', value: '1', domain: 'localhost', path: '/' }
+  ])
+  const warmPage = await warmContext.newPage()
+  await warmUp(warmPage)
+  await warmContext.close()
+
+  // --- Checkout: fill form, submit, WhatsApp opens ---
+  await recordClip(browser, 'pelanggan/checkout', async (page, mark) => {
     await go(page, '/')
     const product = await page.evaluate(async () => {
       const r = await fetch('/api/products')
@@ -271,37 +384,78 @@ async function captureVideos(browser) {
       }, product)
     }
     await go(page, '/cart')
-    await page.waitForTimeout(1500)
+    const phone = page.locator('input[name="phoneNumber"]')
+    await phone.waitFor({ timeout: 40000 })
+    mark()
+    await page.waitForTimeout(700)
+    await phone.fill('08123456789')
+    const name = page.locator('input[name="name"]')
+    if (!(await name.inputValue())) await name.fill('Ahmad Fauzi')
+    await page.waitForFunction(
+      () => {
+        const b = Array.from(document.querySelectorAll('button')).find((x) =>
+          /Pesan Sekarang/i.test(x.textContent || '')
+        )
+        return b && !b.disabled
+      },
+      { timeout: 20000 }
+    )
+    await page.waitForTimeout(1000)
     await page
       .getByRole('button', { name: /Pesan Sekarang/i })
-      .click({ timeout: 8000 })
+      .click({ timeout: 10000 })
       .catch(() => {})
-    await page.waitForTimeout(2500)
+    await page.waitForTimeout(6000)
   })
 
-  await recordClip(browser, 'admin/produk-approval', async (page) => {
-    await go(page, '/admin/products')
-    await page.waitForTimeout(1000)
-    const approve = page.getByRole('button', { name: /^Setujui$/i }).first()
-    if (await approve.count()) {
-      await approve.click({ timeout: 8000 }).catch(() => {})
-      await page.waitForTimeout(2000)
-    }
-  })
-
-  await recordClip(browser, 'admin/pos-pembayaran', async (page) => {
+  // --- POS: add product, open payment, pay cash ---
+  await recordClip(browser, 'admin/pos-pembayaran', async (page, mark) => {
     await go(page, '/pos')
-    await page.waitForTimeout(1200)
     const tile = page.locator('button').filter({ hasText: /Rp/ }).first()
-    if (await tile.count()) {
-      await tile.click({ timeout: 8000 }).catch(() => {})
-      await page.waitForTimeout(800)
-    }
-    const pay = page.getByRole('button', { name: /Bayar/i }).first()
-    if (await pay.count()) {
-      await pay.click({ timeout: 8000 }).catch(() => {})
-      await page.waitForTimeout(2000)
-    }
+    await tile.waitFor({ timeout: 45000 })
+    mark()
+    await page.waitForTimeout(900)
+    await tile.click()
+    const bayar = page.getByRole('button', { name: /^Bayar/i }).first()
+    await bayar.waitFor({ timeout: 10000 })
+    await page.waitForTimeout(800)
+    await bayar.click()
+    await page
+      .getByText('Pembayaran', { exact: true })
+      .waitFor({ timeout: 10000 })
+    await page.waitForTimeout(800)
+    await page.getByRole('button', { name: /Uang Pas/i }).click()
+    await page.waitForTimeout(800)
+    await page.getByRole('button', { name: /Terima Pembayaran/i }).click()
+    await page.waitForTimeout(6000)
+  })
+
+  // --- Admin: approve a vendor product ---
+  await recordClip(browser, 'admin/produk-approval', async (page, mark) => {
+    await go(page, '/admin')
+    const pendingCount = await page.evaluate(async () => {
+      const r = await fetch('/api/products')
+      const j = await r.json()
+      const list = j.products || []
+      let count = 0
+      for (const p of list.slice(0, 3)) {
+        await fetch(`/api/products/${p.id}/approval`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'pending' })
+        })
+        count++
+      }
+      return count
+    })
+    log('produk diset pending:', pendingCount)
+    await go(page, '/admin/products')
+    const approve = page.getByRole('button', { name: /^Setujui$/i }).first()
+    await approve.waitFor({ timeout: 45000 })
+    mark()
+    await page.waitForTimeout(1200)
+    await approve.click()
+    await page.waitForTimeout(4500)
   })
 }
 
