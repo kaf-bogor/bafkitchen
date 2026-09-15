@@ -3,9 +3,10 @@
 import React from 'react'
 
 import { useToast } from '@chakra-ui/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useCreateProducts } from '@/app/admin/(panel)/products/actions'
+import { useGetVendor } from '@/app/admin/(panel)/vendors/actions'
 import { useAuth } from '@/app/UserProvider'
 import { Layout, ProductForm } from '@/components'
 import { EmptyState, PageHeader } from '@/components/ui'
@@ -14,11 +15,19 @@ import { IVendor } from '@/interfaces'
 export default function AddVendorProduct() {
   const toast = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const { createProduct, loading } = useCreateProducts()
 
-  const lockedVendor = user?.vendorId
-    ? { id: user.vendorId, name: user.vendorName || '' }
+  const isAdmin = user?.role === 'admin'
+  const vendorId = isAdmin
+    ? searchParams.get('vendorId') || ''
+    : user?.vendorId || ''
+
+  const { data: vendor } = useGetVendor(vendorId)
+
+  const lockedVendor = vendorId
+    ? { id: vendorId, name: vendor?.name || user?.vendorName || '' }
     : undefined
 
   const handleCreateProduct = async (productData: any) => {

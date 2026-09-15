@@ -40,3 +40,9 @@ yarn-error.log*
 next-env.d.ts
 /dist/
 .vinext/
+
+# guide capture temp
+public/guide/_tmp/
+
+# playwright guide profile
+.guide-profile/

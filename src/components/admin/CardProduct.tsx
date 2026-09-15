@@ -15,7 +15,8 @@ export default function CardProduct({
   editable = true,
   onDelete,
   isDeleting,
-  editBasePath = '/admin/products'
+  editBasePath = '/admin/products',
+  editQuery = ''
 }: Props) {
   const { id, name, price, imageUrl } = product
   const isPreorder = product.availability === 'preorder'
@@ -91,7 +92,7 @@ export default function CardProduct({
           {editable && (
             <Button
               as={Link}
-              href={`${editBasePath}/${id}/edit`}
+              href={`${editBasePath}/${id}/edit${editQuery}`}
               size="sm"
               colorScheme="brand"
               flex="1"
@@ -124,4 +125,5 @@ interface Props {
   onDelete?: (productId: string) => void
   isDeleting?: boolean
   editBasePath?: string
+  editQuery?: string
 }

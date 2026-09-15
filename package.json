@@ -10,6 +10,7 @@
     "format": "prettier --config .prettierrc.json --write './src/**/*.{js,ts,json,yml,yaml}'",
     "db:migrate:local": "wrangler d1 migrations apply baf-kitchen-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply baf-kitchen-db --remote",
+    "guide:capture": "node scripts/capture-guide.mjs",
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
@@ -58,6 +59,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "playwright": "^1.63.0",
     "postcss": "^8",
     "react-server-dom-webpack": "^19.2.8",
     "tailwindcss": "^3.3.0",

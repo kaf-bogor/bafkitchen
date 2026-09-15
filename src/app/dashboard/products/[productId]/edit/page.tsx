@@ -3,19 +3,22 @@
 import React from 'react'
 
 import { useToast } from '@chakra-ui/react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 
 import {
   useGetProduct,
   useUpdateProducts
 } from '@/app/admin/(panel)/products/actions'
+import { useGetVendor } from '@/app/admin/(panel)/vendors/actions'
 import { useAuth } from '@/app/UserProvider'
 import { Layout, ProductForm } from '@/components'
 import { PageHeader } from '@/components/ui'
 
 export default function EditVendorProduct() {
   const { productId } = useParams()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
+
   const {
     data: product,
     loading: isFetching,
@@ -23,12 +26,19 @@ export default function EditVendorProduct() {
     refetch
   } = useGetProduct(productId as string)
 
+  const isAdmin = user?.role === 'admin'
+  const vendorId = isAdmin
+    ? searchParams.get('vendorId') || ''
+    : user?.vendorId || ''
+
+  const { data: vendor } = useGetVendor(vendorId)
+
+  const lockedVendor = vendorId
+    ? { id: vendorId, name: vendor?.name || user?.vendorName || '' }
+    : undefined
+
   const toast = useToast()
   const { updateProduct, loading } = useUpdateProducts()
-
-  const lockedVendor = user?.vendorId
-    ? { id: user.vendorId, name: user.vendorName || '' }
-    : undefined
 
   const handleUpdateProduct = async (productData: any) => {
     try {

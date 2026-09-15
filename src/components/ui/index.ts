@@ -1,6 +1,7 @@
 export { default as Brand } from './Brand'
 export { default as Card, CardHeader, CardBody } from './Card'
 export { default as EmptyState } from './EmptyState'
+export { default as GuideMedia } from './GuideMedia'
 export { default as LabelWithTooltip } from './LabelWithTooltip'
 export { default as MobileFilterSheet } from './MobileFilterSheet'
 export { default as PageHeader } from './PageHeader'

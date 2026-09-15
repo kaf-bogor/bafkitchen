@@ -30,6 +30,7 @@ import {
   AiOutlineFileText,
   AiOutlineHome,
   AiOutlineLogout,
+  AiOutlineQuestionCircle,
   AiOutlineSetting,
   AiOutlineShop,
   AiOutlineShopping,
@@ -94,6 +95,7 @@ function Sidebar({ ...rest }: Props) {
       title: 'Lainnya',
       items: [
         { text: 'Lihat homepage', path: '/', icon: AiOutlineHome },
+        { text: 'Panduan', path: '/guide', icon: AiOutlineQuestionCircle },
         { text: 'Invoice', path: '/admin/invoices', icon: AiOutlineFileText },
         { text: 'Pengguna', path: '/admin/users', icon: AiOutlineUser },
         { text: 'Pengaturan', path: '/admin/settings', icon: AiOutlineSetting },

@@ -20,7 +20,7 @@ import {
   useDisclosure
 } from '@chakra-ui/react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   AiOutlineLogout,
   AiOutlineShop,
@@ -33,6 +33,8 @@ import { handleLogout } from '@/utils/auth'
 
 const Sidebar = ({ ...rest }: Props) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const vendorId = searchParams.get('vendorId')
 
   const router = useRouter()
 
@@ -75,7 +77,10 @@ const Sidebar = ({ ...rest }: Props) => {
     children: React.ReactNode
   }) => {
     return path ? (
-      <Link href={path} prefetch>
+      <Link
+        href={vendorId ? `${path}?vendorId=${vendorId}` : path}
+        prefetch
+      >
         {children}
       </Link>
     ) : (
