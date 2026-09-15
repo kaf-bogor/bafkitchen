@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { Search2Icon } from '@chakra-ui/icons'
 import {
@@ -56,6 +56,7 @@ const ROLE_TABS: { id: 'all' | GuideRoleId; label: string }[] = [
 export default function GuidePage() {
   const [role, setRole] = useState<'all' | GuideRoleId>('all')
   const [query, setQuery] = useState('')
+  const [activeId, setActiveId] = useState('')
   const toc = useDisclosure()
 
   const sections = useMemo(() => {
@@ -76,24 +77,79 @@ export default function GuidePage() {
     })
   }, [role, query])
 
+  // Keep the active id valid when the visible sections change.
+  useEffect(() => {
+    if (!sections.length) {
+      setActiveId('')
+      return
+    }
+    if (!sections.some((section) => section.id === activeId)) {
+      setActiveId(sections[0].id)
+    }
+  }, [sections, activeId])
+
+  // Scroll-spy: highlight the TOC entry for the section currently in view.
+  useEffect(() => {
+    let raf = 0
+
+    const compute = () => {
+      raf = 0
+      let current = sections[0]?.id || ''
+      for (const section of sections) {
+        const el = document.getElementById(section.id)
+        if (!el) continue
+        if (el.getBoundingClientRect().top <= 120) current = section.id
+      }
+      setActiveId(current)
+    }
+
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(compute)
+    }
+
+    compute()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [sections])
+
   const TOC = (
     <VStack align="stretch" spacing={1}>
-      {sections.map((section) => (
-        <Box
-          key={section.id}
-          as="a"
-          href={`#${section.id}`}
-          onClick={toc.onClose}
-          px={3}
-          py={2}
-          borderRadius="lg"
-          fontSize="sm"
-          color="text-body"
-          _hover={{ bg: 'gray.100', color: 'text-strong' }}
-        >
-          {section.title}
-        </Box>
-      ))}
+      {sections.map((section) => {
+        const active = section.id === activeId
+        return (
+          <Box
+            key={section.id}
+            as="a"
+            href={`#${section.id}`}
+            onClick={() => {
+              setActiveId(section.id)
+              toc.onClose()
+            }}
+            px={3}
+            py={2}
+            borderRadius="lg"
+            fontSize="sm"
+            fontWeight={active ? '600' : '400'}
+            color={active ? 'brand.700' : 'text-body'}
+            bg={active ? 'brand.50' : 'transparent'}
+            borderLeft="3px solid"
+            borderColor={active ? 'brand.500' : 'transparent'}
+            _hover={{
+              bg: active ? 'brand.50' : 'gray.100',
+              color: active ? 'brand.700' : 'text-strong'
+            }}
+            transition="background 0.15s, color 0.15s, border-color 0.15s"
+          >
+            {section.title}
+          </Box>
+        )
+      })}
     </VStack>
   )
 
