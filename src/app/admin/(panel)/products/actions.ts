@@ -54,6 +54,8 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
       }
       if (params?.vendorId) search.set('vendorId', params.vendorId)
       if (params?.channel) search.set('channel', params.channel)
+      if (params?.inStock) search.set('inStock', '1')
+      if (params?.sort) search.set('sort', params.sort)
       if (params?.limit) search.set('limit', String(params.limit))
       if (params?.offset) search.set('offset', String(params.offset))
       const qs = search.toString()
@@ -76,6 +78,8 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
     params?.categoryIds?.join(','),
     params?.vendorId,
     params?.channel,
+    params?.inStock,
+    params?.sort,
     params?.limit,
     params?.offset
   ])
@@ -268,6 +272,8 @@ export interface IFetchProductRequest {
   q?: string
   vendorId?: string
   channel?: string
+  inStock?: boolean
+  sort?: string
   limit?: number
   offset?: number
 }

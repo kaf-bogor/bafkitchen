@@ -7,12 +7,16 @@ import {
   Button,
   Center,
   Flex,
+  FormControl,
+  FormLabel,
   HStack,
   Input,
   InputGroup,
   InputLeftElement,
+  Select,
   SimpleGrid,
   Spinner,
+  Switch,
   Text,
   useDisclosure,
   useToast
@@ -23,6 +27,7 @@ import { useDebouncedCallback } from 'use-debounce'
 
 import { useGetCategories } from '@/app/admin/(panel)/categories/actions'
 import { useGetProducts } from '@/app/admin/(panel)/products/actions'
+import { useGetVendors } from '@/app/admin/(panel)/vendors/actions'
 import { useOrders } from '@/app/admin/actions'
 import { useAuth } from '@/app/UserProvider'
 import { EOrderChannel } from '@/constants/order'
@@ -54,6 +59,9 @@ export default function PosPage() {
   )
   const [receipt, setReceipt] = useState<IReceiptData | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState('default')
+  const [vendorFilter, setVendorFilter] = useState('')
+  const [showOutOfStock, setShowOutOfStock] = useState(true)
 
   const cart = usePosCart()
   const { createPosOrder, loading: isProcessing } = useCreatePosOrder()
@@ -79,9 +87,13 @@ export default function PosPage() {
     limit: PER_PAGE,
     offset: (currentPage - 1) * PER_PAGE,
     q: search,
-    categoryIds: selectedCategoryId ? [selectedCategoryId] : undefined
+    categoryIds: selectedCategoryId ? [selectedCategoryId] : undefined,
+    vendorId: vendorFilter || undefined,
+    sort: sortBy !== 'default' ? sortBy : undefined,
+    inStock: showOutOfStock ? undefined : true
   })
   const { data: categories } = useGetCategories()
+  const { data: vendors } = useGetVendors()
   const { data: todayOrders, loading: isLoadingOrders } = useOrders(
     todayStart.toISOString(),
     todayEnd.toISOString(),
@@ -101,7 +113,7 @@ export default function PosPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, selectedCategoryId])
+  }, [search, selectedCategoryId, vendorFilter, sortBy, showOutOfStock])
 
   const debouncedSearch = useDebouncedCallback(setSearch, 300)
 
@@ -196,8 +208,8 @@ export default function PosPage() {
           p={4}
           minH={{ base: '50vh', lg: 'auto' }}
         >
-          <HStack spacing={3} mb={4} flexWrap="wrap">
-            <InputGroup maxW="320px" bg="white" rounded="md" boxShadow="sm">
+          <HStack spacing={3} mb={4} flexWrap="wrap" align="center">
+            <InputGroup maxW="280px" bg="white" rounded="md" boxShadow="sm">
               <InputLeftElement pointerEvents="none">
                 <Search2Icon color="gray.400" />
               </InputLeftElement>
@@ -207,6 +219,49 @@ export default function PosPage() {
                 border="none"
               />
             </InputGroup>
+
+            <Select
+              maxW="190px"
+              bg="white"
+              size="sm"
+              value={vendorFilter}
+              onChange={(e) => setVendorFilter(e.target.value)}
+            >
+              <option value="">Semua vendor</option>
+              <option value="bazaf">Bazaf</option>
+              {(vendors || []).map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>
+                  {vendor.name}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              maxW="190px"
+              bg="white"
+              size="sm"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="default">Urutkan: Default</option>
+              <option value="name_asc">Nama A-Z</option>
+              <option value="name_desc">Nama Z-A</option>
+              <option value="price_asc">Harga termurah</option>
+              <option value="price_desc">Harga termahal</option>
+              <option value="stock_desc">Stok terbanyak</option>
+              <option value="stock_asc">Stok tersedikit</option>
+            </Select>
+
+            <FormControl display="flex" alignItems="center" w="auto" gap={2}>
+              <Switch
+                colorScheme="green"
+                isChecked={showOutOfStock}
+                onChange={(e) => setShowOutOfStock(e.target.checked)}
+              />
+              <FormLabel mb={0} fontSize="sm" whiteSpace="nowrap">
+                Tampilkan stok habis
+              </FormLabel>
+            </FormControl>
           </HStack>
 
           <HStack spacing={2} mb={4} flexWrap="wrap">

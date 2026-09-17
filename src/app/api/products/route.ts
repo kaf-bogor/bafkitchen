@@ -126,6 +126,8 @@ export async function GET(request: Request) {
   const availabilityFilter = url.searchParams.get('availability')
   const channelFilter = url.searchParams.get('channel')
   const q = url.searchParams.get('q')
+  const inStockFilter = url.searchParams.get('inStock')
+  const sortParam = url.searchParams.get('sort')
   const limitParam = url.searchParams.get('limit')
   const offsetParam = url.searchParams.get('offset')
   const database = db()
@@ -210,13 +212,33 @@ export async function GET(request: Request) {
       : []
   }
 
+  if (inStockFilter === '1') {
+    productRows = productRows.filter((row) => (row.stock ?? 0) > 0)
+  }
+
   productRows.sort((a, b) => {
-    const aAvailability = a.availability || 'ready'
-    const bAvailability = b.availability || 'ready'
-    if (aAvailability !== bAvailability) {
-      return aAvailability === 'ready' ? -1 : 1
+    switch (sortParam) {
+      case 'name_asc':
+        return (a.name || '').localeCompare(b.name || '')
+      case 'name_desc':
+        return (b.name || '').localeCompare(a.name || '')
+      case 'price_asc':
+        return (a.price || 0) - (b.price || 0)
+      case 'price_desc':
+        return (b.price || 0) - (a.price || 0)
+      case 'stock_desc':
+        return (b.stock || 0) - (a.stock || 0)
+      case 'stock_asc':
+        return (a.stock || 0) - (b.stock || 0)
+      default: {
+        const aAvailability = a.availability || 'ready'
+        const bAvailability = b.availability || 'ready'
+        if (aAvailability !== bAvailability) {
+          return aAvailability === 'ready' ? -1 : 1
+        }
+        return a.created_at < b.created_at ? 1 : -1
+      }
     }
-    return a.created_at < b.created_at ? 1 : -1
   })
 
   const total = productRows.length
