@@ -25,6 +25,7 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
+  AiOutlineBarChart,
   AiOutlineCalendar,
   AiOutlineDesktop,
   AiOutlineFileText,
@@ -74,7 +75,8 @@ function Sidebar({ ...rest }: Props) {
       items: [
         { text: 'Kasir (POS)', path: '/pos', icon: AiOutlineDesktop },
         { text: 'Pesanan', path: '/admin/orders', icon: AiOutlineShoppingCart },
-        { text: 'Pre-order', path: '/admin/preorders', icon: AiOutlineCalendar }
+        { text: 'Pre-order', path: '/admin/preorders', icon: AiOutlineCalendar },
+        { text: 'Laporan', path: '/admin/reports', icon: AiOutlineBarChart }
       ]
     },
     {

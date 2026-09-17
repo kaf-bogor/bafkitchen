@@ -22,6 +22,7 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
+  AiOutlineBarChart,
   AiOutlineLogout,
   AiOutlineShop,
   AiOutlineShopping,
@@ -52,6 +53,12 @@ const Sidebar = ({ ...rest }: Props) => {
       text: 'Produk',
       path: '/dashboard/products',
       icon: AiOutlineAppstore
+    },
+    {
+      id: 4,
+      text: 'Rekap',
+      path: '/dashboard/reports',
+      icon: AiOutlineBarChart
     },
     {
       id: 2,

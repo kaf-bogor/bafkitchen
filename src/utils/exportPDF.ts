@@ -371,3 +371,135 @@ export const exportInvoicesListToPDF = (
       `Invoices_List_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
   )
 }
+
+export const exportReportToPDF = (
+  {
+    title,
+    subtitle,
+    summary,
+    columns,
+    rows
+  }: {
+    title: string
+    subtitle?: string
+    summary?: { label: string; value: string }[]
+    columns: string[]
+    rows: (string | number)[][]
+  },
+  filename?: string
+) => {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+
+  setColor(pdf, 'fill', BRAND)
+  pdf.roundedRect(MARGIN, 16, 10, 10, 2.5, 2.5, 'F')
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(12)
+  pdf.setTextColor(255, 255, 255)
+  pdf.text('B', MARGIN + 3.6, 23)
+
+  setColor(pdf, 'text', INK)
+  pdf.setFontSize(15)
+  pdf.text('Bazaf', MARGIN + 14, 22)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text('Laporan penjualan', MARGIN + 14, 27)
+
+  setColor(pdf, 'text', INK)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(16)
+  pdf.text(title, PAGE_WIDTH - MARGIN, 22, { align: 'right' })
+  if (subtitle) {
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(subtitle, PAGE_WIDTH - MARGIN, 27, { align: 'right' })
+  }
+
+  setColor(pdf, 'draw', LINE)
+  pdf.line(MARGIN, 34, PAGE_WIDTH - MARGIN, 34)
+
+  let y = 44
+
+  if (summary?.length) {
+    for (const item of summary) {
+      setColor(pdf, 'text', BODY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+      pdf.text(item.label, MARGIN, y)
+      setColor(pdf, 'text', INK)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(item.value, PAGE_WIDTH - MARGIN, y, { align: 'right' })
+      y += 6
+    }
+    setColor(pdf, 'draw', LINE)
+    pdf.line(MARGIN, y, PAGE_WIDTH - MARGIN, y)
+    y += 8
+  }
+
+  const colCount = columns.length
+  const colWidth = CONTENT_WIDTH / colCount
+
+  const renderTableHeader = () => {
+    setColor(pdf, 'fill', SOFT)
+    pdf.rect(MARGIN, y - 5, CONTENT_WIDTH, 9, 'F')
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(8)
+    columns.forEach((col, i) => {
+      if (i === 0) {
+        pdf.text(String(col).toUpperCase(), MARGIN + 3, y)
+      } else {
+        pdf.text(String(col).toUpperCase(), MARGIN + colWidth * (i + 1) - 3, y, {
+          align: 'right'
+        })
+      }
+    })
+    y += 8
+  }
+
+  renderTableHeader()
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+
+  for (const row of rows) {
+    if (y > 272) {
+      pdf.addPage()
+      y = 30
+      renderTableHeader()
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+    }
+    row.forEach((cell, i) => {
+      const value = String(cell)
+      setColor(pdf, 'text', i === 0 ? INK : BODY)
+      if (i === 0) {
+        const max = Math.floor(colWidth / 1.7)
+        pdf.text(
+          value.length > max ? `${value.slice(0, max)}...` : value,
+          MARGIN + 3,
+          y
+        )
+      } else {
+        pdf.text(value, MARGIN + colWidth * (i + 1) - 3, y, { align: 'right' })
+      }
+    })
+    setColor(pdf, 'draw', LINE)
+    pdf.line(MARGIN, y + 3, PAGE_WIDTH - MARGIN, y + 3)
+    y += 8
+  }
+
+  setColor(pdf, 'draw', LINE)
+  pdf.line(MARGIN, 275, PAGE_WIDTH - MARGIN, 275)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFontSize(8)
+  pdf.text('Dibuat oleh Bazaf', MARGIN, 281)
+  pdf.text(
+    `Dicetak ${format(new Date(), 'dd MMM yyyy HH:mm', { locale: id })}`,
+    PAGE_WIDTH - MARGIN,
+    281,
+    { align: 'right' }
+  )
+
+  pdf.save(filename || `Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
+}
