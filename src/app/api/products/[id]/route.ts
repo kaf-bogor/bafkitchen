@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers'
 
-import { requireAuth } from '@/lib/server/auth'
+import { requireAdmin, requireAuth } from '@/lib/server/auth'
 import { json, db, now, parseJson } from '@/lib/server/db'
 import { getVendorForUser } from '@/lib/server/vendors'
 
@@ -243,6 +243,78 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
         }
       : null
   })
+}
+
+const ALLOWED_CHANNELS = ['pos', 'online', 'preorder']
+
+export async function PATCH(request: Request, ctx: { params: { id: string } }) {
+  const auth = await requireAdmin(request)
+  if (auth instanceof Response) return auth
+
+  const body = (await request.json().catch(() => null)) as {
+    price?: number
+    priceBase?: number
+    stock?: number | null
+    isActive?: boolean
+    channels?: string[]
+    approvalStatus?: string
+  } | null
+  if (!body) return json({ error: 'Invalid body' }, { status: 400 })
+
+  const sets: string[] = []
+  const params: unknown[] = []
+
+  if (body.price !== undefined) {
+    sets.push('price = ?')
+    params.push(body.price)
+  }
+  if (body.priceBase !== undefined) {
+    sets.push('price_base = ?')
+    params.push(body.priceBase)
+  }
+  if (body.stock !== undefined) {
+    sets.push('stock = ?')
+    params.push(body.stock ?? 0)
+  }
+  if (body.isActive !== undefined) {
+    sets.push('is_active = ?')
+    params.push(body.isActive ? 1 : 0)
+  }
+  if (body.channels !== undefined) {
+    const channels = (body.channels || []).filter((c) =>
+      ALLOWED_CHANNELS.includes(c)
+    )
+    sets.push('channels = ?')
+    params.push((channels.length ? channels : ['pos']).join(','))
+  }
+  if (body.approvalStatus !== undefined) {
+    if (!['pending', 'approved', 'rejected'].includes(body.approvalStatus)) {
+      return json({ error: 'Invalid approval status' }, { status: 400 })
+    }
+    sets.push('approval_status = ?')
+    params.push(body.approvalStatus)
+  }
+
+  if (!sets.length) {
+    return json({ error: 'No fields to update' }, { status: 400 })
+  }
+
+  const database = db()
+  const existing = await database
+    .prepare('SELECT id FROM products WHERE id = ?')
+    .bind(ctx.params.id)
+    .first()
+  if (!existing) return json({ error: 'Product not found' }, { status: 404 })
+
+  sets.push('updated_at = ?')
+  params.push(now())
+
+  await database
+    .prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`)
+    .bind(...params, ctx.params.id)
+    .run()
+
+  return json({ id: ctx.params.id })
 }
 
 export async function DELETE(request: Request, ctx: { params: { id: string } }) {

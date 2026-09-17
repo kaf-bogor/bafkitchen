@@ -267,6 +267,71 @@ export const useUpdateProductApproval = () => {
   return { updateProductApproval, loading, error }
 }
 
+export interface IProductFieldsUpdate {
+  price?: number
+  priceBase?: number
+  stock?: number | null
+  isActive?: boolean
+  channels?: string[]
+  approvalStatus?: 'pending' | 'approved' | 'rejected'
+}
+
+export const useUpdateProductFields = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const updateProductFields = async (
+    id: string,
+    fields: IProductFieldsUpdate
+  ) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ id: string }>(`/api/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(fields)
+      })
+      return res
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { updateProductFields, loading, error }
+}
+
+export const useBatchUpdateProducts = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const batchUpdateProducts = async (
+    ids: string[],
+    fields: IProductFieldsUpdate
+  ) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ updated: number }>('/api/products/batch', {
+        method: 'POST',
+        body: JSON.stringify({ ids, fields })
+      })
+      return res
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { batchUpdateProducts, loading, error }
+}
+
 export interface IFetchProductRequest {
   categoryIds?: string[]
   q?: string
