@@ -125,6 +125,9 @@ export async function GET(request: Request) {
   const vendorFilter = url.searchParams.get('vendorId')
   const availabilityFilter = url.searchParams.get('availability')
   const channelFilter = url.searchParams.get('channel')
+  const q = url.searchParams.get('q')
+  const limitParam = url.searchParams.get('limit')
+  const offsetParam = url.searchParams.get('offset')
   const database = db()
 
   let productRows: ProductRow[] = []
@@ -167,7 +170,19 @@ export async function GET(request: Request) {
 
   if (channelFilter) {
     productRows = productRows.filter((row) =>
-      (row.channels || 'pos').split(',').includes(channelFilter)
+      (row.channels || 'pos')
+        .split(',')
+        .map((c) => c.trim())
+        .includes(channelFilter)
+    )
+  }
+
+  if (q) {
+    const needle = q.toLowerCase()
+    productRows = productRows.filter(
+      (row) =>
+        (row.name || '').toLowerCase().includes(needle) ||
+        (row.description || '').toLowerCase().includes(needle)
     )
   }
 
@@ -204,17 +219,57 @@ export async function GET(request: Request) {
     return a.created_at < b.created_at ? 1 : -1
   })
 
-  const products = await Promise.all(
-    productRows.map(async (row) => {
-      const [categories, vendor] = await Promise.all([
-        loadCategories(database, row.id),
-        loadVendor(database, row)
-      ])
-      return transformProduct(row, categories, vendor)
-    })
-  )
+  const total = productRows.length
+  const limit = limitParam
+    ? Math.max(1, Math.min(100, Number(limitParam) || 0))
+    : 0
+  const offset = offsetParam ? Math.max(0, Number(offsetParam) || 0) : 0
+  const pageRows =
+    limit > 0 ? productRows.slice(offset, offset + limit) : productRows
 
-  return json({ products })
+  // Batch-load categories for the returned page (chunked to respect the
+  // bound-parameter limit) — avoids the previous N+1 query per product.
+  const categoriesMap = new Map<string, { id: string; name: string }[]>()
+  const uniqueIds = Array.from(new Set(pageRows.map((row) => row.id)))
+  for (let i = 0; i < uniqueIds.length; i += 90) {
+    const batch = uniqueIds.slice(i, i + 90)
+    const placeholders = batch.map(() => '?').join(',')
+    const { results } = await database
+      .prepare(
+        `SELECT pc.product_id AS product_id, c.id AS id, c.name AS name
+         FROM product_categories pc
+         JOIN categories c ON c.id = pc.category_id
+         WHERE pc.product_id IN (${placeholders})`
+      )
+      .bind(...batch)
+      .all<{ product_id: string; id: string; name: string }>()
+    for (const r of results) {
+      const list = categoriesMap.get(r.product_id) || []
+      list.push({ id: r.id, name: r.name })
+      categoriesMap.set(r.product_id, list)
+    }
+  }
+
+  // Batch-load vendors once.
+  const vendorRows = await database
+    .prepare('SELECT * FROM vendors')
+    .all<Record<string, unknown> & { id: string }>()
+  const vendorMap = new Map(vendorRows.results.map((v) => [v.id, v]))
+
+  const products = pageRows.map((row) => {
+    const storedVendor = parseJson<{ id?: string; name?: string } | null>(
+      row.vendor,
+      null
+    )
+    let vendor: Record<string, unknown> | null | undefined = storedVendor
+    if (storedVendor?.id && storedVendor.id !== 'bazaf') {
+      const v = vendorMap.get(storedVendor.id)
+      if (v) vendor = v
+    }
+    return transformProduct(row, categoriesMap.get(row.id) || [], vendor)
+  })
+
+  return json({ products, total })
 }
 
 export async function POST(request: Request) {

@@ -41,6 +41,8 @@ import ProductTile from './components/ProductTile'
 import ReceiptModal from './components/Receipt'
 import TopBar from './components/TopBar'
 
+const PER_PAGE = 60
+
 export default function PosPage() {
   const router = useRouter()
   const toast = useToast()
@@ -72,7 +74,13 @@ export default function PosPage() {
   const todayStart = useMemo(() => startOfDay(new Date()), [])
   const todayEnd = useMemo(() => endOfDay(new Date()), [])
 
-  const { data: allProducts, loading: isLoadingProducts } = useGetProducts()
+  const { data: products, total, loading: isLoadingProducts } = useGetProducts({
+    channel: 'pos',
+    limit: PER_PAGE,
+    offset: (currentPage - 1) * PER_PAGE,
+    q: search,
+    categoryIds: selectedCategoryId ? [selectedCategoryId] : undefined
+  })
   const { data: categories } = useGetCategories()
   const { data: todayOrders, loading: isLoadingOrders } = useOrders(
     todayStart.toISOString(),
@@ -88,30 +96,8 @@ export default function PosPage() {
     [todayOrders]
   )
 
-  const displayedProducts = useMemo(() => {
-    const source = allProducts
-    const getCategoryIds = (p: any): string[] =>
-      p.categories?.length
-        ? p.categories.map((c: any) => c.id)
-        : p.categoryIds || []
-
-    return (source || []).filter((p) => {
-      const matchesSearch =
-        !search || p.name.toLowerCase().includes(search.toLowerCase())
-      const matchesCategory =
-        !selectedCategoryId ||
-        getCategoryIds(p).includes(selectedCategoryId)
-      return matchesSearch && matchesCategory
-    })
-  }, [allProducts, search, selectedCategoryId])
-
-  const PER_PAGE = 60
-  const totalPages = Math.max(1, Math.ceil(displayedProducts.length / PER_PAGE))
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE))
   const safePage = Math.min(currentPage, totalPages)
-  const paginatedProducts = displayedProducts.slice(
-    (safePage - 1) * PER_PAGE,
-    safePage * PER_PAGE
-  )
 
   useEffect(() => {
     setCurrentPage(1)
@@ -261,16 +247,16 @@ export default function PosPage() {
             </Center>
           )}
 
-          {!isLoadingCatalog && displayedProducts.length === 0 && (
+          {!isLoadingCatalog && products.length === 0 && (
             <Center flex={1} flexDirection="column" gap={3}>
               <Text color="gray.400">Tidak ada produk ditemukan</Text>
             </Center>
           )}
 
-          {!isLoadingCatalog && displayedProducts.length > 0 && (
+          {!isLoadingCatalog && products.length > 0 && (
             <>
               <SimpleGrid columns={[2, 3, 3, 4]} spacing={3} pb={4}>
-                {paginatedProducts.map((product) => (
+                {products.map((product) => (
                   <ProductTile
                     key={product.id}
                     product={product}

@@ -38,6 +38,7 @@ export const useGetProduct = (productId: string) => {
 
 export const useGetProducts = (params?: IFetchProductRequest) => {
   const [data, setData] = useState<IProductResponse[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
@@ -46,39 +47,44 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
     setError(null)
 
     try {
-      let url = '/api/products'
-      if (params?.categoryIds && params.categoryIds.length > 0) {
-        const ids = params.categoryIds.slice(0, 10)
-        url = `/api/products?categoryIds=${ids.map(encodeURIComponent).join(',')}`
+      const search = new URLSearchParams()
+      if (params?.q) search.set('q', params.q)
+      if (params?.categoryIds?.length) {
+        search.set('categoryIds', params.categoryIds.slice(0, 10).join(','))
       }
-      const res = await apiFetch<{ products: IProductResponse[] }>(url)
+      if (params?.vendorId) search.set('vendorId', params.vendorId)
+      if (params?.channel) search.set('channel', params.channel)
+      if (params?.limit) search.set('limit', String(params.limit))
+      if (params?.offset) search.set('offset', String(params.offset))
+      const qs = search.toString()
 
-      // client-side q filter (mirrors previous behavior)
-      let results = res.products
-      if (params?.q) {
-        const q = params.q.toLowerCase()
-        results = results.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            (p.description || '').toLowerCase().includes(q)
-        )
-      }
+      const res = await apiFetch<{
+        products: IProductResponse[]
+        total?: number
+      }>(`/api/products${qs ? `?${qs}` : ''}`)
 
-      setData(results)
+      setData(res.products)
+      setTotal(res.total ?? res.products.length)
     } catch (err) {
       setError(err as Error)
     } finally {
       setLoading(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params?.q, params?.categoryIds?.join(',')])
+  }, [
+    params?.q,
+    params?.categoryIds?.join(','),
+    params?.vendorId,
+    params?.channel,
+    params?.limit,
+    params?.offset
+  ])
 
   useEffect(() => {
     fetchProducts()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchProducts])
 
-  return { data, loading, error, refetch: fetchProducts }
+  return { data, total, loading, error, refetch: fetchProducts }
 }
 
 export const useDeleteProducts = () => {
@@ -260,4 +266,8 @@ export const useUpdateProductApproval = () => {
 export interface IFetchProductRequest {
   categoryIds?: string[]
   q?: string
+  vendorId?: string
+  channel?: string
+  limit?: number
+  offset?: number
 }

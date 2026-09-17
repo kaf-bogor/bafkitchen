@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { Search2Icon } from '@chakra-ui/icons'
 import {
@@ -13,6 +13,7 @@ import {
   InputGroup,
   InputLeftElement,
   Select,
+  Text,
   VStack,
   useToast
 } from '@chakra-ui/react'
@@ -36,6 +37,7 @@ export default function ProductPage() {
   const toast = useToast()
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
 
   const {
     data: products,
@@ -65,6 +67,18 @@ export default function ProductPage() {
       ).length,
     [products]
   )
+
+  const PER_PAGE = 24
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filtered.slice(
+    (safePage - 1) * PER_PAGE,
+    safePage * PER_PAGE
+  )
+
+  useEffect(() => {
+    setPage(1)
+  }, [query, statusFilter])
 
   const handleApproval = async (
     id: string,
@@ -166,7 +180,7 @@ export default function ProductPage() {
             }}
             gap={6}
           >
-            {filtered.map((product) => (
+            {paginated.map((product) => (
               <GridItem key={product.id}>
                 <VStack align="stretch" spacing={3}>
                   <CardProduct product={product} />
@@ -197,6 +211,30 @@ export default function ProductPage() {
               </GridItem>
             ))}
           </Grid>
+
+          {totalPages > 1 && (
+            <HStack justify="center" spacing={3} mt={6}>
+              <Button
+                size="sm"
+                variant="outline"
+                isDisabled={safePage === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Sebelumnya
+              </Button>
+              <Text fontSize="sm" color="gray.500">
+                Halaman {safePage} dari {totalPages}
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                isDisabled={safePage === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Berikutnya
+              </Button>
+            </HStack>
+          )}
         </Box>
       )}
     </Layout>
