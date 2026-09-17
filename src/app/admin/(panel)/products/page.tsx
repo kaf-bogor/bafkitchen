@@ -1,28 +1,25 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-import { Search2Icon } from '@chakra-ui/icons'
+import { EditIcon, Search2Icon } from '@chakra-ui/icons'
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box,
   Button,
-  Checkbox,
-  FormControl,
-  FormLabel,
   Grid,
   GridItem,
   HStack,
   Input,
   InputGroup,
   InputLeftElement,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
+  Switch,
   Table,
   Tbody,
   Td,
@@ -37,10 +34,9 @@ import {
 import Link from 'next/link'
 
 import {
-  useBatchUpdateProducts,
+  useBulkUpdateProducts,
   useGetProducts,
   useUpdateProductApproval,
-  useUpdateProductFields,
   type IProductFieldsUpdate
 } from '@/app/admin/(panel)/products/actions'
 import { CardProduct, Layout } from '@/components'
@@ -61,22 +57,26 @@ const CHANNEL_FILTER_OPTIONS = [
   { value: 'online', label: 'Online' }
 ]
 
-const BATCH_FIELDS = [
-  { value: 'price', label: 'Harga jual' },
-  { value: 'priceBase', label: 'HPP' },
-  { value: 'stock', label: 'Stok' },
-  { value: 'channels', label: 'Kanal' },
-  { value: 'isActive', label: 'Status aktif' },
-  { value: 'approvalStatus', label: 'Approval' }
-]
-
 const CHANNEL_MAP: Record<string, string[]> = {
   pos: ['pos'],
   online: ['online'],
   both: ['pos', 'online']
 }
 
+const DRAFT_KEY = 'admin-products-edit-draft'
+const EDIT_MODE_KEY = 'admin-products-edit-mode'
 const PER_PAGE = 24
+
+type Draft = Record<string, IProductFieldsUpdate>
+
+const channelKey = (channels?: string[]) => {
+  const list = channels || []
+  const hasPos = list.includes('pos')
+  const hasOnline = list.includes('online')
+  if (hasPos && hasOnline) return 'both'
+  if (hasOnline) return 'online'
+  return 'pos'
+}
 
 function ChannelBadge({ channels }: { channels?: string[] }) {
   const list = channels || []
@@ -93,72 +93,35 @@ function ChannelBadge({ channels }: { channels?: string[] }) {
   return <StatusBadge color={color}>{label}</StatusBadge>
 }
 
-function EditableCell({
+function DraftNumberInput({
   value,
-  onSave,
-  format
+  onChange
 }: {
   value: number
   // eslint-disable-next-line no-unused-vars
-  onSave: (value: number) => Promise<void>
-  // eslint-disable-next-line no-unused-vars
-  format: (value: number) => string
+  onChange: (value: number) => void
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [text, setText] = useState(String(value ?? 0))
 
   useEffect(() => {
-    if (!editing) setDraft(String(value ?? 0))
-  }, [value, editing])
-
-  const commit = async () => {
-    setEditing(false)
-    const num = Number(draft)
-    if (draft === '' || Number.isNaN(num) || num === value) return
-    setSaving(true)
-    try {
-      await onSave(num)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (editing) {
-    return (
-      <Input
-        size="sm"
-        w="110px"
-        type="number"
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            ;(e.target as HTMLInputElement).blur()
-          }
-          if (e.key === 'Escape') setEditing(false)
-        }}
-      />
-    )
-  }
+    setText(String(value ?? 0))
+  }, [value])
 
   return (
-    <Text
-      as="button"
-      type="button"
-      fontSize="sm"
-      cursor="pointer"
-      _hover={{ color: 'brand.600', textDecoration: 'underline' }}
-      onClick={() => {
-        setDraft(String(value ?? 0))
-        setEditing(true)
+    <Input
+      size="sm"
+      w="110px"
+      type="number"
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value)
+        const num = Number(e.target.value)
+        if (e.target.value !== '' && !Number.isNaN(num)) onChange(num)
       }}
-    >
-      {saving ? '...' : format(value ?? 0)}
-    </Text>
+      onBlur={() => {
+        if (text === '') setText(String(value ?? 0))
+      }}
+    />
   )
 }
 
@@ -169,11 +132,12 @@ export default function ProductPage() {
   const [channelFilter, setChannelFilter] = useState('')
   const [page, setPage] = useState(1)
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [editMode, setEditMode] = useState(false)
+  const [draft, setDraft] = useState<Draft>({})
+  const [hydrated, setHydrated] = useState(false)
 
-  const batchModal = useDisclosure()
-  const [batchField, setBatchField] = useState('price')
-  const [batchValue, setBatchValue] = useState('')
+  const discardDialog = useDisclosure()
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   const {
     data: products,
@@ -186,18 +150,115 @@ export default function ProductPage() {
   })
 
   const { updateProductApproval } = useUpdateProductApproval()
-  const { updateProductFields } = useUpdateProductFields()
-  const { batchUpdateProducts } = useBatchUpdateProducts()
+  const { bulkUpdateProducts, loading: isSaving } = useBulkUpdateProducts()
   const [approvingId, setApprovingId] = useState('')
 
   useEffect(() => {
     const saved = localStorage.getItem('admin-products-view')
     if (saved === 'grid' || saved === 'table') setViewMode(saved)
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      const parsed = raw ? JSON.parse(raw) : null
+      if (parsed && typeof parsed === 'object') {
+        setDraft(parsed)
+        if (Object.keys(parsed).length) {
+          setEditMode(localStorage.getItem(EDIT_MODE_KEY) === 'true')
+        }
+      }
+    } catch {
+      localStorage.removeItem(DRAFT_KEY)
+    }
+    setHydrated(true)
   }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    localStorage.setItem(EDIT_MODE_KEY, String(editMode))
+  }, [draft, editMode, hydrated])
+
+  useEffect(() => {
+    const handler = (event: BeforeUnloadEvent) => {
+      if (Object.keys(draft).length) {
+        event.preventDefault()
+        event.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [draft])
 
   const changeView = (mode: 'grid' | 'table') => {
     setViewMode(mode)
     localStorage.setItem('admin-products-view', mode)
+  }
+
+  const changeCount = Object.keys(draft).length
+
+  const setField = (
+    product: IProductResponse,
+    field: keyof IProductFieldsUpdate,
+    value: unknown
+  ) => {
+    setDraft((prev) => {
+      const next = { ...prev }
+      const entry: Record<string, unknown> = { ...(prev[product.id] || {}) }
+      let same = false
+      if (field === 'price') same = value === product.price
+      else if (field === 'priceBase') same = value === product.priceBase
+      else if (field === 'stock') same = value === product.stock
+      else if (field === 'isActive') same = value === product.isActive
+      else if (field === 'channels') {
+        const a = ((value as string[]) || []).slice().sort().join(',')
+        const b = (product.channels || []).slice().sort().join(',')
+        same = a === b
+      }
+      if (same) delete entry[field]
+      else entry[field] = value
+      if (Object.keys(entry).length) next[product.id] = entry as IProductFieldsUpdate
+      else delete next[product.id]
+      return next
+    })
+  }
+
+  const handleSave = async () => {
+    const items = Object.entries(draft).map(([id, fields]) => ({ id, fields }))
+    if (!items.length) return
+    try {
+      const res = await bulkUpdateProducts(items)
+      setDraft({})
+      toast({
+        title: 'Perubahan tersimpan',
+        description: `${res.updated} produk diperbarui`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal menyimpan perubahan',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
+
+  const doDiscard = () => {
+    setDraft({})
+    discardDialog.onClose()
+  }
+
+  const toggleEditMode = () => {
+    if (editMode) {
+      setEditMode(false)
+      return
+    }
+    setViewMode('table')
+    localStorage.setItem('admin-products-view', 'table')
+    setEditMode(true)
   }
 
   const filtered = useMemo(() => {
@@ -226,25 +287,6 @@ export default function ProductPage() {
     (safePage - 1) * PER_PAGE,
     safePage * PER_PAGE
   )
-
-  const pageIds = paginated.map((product) => product.id)
-  const allSelected =
-    pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
-  const someSelected = pageIds.some((id) => selectedIds.includes(id))
-
-  const toggleAll = () => {
-    setSelectedIds((prev) =>
-      allSelected
-        ? prev.filter((id) => !pageIds.includes(id))
-        : Array.from(new Set([...prev, ...pageIds]))
-    )
-  }
-
-  const toggleOne = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
 
   useEffect(() => {
     setPage(1)
@@ -277,69 +319,9 @@ export default function ProductPage() {
     }
   }
 
-  const handleFieldSave = async (
-    id: string,
-    field: 'price' | 'priceBase' | 'stock',
-    value: number
-  ) => {
-    try {
-      await updateProductFields(id, { [field]: value })
-      toast({
-        title: 'Tersimpan',
-        status: 'success',
-        duration: 1500,
-        isClosable: true
-      })
-      refetch()
-    } catch (err) {
-      toast({
-        title: 'Gagal menyimpan',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true
-      })
-    }
-  }
-
-  const applyBatch = async () => {
-    if (!selectedIds.length) return
-    const fields: IProductFieldsUpdate = {}
-    if (batchField === 'price') fields.price = Number(batchValue)
-    if (batchField === 'priceBase') fields.priceBase = Number(batchValue)
-    if (batchField === 'stock') fields.stock = Number(batchValue)
-    if (batchField === 'channels')
-      fields.channels = CHANNEL_MAP[batchValue] || ['pos']
-    if (batchField === 'isActive') fields.isActive = batchValue === 'true'
-    if (batchField === 'approvalStatus')
-      fields.approvalStatus = batchValue as IProductFieldsUpdate['approvalStatus']
-
-    try {
-      await batchUpdateProducts(selectedIds, fields)
-      toast({
-        title: 'Berhasil',
-        description: `${selectedIds.length} produk diperbarui`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true
-      })
-      setSelectedIds([])
-      setBatchValue('')
-      batchModal.onClose()
-      refetch()
-    } catch (err) {
-      toast({
-        title: 'Gagal update massal',
-        description: (err as Error).message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true
-      })
-    }
-  }
-
-  const renderApprovalCell = (product: IProductResponse) => {
+  const renderStatusCell = (product: IProductResponse) => {
     const approval = product.approvalStatus || 'approved'
+    const active = draft[product.id]?.isActive ?? product.isActive
     return (
       <VStack align="start" spacing={1}>
         <StatusBadge
@@ -357,9 +339,22 @@ export default function ProductPage() {
               ? 'Menunggu'
               : 'Ditolak'}
         </StatusBadge>
-        <StatusBadge color={product.isActive ? 'green' : 'gray'}>
-          {product.isActive ? 'Aktif' : 'Nonaktif'}
-        </StatusBadge>
+        {editMode ? (
+          <HStack spacing={2}>
+            <Switch
+              size="sm"
+              isChecked={active}
+              onChange={(e) => setField(product, 'isActive', e.target.checked)}
+            />
+            <Text fontSize="xs" color="gray.600">
+              {active ? 'Aktif' : 'Nonaktif'}
+            </Text>
+          </HStack>
+        ) : (
+          <StatusBadge color={active ? 'green' : 'gray'}>
+            {active ? 'Aktif' : 'Nonaktif'}
+          </StatusBadge>
+        )}
       </VStack>
     )
   }
@@ -379,21 +374,34 @@ export default function ProductPage() {
         ]}
         actions={
           <HStack spacing={2}>
+            {!editMode && (
+              <>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'grid' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'grid' ? 'brand' : 'gray'}
+                  onClick={() => changeView('grid')}
+                >
+                  Grid
+                </Button>
+                <Button
+                  size="sm"
+                  variant={viewMode === 'table' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'table' ? 'brand' : 'gray'}
+                  onClick={() => changeView('table')}
+                >
+                  Tabel
+                </Button>
+              </>
+            )}
             <Button
               size="sm"
-              variant={viewMode === 'grid' ? 'solid' : 'outline'}
-              colorScheme={viewMode === 'grid' ? 'brand' : 'gray'}
-              onClick={() => changeView('grid')}
+              variant={editMode ? 'solid' : 'outline'}
+              colorScheme={editMode ? 'brand' : 'gray'}
+              leftIcon={<EditIcon />}
+              onClick={toggleEditMode}
             >
-              Grid
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'table' ? 'solid' : 'outline'}
-              colorScheme={viewMode === 'table' ? 'brand' : 'gray'}
-              onClick={() => changeView('table')}
-            >
-              Tabel
+              {editMode ? 'Keluar mode edit' : 'Mode edit'}
             </Button>
             <Link href="/admin/products/add">
               <Button colorScheme="brand" size="sm">
@@ -441,11 +449,14 @@ export default function ProductPage() {
         </Select>
       </HStack>
 
-      {selectedIds.length > 0 && (
+      {editMode && (
         <HStack
-          bg="brand.50"
+          position="sticky"
+          top={2}
+          zIndex={10}
+          bg="yellow.50"
           border="1px solid"
-          borderColor="brand.200"
+          borderColor="yellow.300"
           borderRadius="lg"
           p={3}
           mb={4}
@@ -453,15 +464,35 @@ export default function ProductPage() {
           flexWrap="wrap"
           gap={2}
         >
-          <Text fontSize="sm" fontWeight="600">
-            {selectedIds.length} produk dipilih
-          </Text>
+          <VStack align="start" spacing={0}>
+            <Text fontSize="sm" fontWeight="600">
+              Mode edit · {changeCount} perubahan belum disimpan
+            </Text>
+            <Text fontSize="xs" color="gray.600">
+              Edit nilai langsung di tabel, lalu klik Simpan. Perubahan
+              tersimpan otomatis di perangkat ini.
+            </Text>
+          </VStack>
           <HStack spacing={2}>
-            <Button size="sm" colorScheme="brand" onClick={batchModal.onOpen}>
-              Edit massal
+            <Button
+              size="sm"
+              colorScheme="brand"
+              onClick={handleSave}
+              isLoading={isSaving}
+              isDisabled={!changeCount}
+            >
+              Simpan
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={discardDialog.onOpen}
+              isDisabled={!changeCount}
+            >
               Batal
+            </Button>
+            <Button size="sm" variant="ghost" onClick={toggleEditMode}>
+              Keluar
             </Button>
           </HStack>
         </HStack>
@@ -484,17 +515,16 @@ export default function ProductPage() {
           <Box fontSize="sm" color="gray.500" mb={4}>
             {filtered.length} produk ditemukan
           </Box>
-          <Box overflowX="auto" bg="white" borderRadius="xl" border="1px solid" borderColor="border-subtle">
+          <Box
+            overflowX="auto"
+            bg="white"
+            borderRadius="xl"
+            border="1px solid"
+            borderColor="border-subtle"
+          >
             <Table variant="simple" size="sm">
               <Thead>
                 <Tr>
-                  <Th w="40px">
-                    <Checkbox
-                      isChecked={allSelected}
-                      isIndeterminate={!allSelected && someSelected}
-                      onChange={toggleAll}
-                    />
-                  </Th>
                   <Th>Produk</Th>
                   <Th>Kanal</Th>
                   <Th>Vendor</Th>
@@ -508,50 +538,96 @@ export default function ProductPage() {
               <Tbody>
                 {paginated.map((product) => {
                   const approval = product.approvalStatus || 'approved'
+                  const changed = Boolean(draft[product.id])
                   return (
-                    <Tr key={product.id} _hover={{ bg: 'gray.50' }}>
+                    <Tr
+                      key={product.id}
+                      bg={changed ? 'yellow.50' : undefined}
+                      _hover={{ bg: changed ? 'yellow.100' : 'gray.50' }}
+                    >
                       <Td>
-                        <Checkbox
-                          isChecked={selectedIds.includes(product.id)}
-                          onChange={() => toggleOne(product.id)}
-                        />
+                        <HStack spacing={2}>
+                          {changed && (
+                            <Box
+                              w="6px"
+                              h="6px"
+                              borderRadius="full"
+                              bg="orange.400"
+                              flexShrink={0}
+                            />
+                          )}
+                          <Box>
+                            <Text fontWeight="600">{product.name}</Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {product.sku || '-'}
+                            </Text>
+                          </Box>
+                        </HStack>
                       </Td>
                       <Td>
-                        <Text fontWeight="600">{product.name}</Text>
-                        <Text fontSize="xs" color="gray.500">
-                          {product.sku || '-'}
-                        </Text>
-                      </Td>
-                      <Td>
-                        <ChannelBadge channels={product.channels} />
+                        {editMode ? (
+                          <Select
+                            size="sm"
+                            w="140px"
+                            value={channelKey(
+                              draft[product.id]?.channels ?? product.channels
+                            )}
+                            onChange={(e) =>
+                              setField(
+                                product,
+                                'channels',
+                                CHANNEL_MAP[e.target.value] || ['pos']
+                              )
+                            }
+                          >
+                            <option value="pos">POS</option>
+                            <option value="online">Online</option>
+                            <option value="both">POS + Online</option>
+                          </Select>
+                        ) : (
+                          <ChannelBadge channels={product.channels} />
+                        )}
                       </Td>
                       <Td>
                         <Text fontSize="sm">{product.vendor?.name || '-'}</Text>
                       </Td>
                       <Td isNumeric>
-                        <EditableCell
-                          value={product.price}
-                          format={currency.toIDRFormat}
-                          onSave={(v) => handleFieldSave(product.id, 'price', v)}
-                        />
+                        {editMode ? (
+                          <DraftNumberInput
+                            value={draft[product.id]?.price ?? product.price}
+                            onChange={(v) => setField(product, 'price', v)}
+                          />
+                        ) : (
+                          <Text fontSize="sm">
+                            {currency.toIDRFormat(product.price ?? 0)}
+                          </Text>
+                        )}
                       </Td>
                       <Td isNumeric>
-                        <EditableCell
-                          value={product.priceBase}
-                          format={currency.toIDRFormat}
-                          onSave={(v) =>
-                            handleFieldSave(product.id, 'priceBase', v)
-                          }
-                        />
+                        {editMode ? (
+                          <DraftNumberInput
+                            value={
+                              draft[product.id]?.priceBase ?? product.priceBase
+                            }
+                            onChange={(v) => setField(product, 'priceBase', v)}
+                          />
+                        ) : (
+                          <Text fontSize="sm">
+                            {currency.toIDRFormat(product.priceBase ?? 0)}
+                          </Text>
+                        )}
                       </Td>
                       <Td isNumeric>
-                        <EditableCell
-                          value={product.stock}
-                          format={(v) => String(v)}
-                          onSave={(v) => handleFieldSave(product.id, 'stock', v)}
-                        />
+                        {editMode ? (
+                          <DraftNumberInput
+                            value={draft[product.id]?.stock ?? product.stock}
+                            onChange={(v) => setField(product, 'stock', v)}
+                          />
+                        ) : (
+                          <Text fontSize="sm">{product.stock ?? 0}</Text>
+                        )}
                       </Td>
-                      <Td>{renderApprovalCell(product)}</Td>
+                      <Td>{renderStatusCell(product)}</Td>
                       <Td>
                         <HStack spacing={1}>
                           {approval === 'pending' && (
@@ -579,7 +655,11 @@ export default function ProductPage() {
                             </>
                           )}
                           <Link href={`/admin/products/${product.id}/edit`}>
-                            <Button size="xs" variant="outline" colorScheme="brand">
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              colorScheme="brand"
+                            >
                               Ubah
                             </Button>
                           </Link>
@@ -664,86 +744,32 @@ export default function ProductPage() {
         </HStack>
       )}
 
-      <Modal isOpen={batchModal.isOpen} onClose={batchModal.onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit massal ({selectedIds.length} produk)</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="stretch" spacing={4}>
-              <FormControl>
-                <FormLabel>Field</FormLabel>
-                <Select
-                  value={batchField}
-                  onChange={(e) => {
-                    setBatchField(e.target.value)
-                    setBatchValue('')
-                  }}
-                >
-                  {BATCH_FIELDS.map((field) => (
-                    <option key={field.value} value={field.value}>
-                      {field.label}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Nilai</FormLabel>
-                {batchField === 'channels' ? (
-                  <Select
-                    value={batchValue}
-                    onChange={(e) => setBatchValue(e.target.value)}
-                    placeholder="Pilih kanal"
-                  >
-                    <option value="pos">POS saja</option>
-                    <option value="online">Online saja</option>
-                    <option value="both">POS + Online</option>
-                  </Select>
-                ) : batchField === 'isActive' ? (
-                  <Select
-                    value={batchValue}
-                    onChange={(e) => setBatchValue(e.target.value)}
-                    placeholder="Pilih status"
-                  >
-                    <option value="true">Aktif</option>
-                    <option value="false">Nonaktif</option>
-                  </Select>
-                ) : batchField === 'approvalStatus' ? (
-                  <Select
-                    value={batchValue}
-                    onChange={(e) => setBatchValue(e.target.value)}
-                    placeholder="Pilih approval"
-                  >
-                    <option value="approved">Disetujui</option>
-                    <option value="pending">Menunggu</option>
-                    <option value="rejected">Ditolak</option>
-                  </Select>
-                ) : (
-                  <Input
-                    type="number"
-                    value={batchValue}
-                    onChange={(e) => setBatchValue(e.target.value)}
-                    placeholder="Masukkan nilai"
-                  />
-                )}
-              </FormControl>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={batchModal.onClose}>
-              Batal
-            </Button>
-            <Button
-              colorScheme="brand"
-              onClick={applyBatch}
-              isDisabled={batchValue === ''}
-            >
-              Terapkan
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AlertDialog
+        isOpen={discardDialog.isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={discardDialog.onClose}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Buang perubahan?
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              {changeCount} perubahan yang belum disimpan akan dihapus dan tidak
+              bisa dikembalikan.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={discardDialog.onClose}>
+                Lanjutkan edit
+              </Button>
+              <Button colorScheme="red" onClick={doDiscard} ml={3}>
+                Buang
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Layout>
   )
 }

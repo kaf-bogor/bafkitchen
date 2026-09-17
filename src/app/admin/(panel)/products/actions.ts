@@ -332,6 +332,33 @@ export const useBatchUpdateProducts = () => {
   return { batchUpdateProducts, loading, error }
 }
 
+export const useBulkUpdateProducts = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const bulkUpdateProducts = async (
+    items: { id: string; fields: IProductFieldsUpdate }[]
+  ) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ updated: number }>('/api/products/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ items })
+      })
+      return res
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { bulkUpdateProducts, loading, error }
+}
+
 export interface IFetchProductRequest {
   categoryIds?: string[]
   q?: string
