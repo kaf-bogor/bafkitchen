@@ -78,10 +78,6 @@ export default function VendorInvoiceDetailPage() {
     new Date(invoice.dueDate) < new Date() &&
     invoice.status !== EInvoiceStatus.SETTLED
 
-  const netAmount = invoice
-    ? invoice.totalAmount - (invoice.commission?.amount || 0)
-    : 0
-
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       {invoice ? (
@@ -255,10 +251,10 @@ export default function VendorInvoiceDetailPage() {
                 </CardBody>
               </Card>
 
-              <SimpleGridStats
-                total={invoice.totalAmount}
-                commission={invoice.commission?.amount || 0}
-                net={netAmount}
+              <StatCard
+                label="Total invoice"
+                value={currency.toIDRFormat(invoice.totalAmount)}
+                tone="green"
               />
             </VStack>
           </Flex>
@@ -273,35 +269,5 @@ export default function VendorInvoiceDetailPage() {
         )
       )}
     </Layout>
-  )
-}
-
-function SimpleGridStats({
-  total,
-  commission,
-  net
-}: {
-  total: number
-  commission: number
-  net: number
-}) {
-  return (
-    <VStack spacing={4} align="stretch">
-      <StatCard
-        label="Total invoice"
-        value={currency.toIDRFormat(total)}
-        tone="blue"
-      />
-      <StatCard
-        label="Komisi Bazaf"
-        value={currency.toIDRFormat(commission)}
-        tone="gray"
-      />
-      <StatCard
-        label="Net diterima"
-        value={currency.toIDRFormat(net)}
-        tone="green"
-      />
-    </VStack>
   )
 }

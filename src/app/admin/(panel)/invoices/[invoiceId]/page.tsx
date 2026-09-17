@@ -14,7 +14,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  Divider,
   Flex,
   HStack,
   Table,
@@ -147,10 +146,6 @@ export default function InvoiceDetailsPage() {
     new Date(invoice.dueDate) < new Date() &&
     invoice.status !== EInvoiceStatus.SETTLED
 
-  const netAmount = invoice
-    ? invoice.totalAmount - (invoice.commission?.amount || 0)
-    : 0
-
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       {invoice ? (
@@ -275,29 +270,7 @@ export default function InvoiceDetailsPage() {
                       <Text fontSize="sm" color="text-muted">
                         Total invoice
                       </Text>
-                      <Price value={invoice.totalAmount} size="md" />
-                    </Flex>
-                    <Flex justify="space-between" align="baseline">
-                      <Text fontSize="sm" color="text-muted">
-                        Komisi Bazaf
-                        {invoice.commission
-                          ? ` (${invoice.commission.percentage}%)`
-                          : ''}
-                      </Text>
-                      <Text fontSize="sm" color="text-body">
-                        -
-                        <Price
-                          value={invoice.commission?.amount || 0}
-                          size="sm"
-                        />
-                      </Text>
-                    </Flex>
-                    <Divider />
-                    <Flex justify="space-between" align="baseline">
-                      <Text fontSize="sm" fontWeight="600" color="text-strong">
-                        Net diterima
-                      </Text>
-                      <Price value={netAmount} size="lg" />
+                      <Price value={invoice.totalAmount} size="lg" />
                     </Flex>
                   </VStack>
                 </CardBody>

@@ -183,39 +183,16 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
   const boxWidth = 82
   const boxX = PAGE_WIDTH - MARGIN - boxWidth
 
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  setColor(pdf, 'text', BODY)
-  pdf.text('Subtotal', boxX, y)
-  pdf.text(currency.toIDRFormat(invoice.totalAmount), PAGE_WIDTH - MARGIN, y, {
-    align: 'right'
-  })
-  y += 6
-
-  if (invoice.commission) {
-    pdf.text(`Komisi Bazaf (${invoice.commission.percentage}%)`, boxX, y)
-    pdf.text(
-      `-${currency.toIDRFormat(invoice.commission.amount)}`,
-      PAGE_WIDTH - MARGIN,
-      y,
-      { align: 'right' }
-    )
-    y += 6
-  }
-
   setColor(pdf, 'draw', LINE)
   pdf.line(boxX, y - 2, PAGE_WIDTH - MARGIN, y - 2)
 
   setColor(pdf, 'text', INK)
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(11)
-  pdf.text('Net diterima', boxX, y + 3)
-  pdf.text(
-    currency.toIDRFormat(invoice.totalAmount - (invoice.commission?.amount || 0)),
-    PAGE_WIDTH - MARGIN,
-    y + 3,
-    { align: 'right' }
-  )
+  pdf.text('Total', boxX, y + 3)
+  pdf.text(currency.toIDRFormat(invoice.totalAmount), PAGE_WIDTH - MARGIN, y + 3, {
+    align: 'right'
+  })
   y += 14
 
   // ---- Payment note ----

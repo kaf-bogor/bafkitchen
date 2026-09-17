@@ -114,16 +114,12 @@ export async function generateInvoicesForOrder(orderId: string) {
         phoneNumber: customer?.phoneNumber ?? '',
         namaSantri: customer?.namaSantri ?? '',
         kelas: customer?.kelas ?? ''
-      },
-      commission: {
-        percentage: 10,
-        amount: totalAmount * 0.1
       }
     }
     await db()
       .prepare(
         `INSERT INTO invoices (id, invoice_number, order_id, vendor_id, vendor_name, total_amount, status, due_date, issued_date, settled_date, items, customer, commission, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, ?, ?)`
       )
       .bind(
         invoice.id,
@@ -137,7 +133,6 @@ export async function generateInvoicesForOrder(orderId: string) {
         invoice.issuedDate,
         JSON.stringify(invoice.items),
         JSON.stringify(invoice.customer),
-        JSON.stringify(invoice.commission),
         invoice.createdAt,
         invoice.updatedAt
       )

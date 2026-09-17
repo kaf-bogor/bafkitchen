@@ -15,7 +15,6 @@ const transformInvoiceRow = (row: {
   settled_date: string | null
   items: string
   customer: string
-  commission: string | null
   created_at: string
   updated_at: string
 }) => ({
@@ -32,8 +31,7 @@ const transformInvoiceRow = (row: {
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   items: parseJson(row.items, []),
-  customer: parseJson(row.customer, {}),
-  commission: row.commission ? parseJson(row.commission, null) : undefined
+  customer: parseJson(row.customer, {})
 })
 
 export async function GET(request: Request) {

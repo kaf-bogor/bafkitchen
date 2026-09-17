@@ -73,15 +73,13 @@ export default function ReportsPage() {
 
   const handleExportCSV = () => {
     exportTableToCSV(
-      ['Vendor', 'Qty', 'Omset', 'HPP', 'Laba Kotor', 'Komisi', 'Net Vendor'],
+      ['Vendor', 'Qty', 'Omset', 'HPP', 'Laba Kotor'],
       byVendor.map((row) => [
         row.name,
         row.qty,
         currency.toIDRFormat(row.omset),
         currency.toIDRFormat(row.hpp),
-        currency.toIDRFormat(row.labaKotor),
-        currency.toIDRFormat(row.komisi),
-        currency.toIDRFormat(row.net)
+        currency.toIDRFormat(row.labaKotor)
       ]),
       `Laporan_Penjualan_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
     )
@@ -95,18 +93,15 @@ export default function ReportsPage() {
         summary: [
           { label: 'Omset', value: currency.toIDRFormat(totals.omset) },
           { label: 'HPP', value: currency.toIDRFormat(totals.hpp) },
-          { label: 'Laba kotor', value: currency.toIDRFormat(totals.labaKotor) },
-          { label: 'Net Bazaf (komisi)', value: currency.toIDRFormat(totals.netAdmin) }
+          { label: 'Laba kotor', value: currency.toIDRFormat(totals.labaKotor) }
         ],
-        columns: ['Vendor', 'Qty', 'Omset', 'HPP', 'Laba', 'Komisi', 'Net'],
+        columns: ['Vendor', 'Qty', 'Omset', 'HPP', 'Laba'],
         rows: byVendor.map((row) => [
           row.name,
           row.qty,
           currency.toIDRFormat(row.omset),
           currency.toIDRFormat(row.hpp),
-          currency.toIDRFormat(row.labaKotor),
-          currency.toIDRFormat(row.komisi),
-          currency.toIDRFormat(row.net)
+          currency.toIDRFormat(row.labaKotor)
         ])
       },
       `Laporan_Penjualan_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
@@ -145,20 +140,6 @@ export default function ReportsPage() {
         <Text fontWeight="600" color="brand.700">
           {currency.toIDRFormat(row.labaKotor)}
         </Text>
-      )
-    },
-    {
-      key: 'komisi',
-      header: 'Komisi',
-      isNumeric: true,
-      render: (row) => currency.toIDRFormat(row.komisi)
-    },
-    {
-      key: 'net',
-      header: 'Net vendor',
-      isNumeric: true,
-      render: (row) => (
-        <Text fontWeight="600">{currency.toIDRFormat(row.net)}</Text>
       )
     }
   ]
@@ -237,7 +218,7 @@ export default function ReportsPage() {
         <StatusBadge color="gray">{totals.orderCount} order</StatusBadge>
       </Flex>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, lg: 5 }} gap={5} mb={6}>
+      <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={5} mb={6}>
         <StatCard
           label="Omset"
           value={currency.toIDRFormat(totals.omset)}
@@ -255,18 +236,6 @@ export default function ReportsPage() {
           value={currency.toIDRFormat(totals.labaKotor)}
           sublabel="Omset − HPP"
           tone="green"
-        />
-        <StatCard
-          label="Komisi Bazaf"
-          value={currency.toIDRFormat(totals.netAdmin)}
-          sublabel="10% dari omset"
-          tone="blue"
-        />
-        <StatCard
-          label="Net vendor"
-          value={currency.toIDRFormat(totals.netVendor)}
-          sublabel="Omset − komisi"
-          tone="purple"
         />
       </SimpleGrid>
 

@@ -235,14 +235,6 @@ export default function VendorDashboard() {
                             </Td>
                             <Td>
                               <Price value={invoice.totalAmount} size="sm" />
-                              {invoice.commission && (
-                                <Text fontSize="xs" color="text-muted" mt={0.5}>
-                                  Net:{' '}
-                                  {currency.toIDRFormat(
-                                    invoice.totalAmount - invoice.commission.amount
-                                  )}
-                                </Text>
-                              )}
                             </Td>
                             <Td>
                               <HStack spacing={2} flexWrap="wrap">

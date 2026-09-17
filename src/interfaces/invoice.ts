@@ -22,12 +22,6 @@ export interface IInvoice {
     namaSantri: string
     kelas: string
   }
-  
-  // Bazaf commission/fee details
-  commission?: {
-    percentage: number
-    amount: number
-  }
 }
 
 export interface IInvoiceItem {

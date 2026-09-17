@@ -87,15 +87,13 @@ export default function VendorReportsPage() {
 
   const handleExportCSV = () => {
     exportTableToCSV(
-      ['Produk', 'Qty', 'Omset', 'HPP', 'Laba Kotor', 'Komisi', 'Net'],
+      ['Produk', 'Qty', 'Omset', 'HPP', 'Laba Kotor'],
       byProduct.map((row) => [
         row.name,
         row.qty,
         currency.toIDRFormat(row.omset),
         currency.toIDRFormat(row.hpp),
-        currency.toIDRFormat(row.labaKotor),
-        currency.toIDRFormat(row.komisi),
-        currency.toIDRFormat(row.net)
+        currency.toIDRFormat(row.labaKotor)
       ]),
       `Rekap_Penjualan_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
     )
@@ -109,17 +107,15 @@ export default function VendorReportsPage() {
         summary: [
           { label: 'Omset', value: currency.toIDRFormat(totals.omset) },
           { label: 'Item terjual', value: String(totals.qty) },
-          { label: 'Komisi', value: currency.toIDRFormat(totals.komisi) },
-          { label: 'Net diterima', value: currency.toIDRFormat(totals.netVendor) }
+          { label: 'Laba kotor', value: currency.toIDRFormat(totals.labaKotor) }
         ],
-        columns: ['Produk', 'Qty', 'Omset', 'HPP', 'Laba', 'Net'],
+        columns: ['Produk', 'Qty', 'Omset', 'HPP', 'Laba'],
         rows: byProduct.map((row) => [
           row.name,
           row.qty,
           currency.toIDRFormat(row.omset),
           currency.toIDRFormat(row.hpp),
-          currency.toIDRFormat(row.labaKotor),
-          currency.toIDRFormat(row.net)
+          currency.toIDRFormat(row.labaKotor)
         ])
       },
       `Rekap_Penjualan_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
@@ -153,14 +149,6 @@ export default function VendorReportsPage() {
         <Text fontWeight="600" color="brand.700">
           {currency.toIDRFormat(row.labaKotor)}
         </Text>
-      )
-    },
-    {
-      key: 'net',
-      header: 'Net',
-      isNumeric: true,
-      render: (row) => (
-        <Text fontWeight="600">{currency.toIDRFormat(row.net)}</Text>
       )
     }
   ]
@@ -219,7 +207,7 @@ export default function VendorReportsPage() {
             <StatusBadge color="gray">{totals.orderCount} order</StatusBadge>
           </Flex>
 
-          <SimpleGrid columns={{ base: 1, sm: 2, lg: 5 }} gap={5} mb={6}>
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={5} mb={6}>
             <StatCard
               label="Omset"
               value={currency.toIDRFormat(totals.omset)}
@@ -237,18 +225,6 @@ export default function VendorReportsPage() {
               value={currency.toIDRFormat(totals.labaKotor)}
               sublabel="Omset − HPP"
               tone="green"
-            />
-            <StatCard
-              label="Komisi"
-              value={currency.toIDRFormat(totals.komisi)}
-              sublabel="10% dari omset"
-              tone="orange"
-            />
-            <StatCard
-              label="Net diterima"
-              value={currency.toIDRFormat(totals.netVendor)}
-              sublabel="Omset − komisi"
-              tone="purple"
             />
           </SimpleGrid>
 

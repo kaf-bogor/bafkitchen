@@ -1,17 +1,11 @@
 import { IOrder } from '@/interfaces'
 
-// Bazaf takes a 10% commission on each sale.
-export const COMMISSION_RATE = 0.1
-
 export interface ReportTotals {
   orderCount: number
   qty: number
   omset: number
   hpp: number
   labaKotor: number
-  komisi: number
-  netVendor: number
-  netAdmin: number
 }
 
 export interface ReportRow {
@@ -21,8 +15,6 @@ export interface ReportRow {
   omset: number
   hpp: number
   labaKotor: number
-  komisi: number
-  net: number
 }
 
 const emptyTotals = (): ReportTotals => ({
@@ -30,22 +22,15 @@ const emptyTotals = (): ReportTotals => ({
   qty: 0,
   omset: 0,
   hpp: 0,
-  labaKotor: 0,
-  komisi: 0,
-  netVendor: 0,
-  netAdmin: 0
+  labaKotor: 0
 })
 
 /**
  * Aggregate sales metrics from orders.
  *
- * Definitions (defaults):
  * - omset      = Σ (price × qty)          gross sales
  * - hpp        = Σ (priceBase × qty)      cost of goods
  * - labaKotor  = omset − hpp              gross margin
- * - komisi     = 10% × omset              Bazaf income
- * - netVendor  = omset − komisi           what the vendor receives
- * - netAdmin   = komisi                   Bazaf net income
  *
  * Cancelled orders are excluded. Pass `vendorId` to scope to one vendor.
  */
@@ -77,13 +62,11 @@ export const buildReport = (
       const omset = qty * price
       const hpp = qty * priceBase
       const labaKotor = omset - hpp
-      const komisi = omset * COMMISSION_RATE
 
       totals.qty += qty
       totals.omset += omset
       totals.hpp += hpp
       totals.labaKotor += labaKotor
-      totals.komisi += komisi
       orderIncluded = true
 
       const v =
@@ -94,16 +77,12 @@ export const buildReport = (
           qty: 0,
           omset: 0,
           hpp: 0,
-          labaKotor: 0,
-          komisi: 0,
-          net: 0
+          labaKotor: 0
         } as ReportRow)
       v.qty += qty
       v.omset += omset
       v.hpp += hpp
       v.labaKotor += labaKotor
-      v.komisi += komisi
-      v.net = v.omset - v.komisi
       vendorMap.set(vId, v)
 
       const pId = product?.id || po.productId || 'unknown'
@@ -115,24 +94,17 @@ export const buildReport = (
           qty: 0,
           omset: 0,
           hpp: 0,
-          labaKotor: 0,
-          komisi: 0,
-          net: 0
+          labaKotor: 0
         } as ReportRow)
       p.qty += qty
       p.omset += omset
       p.hpp += hpp
       p.labaKotor += labaKotor
-      p.komisi += komisi
-      p.net = p.omset - p.komisi
       productMap.set(pId, p)
     }
 
     if (orderIncluded) totals.orderCount += 1
   }
-
-  totals.netVendor = totals.omset - totals.komisi
-  totals.netAdmin = totals.komisi
 
   return {
     totals,
