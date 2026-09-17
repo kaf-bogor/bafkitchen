@@ -51,6 +51,7 @@ export default function PosPage() {
     null
   )
   const [receipt, setReceipt] = useState<IReceiptData | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const cart = usePosCart()
   const { createPosOrder, loading: isProcessing } = useCreatePosOrder()
@@ -103,6 +104,18 @@ export default function PosPage() {
       return matchesSearch && matchesCategory
     })
   }, [allProducts, search, selectedCategoryId])
+
+  const PER_PAGE = 60
+  const totalPages = Math.max(1, Math.ceil(displayedProducts.length / PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedProducts = displayedProducts.slice(
+    (safePage - 1) * PER_PAGE,
+    safePage * PER_PAGE
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedCategoryId])
 
   const debouncedSearch = useDebouncedCallback(setSearch, 300)
 
@@ -255,16 +268,46 @@ export default function PosPage() {
           )}
 
           {!isLoadingCatalog && displayedProducts.length > 0 && (
-            <SimpleGrid columns={[2, 3, 3, 4]} spacing={3} pb={4}>
-              {displayedProducts.map((product) => (
-                <ProductTile
-                  key={product.id}
-                  product={product}
-                  cartQty={cart.getTotalQuantity(product.id)}
-                  onAdd={handleAddProduct}
-                />
-              ))}
-            </SimpleGrid>
+            <>
+              <SimpleGrid columns={[2, 3, 3, 4]} spacing={3} pb={4}>
+                {paginatedProducts.map((product) => (
+                  <ProductTile
+                    key={product.id}
+                    product={product}
+                    cartQty={cart.getTotalQuantity(product.id)}
+                    onAdd={handleAddProduct}
+                  />
+                ))}
+              </SimpleGrid>
+
+              {totalPages > 1 && (
+                <Flex justify="center" align="center" gap={3} pb={4}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    isDisabled={safePage === 1}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.max(1, p - 1))
+                    }
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Text fontSize="sm" color="gray.500">
+                    Halaman {safePage} dari {totalPages}
+                  </Text>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    isDisabled={safePage === totalPages}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                  >
+                    Berikutnya
+                  </Button>
+                </Flex>
+              )}
+            </>
           )}
         </Flex>
 

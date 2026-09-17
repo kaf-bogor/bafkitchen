@@ -210,7 +210,19 @@ export default function ProductForm({
                         <option value="box">box</option>
                         <option value="pack">pack</option>
                         <option value="kg">kg</option>
+                        <option value="gr">gr</option>
                         <option value="liter">liter</option>
+                        <option value="ml">ml</option>
+                        <option value="botol">botol</option>
+                        <option value="paket">paket</option>
+                        <option value="porsi">porsi</option>
+                        <option value="cup">cup</option>
+                        <option value="buah">buah</option>
+                        <option value="toples">toples</option>
+                        <option value="sachet">sachet</option>
+                        <option value="pouch">pouch</option>
+                        <option value="karung">karung</option>
+                        <option value="lembar">lembar</option>
                       </Select>
                     </FormControl>
                   </SimpleGrid>

@@ -174,11 +174,15 @@ export async function GET(request: Request) {
   // Visibility rules
   const session = await getSession(request)
   if (!session) {
-    // Public storefront: only approved and active products
+    // Public storefront: only approved, active products sold online
     productRows = productRows.filter(
       (row) =>
         (row.approval_status || 'approved') === 'approved' &&
-        (row.is_active ?? 1) === 1
+        (row.is_active ?? 1) === 1 &&
+        (row.channels || '')
+          .split(',')
+          .map((c) => c.trim())
+          .includes('online')
     )
   } else if (session.role !== 'admin') {
     // Vendor: only their own products (any approval status)
