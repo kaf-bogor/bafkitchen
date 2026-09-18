@@ -30,6 +30,7 @@ export interface ProductRow {
   preorder_capacity: number | null
   fulfillment_type: string
   approval_status: string
+  activities?: string | null
   created_at: string
   updated_at: string
 }

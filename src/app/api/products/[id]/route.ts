@@ -2,6 +2,10 @@ import { env } from 'cloudflare:workers'
 
 import { requireAdmin, requireAuth } from '@/lib/server/auth'
 import { json, db, now, parseJson } from '@/lib/server/db'
+import {
+  recordProductActivity,
+  snapshotProduct
+} from '@/lib/server/productActivities'
 import { getVendorForUser } from '@/lib/server/vendors'
 
 import type { ProductRow } from '../route'
@@ -68,6 +72,7 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
       fulfillmentType: row.fulfillment_type || 'takeaway',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      activities: parseJson(row.activities, []),
       vendor,
       categories: results
     }
@@ -210,6 +215,15 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .bind(ctx.params.id)
     .all<CategoryRow>()
   const storedVendor = parseJson(row?.vendor ?? null, null)
+  if (row) {
+    await recordProductActivity(
+      database,
+      ctx.params.id,
+      snapshotProduct(existing),
+      snapshotProduct(row),
+      auth
+    )
+  }
   return json({
     product: row
       ? {
@@ -301,9 +315,9 @@ export async function PATCH(request: Request, ctx: { params: { id: string } }) {
 
   const database = db()
   const existing = await database
-    .prepare('SELECT id FROM products WHERE id = ?')
+    .prepare('SELECT * FROM products WHERE id = ?')
     .bind(ctx.params.id)
-    .first()
+    .first<ProductRow>()
   if (!existing) return json({ error: 'Product not found' }, { status: 404 })
 
   sets.push('updated_at = ?')
@@ -313,6 +327,20 @@ export async function PATCH(request: Request, ctx: { params: { id: string } }) {
     .prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`)
     .bind(...params, ctx.params.id)
     .run()
+
+  const updated = await database
+    .prepare('SELECT * FROM products WHERE id = ?')
+    .bind(ctx.params.id)
+    .first<ProductRow>()
+  if (updated) {
+    await recordProductActivity(
+      database,
+      ctx.params.id,
+      snapshotProduct(existing),
+      snapshotProduct(updated),
+      auth
+    )
+  }
 
   return json({ id: ctx.params.id })
 }

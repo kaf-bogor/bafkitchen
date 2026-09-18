@@ -35,6 +35,24 @@ export interface IProductsResponse {
   products: IProductResponse[]
 }
 
+export interface IProductChange {
+  field: string
+  label: string
+  from: string
+  to: string
+}
+
+export interface IProductActivity {
+  id: string
+  userId: string
+  userEmail: string
+  userName: string
+  action: string
+  changes: IProductChange[]
+  timestamp: string
+  createdAt: string
+}
+
 export interface IProductResponse {
   id: string
   name: string
@@ -65,6 +83,7 @@ export interface IProductResponse {
   updatedAt: string
   vendor: IVendor
   categories: ICategory[]
+  activities?: IProductActivity[]
 }
 
 export interface ICategoryInput {

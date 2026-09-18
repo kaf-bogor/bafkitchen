@@ -1,5 +1,12 @@
 import { requireAdmin } from '@/lib/server/auth'
 import { json, db, now } from '@/lib/server/db'
+import {
+  diffProduct,
+  recordProductActivities,
+  snapshotProduct
+} from '@/lib/server/productActivities'
+
+import type { ProductRow } from '../route'
 
 const ALLOWED_CHANNELS = ['pos', 'online', 'preorder']
 
@@ -20,14 +27,20 @@ export async function POST(request: Request) {
     items?: { id: string; fields: Fields }[]
   } | null
 
-  const items = (body?.items || []).filter(
-    (item) => item?.id && item?.fields
-  )
+  const items = (body?.items || []).filter((item) => item?.id && item?.fields)
   if (!items.length) {
     return json({ error: 'No items provided' }, { status: 400 })
   }
 
   const database = db()
+  const ids = items.map((item) => item.id)
+  const placeholders = ids.map(() => '?').join(',')
+
+  const { results: beforeRows } = await database
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ProductRow>()
+
   let updated = 0
 
   for (const item of items) {
@@ -77,6 +90,24 @@ export async function POST(request: Request) {
       .run()
     updated++
   }
+
+  const { results: afterRows } = await database
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ProductRow>()
+
+  const beforeMap = new Map(beforeRows.map((row) => [row.id, row]))
+  const entries = afterRows
+    .filter((row) => beforeMap.has(row.id))
+    .map((row) => ({
+      productId: row.id,
+      changes: diffProduct(
+        snapshotProduct(beforeMap.get(row.id) as ProductRow),
+        snapshotProduct(row)
+      )
+    }))
+
+  await recordProductActivities(database, entries, auth)
 
   return json({ updated })
 }

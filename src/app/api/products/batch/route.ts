@@ -1,5 +1,12 @@
 import { requireAdmin } from '@/lib/server/auth'
 import { json, db, now } from '@/lib/server/db'
+import {
+  diffProduct,
+  recordProductActivities,
+  snapshotProduct
+} from '@/lib/server/productActivities'
+
+import type { ProductRow } from '../route'
 
 const ALLOWED_CHANNELS = ['pos', 'online', 'preorder']
 
@@ -64,11 +71,36 @@ export async function POST(request: Request) {
   sets.push('updated_at = ?')
   params.push(now())
 
+  const database = db()
   const placeholders = ids.map(() => '?').join(',')
-  await db()
+
+  const { results: beforeRows } = await database
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ProductRow>()
+
+  await database
     .prepare(`UPDATE products SET ${sets.join(', ')} WHERE id IN (${placeholders})`)
     .bind(...params, ...ids)
     .run()
+
+  const { results: afterRows } = await database
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
+    .bind(...ids)
+    .all<ProductRow>()
+
+  const beforeMap = new Map(beforeRows.map((row) => [row.id, row]))
+  const entries = afterRows
+    .filter((row) => beforeMap.has(row.id))
+    .map((row) => ({
+      productId: row.id,
+      changes: diffProduct(
+        snapshotProduct(beforeMap.get(row.id) as ProductRow),
+        snapshotProduct(row)
+      )
+    }))
+
+  await recordProductActivities(database, entries, auth)
 
   return json({ updated: ids.length })
 }

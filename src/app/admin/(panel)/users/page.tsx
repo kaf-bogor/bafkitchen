@@ -1,14 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
 import {
   Button,
+  HStack,
   IconButton,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
+  Select,
   Text,
   useToast
 } from '@chakra-ui/react'
@@ -41,6 +43,7 @@ export default function User() {
   const { deleteUser, loading: isDeleting } = useDeleteUser()
 
   const [selectedId, setSelectedId] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
 
   const handleDelete = async (id: string) => {
     try {
@@ -67,6 +70,14 @@ export default function User() {
 
   const sortedUsers = [...(users || [])].sort((a, b) =>
     new Date(a.createdAt) > new Date(b.createdAt) ? 1 : -1
+  )
+
+  const filteredUsers = useMemo(
+    () =>
+      roleFilter
+        ? sortedUsers.filter((user) => user.role === roleFilter)
+        : sortedUsers,
+    [sortedUsers, roleFilter]
   )
 
   const renderActions = (user: IUser.IUser) => (
@@ -141,15 +152,32 @@ export default function User() {
         }
       />
 
+      <HStack mb={5} gap={3} flexWrap="wrap">
+        <Select
+          maxW="220px"
+          bg="white"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
+          <option value="">Semua peran</option>
+          <option value="admin">Admin</option>
+          <option value="user">Pengguna</option>
+          <option value="customer">Pelanggan</option>
+        </Select>
+        <Text fontSize="sm" color="text-muted">
+          {filteredUsers.length} pengguna
+        </Text>
+      </HStack>
+
       <Card>
         <CardHeader
           title="Daftar pengguna"
-          description={`${users?.length || 0} pengguna terdaftar`}
+          description={`${filteredUsers.length} pengguna terdaftar`}
         />
         <CardBody p={0}>
           <ResponsiveTable
             columns={columns}
-            rows={sortedUsers}
+            rows={filteredUsers}
             getRowKey={(user) => user.id}
             mobileTitleKey="name"
             mobileSubtitleKey="email"
