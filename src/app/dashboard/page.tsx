@@ -232,7 +232,7 @@ export default function VendorDashboard() {
                             <Td>
                               {invoice.orderId ? (
                                 <Link href={`/admin/orders/${invoice.orderId}`}>
-                                  {invoice.orderId.substring(0, 8)}...
+                                  {invoice.orderId}
                                 </Link>
                               ) : invoice.periodStart && invoice.periodEnd ? (
                                 <Text fontSize="xs" color="text-muted">

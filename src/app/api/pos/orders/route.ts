@@ -1,5 +1,5 @@
-import { json, db, now, uuid } from '@/lib/server/db'
-import { generateOrderNumber } from '@/lib/server/orderNumber'
+import { json, db, now } from '@/lib/server/db'
+import { generateOrderId, generateOrderNumber } from '@/lib/server/orderNumber'
 
 interface CartItem {
   id: string
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   })
 
   const ts = now()
-  const id = uuid()
+  const id = await generateOrderId()
   const orderNumber = await generateOrderNumber()
   const customer = {
     name: body.customerName || 'Walk-in Customer',

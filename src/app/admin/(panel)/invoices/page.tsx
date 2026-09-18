@@ -405,7 +405,7 @@ export default function InvoicesPage() {
           </Text>
         ) : invoice.orderId ? (
           <Link href={`/admin/orders/${invoice.orderId}`}>
-            {invoice.orderId.substring(0, 8)}...
+            {invoice.orderId}
           </Link>
         ) : (
           <Text fontSize="sm" color="text-muted">

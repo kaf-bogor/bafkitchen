@@ -24,3 +24,27 @@ export const generateOrderNumber = async (): Promise<string> => {
 
   return `BZ-${String(next).padStart(3, '0')}${suffix}`
 }
+
+// First letter of the Indonesian month name (Januari..Desember).
+const MONTH_LETTERS = ['j', 'f', 'm', 'a', 'm', 'j', 'j', 'a', 's', 'o', 'n', 'd']
+
+/**
+ * Short, readable order id: first letter of the month + a globally
+ * incrementing sequence. Example: s1, s2, ... (September), then o16 (October).
+ * The number never resets, so ids stay unique across months and years.
+ */
+export const generateOrderId = async (): Promise<string> => {
+  const letter = MONTH_LETTERS[new Date().getMonth()]
+
+  const row = await db()
+    .prepare(
+      `SELECT MAX(CAST(substr(id, 2) AS INTEGER)) AS maxseq
+       FROM orders
+       WHERE length(id) <= 8 AND id GLOB '[a-z][0-9]*'`
+    )
+    .first<{ maxseq: number | null }>()
+
+  const next = (row?.maxseq ?? 0) + 1
+
+  return `${letter}${next}`
+}

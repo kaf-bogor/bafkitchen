@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/server/auth'
-import { json, db, now, uuid, parseJson } from '@/lib/server/db'
-import { generateOrderNumber } from '@/lib/server/orderNumber'
+import { json, db, now, parseJson } from '@/lib/server/db'
+import { generateOrderId, generateOrderNumber } from '@/lib/server/orderNumber'
 
 interface ProductOrder {
   id: number
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
   })
 
   const ts = now()
-  const id = uuid()
+  const id = await generateOrderId()
   const orderNumber = await generateOrderNumber()
   const customer = {
     name: body.orderer?.name || '',
