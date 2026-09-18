@@ -1,14 +1,29 @@
 'use client'
 import React, { useState } from 'react'
 
+import { AddIcon } from '@chakra-ui/icons'
 import {
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
   IconButton,
+  Input,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
+  Stack,
   Text,
+  useDisclosure,
   useToast
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
@@ -27,16 +42,75 @@ import {
   StatusBadge,
   type ResponsiveColumn
 } from '@/components/ui'
-import { VENDOR_TYPE_OPTIONS, VendorType } from '@/constants/vendor'
+import {
+  isGmailAddress,
+  VENDOR_TYPE_OPTIONS,
+  VendorType
+} from '@/constants/vendor'
 import { IVendor } from '@/interfaces/vendor'
 
-import { useGetVendors, useUpdateVendor } from './actions'
+import { useCreateVendor, useGetVendors, useUpdateVendor } from './actions'
 
 export default function VendorsPage() {
   const toast = useToast()
   const { data: vendors, loading: isFetching, error, refetch } = useGetVendors()
   const { updateVendor, loading: isUpdating } = useUpdateVendor()
+  const { createVendor, loading: isCreating } = useCreateVendor()
   const [updatingId, setUpdatingId] = useState('')
+
+  const createModal = useDisclosure()
+  const [formName, setFormName] = useState('')
+  const [formEmail, setFormEmail] = useState('')
+  const [formType, setFormType] = useState<VendorType>('bazaf')
+  const [errors, setErrors] = useState<{ name?: string; email?: string }>({})
+
+  const resetForm = () => {
+    setFormName('')
+    setFormEmail('')
+    setFormType('bazaf')
+    setErrors({})
+  }
+
+  const closeCreateModal = () => {
+    createModal.onClose()
+    resetForm()
+  }
+
+  const handleCreate = async () => {
+    const nextErrors: { name?: string; email?: string } = {}
+    if (!formName.trim()) nextErrors.name = 'Nama vendor wajib diisi'
+    if (!formEmail.trim()) {
+      nextErrors.email = 'Email vendor wajib diisi'
+    } else if (!isGmailAddress(formEmail)) {
+      nextErrors.email = 'Email vendor harus menggunakan alamat @gmail.com'
+    }
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+
+    try {
+      await createVendor({
+        name: formName.trim(),
+        email: formEmail.trim(),
+        type: formType
+      })
+      toast({
+        title: 'Vendor ditambahkan',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      closeCreateModal()
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal menambahkan vendor',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
 
   const handleTypeChange = async (vendor: IVendor, type: VendorType) => {
     setUpdatingId(vendor.id)
@@ -140,6 +214,16 @@ export default function VendorsPage() {
           { label: 'Dasbor', path: '/admin' },
           { label: 'Vendor' }
         ]}
+        actions={
+          <Button
+            colorScheme="brand"
+            size="sm"
+            leftIcon={<AddIcon />}
+            onClick={createModal.onOpen}
+          >
+            Tambah Vendor
+          </Button>
+        }
       />
 
       <Card>
@@ -164,6 +248,82 @@ export default function VendorsPage() {
           />
         </CardBody>
       </Card>
+
+      <Modal
+        isOpen={createModal.isOpen}
+        onClose={closeCreateModal}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Tambah vendor</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={4}>
+              <FormControl isInvalid={Boolean(errors.name)} isRequired>
+                <FormLabel fontSize="sm">Nama vendor</FormLabel>
+                <Input
+                  size="sm"
+                  placeholder="Nama vendor"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                />
+                <FormErrorMessage>{errors.name}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={Boolean(errors.email)} isRequired>
+                <FormLabel fontSize="sm">Email</FormLabel>
+                <Input
+                  size="sm"
+                  type="email"
+                  placeholder="nama@gmail.com"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                />
+                <FormErrorMessage>{errors.email}</FormErrorMessage>
+                {!errors.email && (
+                  <Text fontSize="xs" color="text-muted" mt={1}>
+                    Hanya email @gmail.com yang diizinkan.
+                  </Text>
+                )}
+              </FormControl>
+
+              <FormControl>
+                <FormLabel fontSize="sm">Tipe</FormLabel>
+                <Select
+                  size="sm"
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value as VendorType)}
+                >
+                  {VENDOR_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={closeCreateModal}
+              isDisabled={isCreating}
+            >
+              Batal
+            </Button>
+            <Button
+              colorScheme="brand"
+              onClick={handleCreate}
+              isLoading={isCreating}
+              loadingText="Menyimpan..."
+            >
+              Simpan
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Layout>
   )
 }

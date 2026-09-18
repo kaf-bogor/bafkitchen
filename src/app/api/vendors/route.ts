@@ -1,3 +1,4 @@
+import { isGmailAddress } from '@/constants/vendor'
 import { requireAdmin } from '@/lib/server/auth'
 import { json, db, now } from '@/lib/server/db'
 import { generateVendorId } from '@/lib/server/vendorId'
@@ -87,6 +88,17 @@ export async function POST(request: Request) {
   const name = body?.name?.trim()
   if (!name) return json({ error: 'Name is required' }, { status: 400 })
 
+  const email = body?.email?.trim() ?? ''
+  if (!email) {
+    return json({ error: 'Email vendor wajib diisi' }, { status: 400 })
+  }
+  if (!isGmailAddress(email)) {
+    return json(
+      { error: 'Email vendor harus menggunakan alamat @gmail.com' },
+      { status: 400 }
+    )
+  }
+
   const type = body?.type ?? 'bazaf'
   const ts = now()
   const database = db()
@@ -106,7 +118,7 @@ export async function POST(request: Request) {
       `INSERT INTO vendors (id, name, email, type, is_active, user_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, 1, NULL, ?, ?)`
     )
-    .bind(id, name, body?.email?.trim() ?? null, type, ts, ts)
+    .bind(id, name, email, type, ts, ts)
     .run()
 
   return json(
@@ -114,7 +126,7 @@ export async function POST(request: Request) {
       vendor: {
         id,
         name,
-        email: body?.email?.trim() ?? '',
+        email,
         type,
         isActive: true,
         userId: '',
