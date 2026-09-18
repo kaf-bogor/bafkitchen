@@ -507,3 +507,159 @@ export const exportReportToPDF = (
 
   pdf.save(filename || `Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
 }
+
+interface StockChecklistRow {
+  productId: string
+  productName: string
+  sku: string
+  unit: string
+  systemStock: number
+  countedStock?: number | null
+  difference?: number | null
+  note?: string
+}
+
+export const exportStockChecklistToPDF = (
+  items: StockChecklistRow[],
+  options?: { title?: string; subtitle?: string; fileName?: string }
+) => {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
+  const pageWidth = 297
+  const margin = 15
+  const contentWidth = pageWidth - margin * 2
+
+  const renderHeader = () => {
+    setColor(pdf, 'fill', BRAND)
+    pdf.roundedRect(margin, 12, 10, 10, 2.5, 2.5, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(12)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text('B', margin + 3.6, 19)
+
+    setColor(pdf, 'text', INK)
+    pdf.setFontSize(15)
+    pdf.text('Bazaf', margin + 14, 18)
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text('Checklist stok fisik', margin + 14, 23)
+
+    setColor(pdf, 'text', INK)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(14)
+    pdf.text(options?.title || 'Checklist Stok', pageWidth - margin, 18, {
+      align: 'right'
+    })
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(options?.subtitle || '', pageWidth - margin, 23, {
+      align: 'right'
+    })
+
+    setColor(pdf, 'draw', LINE)
+    pdf.line(margin, 29, pageWidth - margin, 29)
+  }
+
+  const cols = {
+    no: margin + 2,
+    sku: margin + 10,
+    name: margin + 45,
+    unit: margin + 135,
+    system: margin + 175,
+    counted: margin + 205,
+    difference: margin + 232,
+    note: margin + 240
+  }
+
+  const renderTableHeader = (y: number) => {
+    setColor(pdf, 'fill', SOFT)
+    pdf.rect(margin, y - 5, contentWidth, 8, 'F')
+    setColor(pdf, 'text', MUTED)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(8)
+    pdf.text('NO', cols.no, y)
+    pdf.text('SKU', cols.sku, y)
+    pdf.text('NAMA PRODUK', cols.name, y)
+    pdf.text('SATUAN', cols.unit, y)
+    pdf.text('STOK SISTEM', cols.system, y, { align: 'right' })
+    pdf.text('STOK FISIK', cols.counted, y, { align: 'right' })
+    pdf.text('SELISIH', cols.difference, y, { align: 'right' })
+    pdf.text('CATATAN', cols.note, y)
+  }
+
+  renderHeader()
+  let y = 38
+  renderTableHeader(y)
+  y += 7
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+
+  items.forEach((item, index) => {
+    if (y > 195) {
+      pdf.addPage()
+      renderHeader()
+      y = 38
+      renderTableHeader(y)
+      y += 7
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+    }
+
+    const name =
+      item.productName.length > 48
+        ? `${item.productName.substring(0, 48)}...`
+        : item.productName
+    const note = (item.note || '').length > 22
+      ? `${(item.note || '').substring(0, 22)}...`
+      : item.note || ''
+
+    setColor(pdf, 'text', BODY)
+    pdf.text(String(index + 1), cols.no, y)
+    pdf.text(item.sku || '-', cols.sku, y)
+    setColor(pdf, 'text', INK)
+    pdf.text(name, cols.name, y)
+    setColor(pdf, 'text', BODY)
+    pdf.text(item.unit || '-', cols.unit, y)
+    pdf.text(String(item.systemStock), cols.system, y, { align: 'right' })
+    pdf.text(
+      item.countedStock === null || item.countedStock === undefined
+        ? ''
+        : String(item.countedStock),
+      cols.counted,
+      y,
+      { align: 'right' }
+    )
+    pdf.text(
+      item.difference === null || item.difference === undefined
+        ? ''
+        : String(item.difference),
+      cols.difference,
+      y,
+      { align: 'right' }
+    )
+    pdf.text(note, cols.note, y)
+
+    setColor(pdf, 'draw', LINE)
+    pdf.line(margin, y + 3, pageWidth - margin, y + 3)
+    y += 7
+  })
+
+  setColor(pdf, 'draw', LINE)
+  pdf.line(margin, 202, pageWidth - margin, 202)
+  setColor(pdf, 'text', MUTED)
+  pdf.setFontSize(8)
+  pdf.text(`Total ${items.length} produk`, margin, 207)
+  pdf.text(
+    `Dicetak ${format(new Date(), 'dd MMM yyyy HH:mm', { locale: id })}`,
+    pageWidth - margin,
+    207,
+    { align: 'right' }
+  )
+
+  pdf.save(
+    options?.fileName ||
+      `Checklist_Stok_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
+  )
+}

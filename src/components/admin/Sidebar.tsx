@@ -27,9 +27,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   AiOutlineBarChart,
   AiOutlineCalendar,
+  AiOutlineDatabase,
   AiOutlineDesktop,
   AiOutlineFileText,
   AiOutlineHome,
+  AiOutlineInbox,
   AiOutlineLogout,
   AiOutlineQuestionCircle,
   AiOutlineSetting,
@@ -84,6 +86,17 @@ function Sidebar({ ...rest }: Props) {
       items: [
         { text: 'Produk', path: '/admin/products', icon: AiOutlineShopping },
         { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags }
+      ]
+    },
+    {
+      title: 'Inventori',
+      items: [
+        { text: 'Pembelian', path: '/admin/purchases', icon: AiOutlineInbox },
+        {
+          text: 'Stok Opname',
+          path: '/admin/inventory/opname',
+          icon: AiOutlineDatabase
+        }
       ]
     },
     {
