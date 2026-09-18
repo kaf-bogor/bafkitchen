@@ -102,18 +102,23 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
   pdf.line(MARGIN, 58, PAGE_WIDTH - MARGIN, 58)
 
   // ---- Bill to / Customer ----
+  const isPeriod = invoice.type === 'vendor_period'
   const col2X = MARGIN + CONTENT_WIDTH / 2 + 5
 
   setColor(pdf, 'text', MUTED)
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(8)
-  pdf.text('DITAGIHKAN KEPADA', MARGIN, 67)
-  pdf.text('PELANGGAN', col2X, 67)
+  pdf.text('VENDOR', MARGIN, 67)
+  pdf.text(isPeriod ? 'PERIODE' : 'PELANGGAN', col2X, 67)
 
   setColor(pdf, 'text', INK)
   pdf.setFontSize(11)
   pdf.text(invoice.vendorName || '-', MARGIN, 73)
-  pdf.text(invoice.customer?.name || '-', col2X, 73)
+  const rightTitle =
+    isPeriod && invoice.periodStart && invoice.periodEnd
+      ? `${format(new Date(invoice.periodStart), 'dd MMM yyyy', { locale: id })} – ${format(new Date(invoice.periodEnd), 'dd MMM yyyy', { locale: id })}`
+      : invoice.customer?.name || '-'
+  pdf.text(rightTitle, col2X, 73)
 
   setColor(pdf, 'text', BODY)
   pdf.setFont('helvetica', 'normal')
@@ -121,17 +126,26 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
   pdf.text(`ID vendor: ${invoice.vendorId || '-'}`, MARGIN, 78.5)
 
   let customerY = 78.5
-  if (invoice.customer?.phoneNumber) {
-    pdf.text(`Telepon: ${invoice.customer.phoneNumber}`, col2X, customerY)
+  if (isPeriod) {
+    pdf.text(
+      `Jumlah order: ${invoice.orderIds?.length || 0}`,
+      col2X,
+      customerY
+    )
     customerY += 5
-  }
-  if (invoice.customer?.namaSantri) {
-    pdf.text(`Nama santri: ${invoice.customer.namaSantri}`, col2X, customerY)
-    customerY += 5
-  }
-  if (invoice.customer?.kelas) {
-    pdf.text(`Kelas: ${invoice.customer.kelas}`, col2X, customerY)
-    customerY += 5
+  } else {
+    if (invoice.customer?.phoneNumber) {
+      pdf.text(`Telepon: ${invoice.customer.phoneNumber}`, col2X, customerY)
+      customerY += 5
+    }
+    if (invoice.customer?.namaSantri) {
+      pdf.text(`Nama santri: ${invoice.customer.namaSantri}`, col2X, customerY)
+      customerY += 5
+    }
+    if (invoice.customer?.kelas) {
+      pdf.text(`Kelas: ${invoice.customer.kelas}`, col2X, customerY)
+      customerY += 5
+    }
   }
 
   // ---- Items table ----
@@ -164,18 +178,31 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
 
     setColor(pdf, 'text', INK)
     pdf.text(name, MARGIN + 3, y)
+
+    const hasVendorLine = Boolean(item.vendorName)
+    if (hasVendorLine) {
+      setColor(pdf, 'text', MUTED)
+      pdf.setFontSize(7.5)
+      pdf.text(item.vendorName as string, MARGIN + 3, y + 3.5)
+      pdf.setFontSize(9)
+    }
+
     setColor(pdf, 'text', BODY)
     pdf.text(String(item.quantity), MARGIN + 100, y, { align: 'right' })
-    pdf.text(currency.toIDRFormat(item.unitPrice), MARGIN + 140, y, {
-      align: 'right'
-    })
+    if (item.orderNumber || item.unitPrice === 0) {
+      pdf.text('-', MARGIN + 140, y, { align: 'right' })
+    } else {
+      pdf.text(currency.toIDRFormat(item.unitPrice), MARGIN + 140, y, {
+        align: 'right'
+      })
+    }
     pdf.text(currency.toIDRFormat(item.totalPrice), PAGE_WIDTH - MARGIN - 3, y, {
       align: 'right'
     })
 
     setColor(pdf, 'draw', LINE)
     pdf.line(MARGIN, y + 3, PAGE_WIDTH - MARGIN, y + 3)
-    y += 8
+    y += hasVendorLine ? 11 : 8
   })
 
   // ---- Summary ----
@@ -230,10 +257,10 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
     { align: 'right' }
   )
 
-  const fileName = `Invoice_${invoice.invoiceNumber}_${invoice.vendorName.replace(
-    /[^a-zA-Z0-9]/g,
-    '_'
-  )}.pdf`
+  const vendorSuffix = invoice.vendorName
+    ? `_${invoice.vendorName.replace(/[^a-zA-Z0-9]/g, '_')}`
+    : ''
+  const fileName = `Invoice_${invoice.invoiceNumber}${vendorSuffix}.pdf`
   pdf.save(fileName)
 }
 

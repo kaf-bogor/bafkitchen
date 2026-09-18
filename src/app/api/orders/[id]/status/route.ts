@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/server/auth'
 import { json, db, now, parseJson } from '@/lib/server/db'
-import { generateInvoicesForOrder } from '@/lib/server/invoices'
+import { generateInvoiceForOrder } from '@/lib/server/invoices'
 
 export async function PUT(request: Request, ctx: { params: { id: string } }) {
   const auth = await requireAdmin(request)
@@ -68,10 +68,10 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
       .run()
   }
 
-  let invoices: Record<string, unknown>[] | undefined
+  let invoice: Record<string, unknown> | undefined
   if (newStatus === 'Invoice Issued') {
     try {
-      invoices = await generateInvoicesForOrder(ctx.params.id)
+      invoice = await generateInvoiceForOrder(ctx.params.id)
     } catch (error) {
       return json(
         { error: `Order updated but invoice generation failed: ${(error as Error).message}` },
@@ -80,5 +80,5 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     }
   }
 
-  return json({ success: true, invoices })
+  return json({ success: true, invoice })
 }

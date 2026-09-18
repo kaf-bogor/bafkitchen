@@ -1,6 +1,9 @@
+export type TInvoiceType = 'transaction' | 'vendor_period'
+
 export interface IInvoice {
   id: string
-  invoiceNumber: string // Format: INV-<seq><MM>-<YY>, e.g. INV-00109-26
+  invoiceNumber: string // Format: INV-<seq><MM>-<YY> (transaction) or INVP-... (vendor period)
+  type: TInvoiceType
   orderId: string
   vendorId: string
   vendorName: string
@@ -11,6 +14,14 @@ export interface IInvoice {
   settledDate?: string
   createdAt: string
   updatedAt: string
+
+  // Vendor period invoices
+  periodStart?: string
+  periodEnd?: string
+  orderIds?: string[]
+
+  // Derived when the invoice is scoped to a vendor (vendor dashboard)
+  vendorTotal?: number
 
   // Invoice items (products from this specific vendor)
   items: IInvoiceItem[]
@@ -30,6 +41,10 @@ export interface IInvoiceItem {
   quantity: number
   unitPrice: number
   totalPrice: number
+  vendorId?: string
+  vendorName?: string
+  orderNumber?: string
+  orderCount?: number
 }
 
 export enum EInvoiceStatus {
@@ -69,4 +84,12 @@ export interface IUpdateInvoiceStatusRequest {
   invoiceId: string
   status: EInvoiceStatus
   settledDate?: string
+}
+
+export interface ICreateVendorPeriodInvoiceRequest {
+  vendorId: string
+  periodStart: string
+  periodEnd: string
+  dueDate?: string
+  groupBy: 'product' | 'order'
 }

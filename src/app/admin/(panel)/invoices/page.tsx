@@ -4,12 +4,15 @@ import React, { useMemo, useRef, useState } from 'react'
 
 import { Search2Icon } from '@chakra-ui/icons'
 import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogBody,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
+  AlertIcon,
   Button,
   ButtonGroup,
   Flex,
@@ -24,9 +27,17 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
   SimpleGrid,
   Text,
+  VStack,
   useDisclosure,
   useToast
 } from '@chakra-ui/react'
@@ -57,7 +68,8 @@ import {
 import { exportInvoicesToCSV } from '@/utils/exportCSV'
 import { exportInvoicesListToPDF } from '@/utils/exportPDF'
 
-import { useGetInvoices, useUpdateInvoiceStatus } from './actions'
+import { useGetInvoices, useUpdateInvoiceStatus, useCreateVendorPeriodInvoice } from './actions'
+import { useGetVendors } from '../vendors/actions'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
@@ -71,9 +83,18 @@ export default function InvoicesPage() {
     refetch
   } = useGetInvoices()
   const { updateInvoiceStatus } = useUpdateInvoiceStatus()
+  const { createVendorPeriodInvoice, loading: isCreating } = useCreateVendorPeriodInvoice()
+  const { data: vendorsData } = useGetVendors()
 
   const settleDialog = useDisclosure()
+  const vendorPeriodModal = useDisclosure()
   const cancelRef = useRef<HTMLButtonElement>(null)
+
+  const [periodVendor, setPeriodVendor] = useState('')
+  const [periodStart, setPeriodStart] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
+  const [periodDueDate, setPeriodDueDate] = useState('')
+  const [periodGroupBy, setPeriodGroupBy] = useState<'product' | 'order'>('product')
 
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -215,6 +236,68 @@ export default function InvoicesPage() {
     settleDialog.onClose()
   }
 
+  const vendorOptionsAll = useMemo(
+    () =>
+      (vendorsData || [])
+        .filter((vendor) => vendor.isActive)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [vendorsData]
+  )
+
+  const overlappingPeriodInvoices = useMemo(() => {
+    if (!periodVendor || !periodStart || !periodEnd) return []
+    const start = new Date(`${periodStart}T00:00:00`).getTime()
+    const end = new Date(`${periodEnd}T23:59:59.999`).getTime()
+    return (invoices || []).filter(
+      (invoice) =>
+        invoice.type === 'vendor_period' &&
+        invoice.vendorId === periodVendor &&
+        invoice.periodStart &&
+        invoice.periodEnd &&
+        new Date(invoice.periodStart).getTime() <= end &&
+        new Date(invoice.periodEnd).getTime() >= start
+    )
+  }, [invoices, periodVendor, periodStart, periodEnd])
+
+  const closeVendorPeriodModal = () => {
+    vendorPeriodModal.onClose()
+    setPeriodVendor('')
+    setPeriodStart('')
+    setPeriodEnd('')
+    setPeriodDueDate('')
+    setPeriodGroupBy('product')
+  }
+
+  const handleCreateVendorPeriod = async () => {
+    if (!periodVendor || !periodStart || !periodEnd) return
+    try {
+      const invoice = await createVendorPeriodInvoice({
+        vendorId: periodVendor,
+        periodStart,
+        periodEnd,
+        dueDate: periodDueDate || undefined,
+        groupBy: periodGroupBy
+      })
+      toast({
+        title: 'Invoice vendor dibuat',
+        description: invoice.invoiceNumber,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      closeVendorPeriodModal()
+      await refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal membuat invoice vendor',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
+
   const handleExportCSV = () => {
     exportInvoicesToCSV(filteredInvoices)
     toast({ title: 'Export CSV dibuat', status: 'success', duration: 3000 })
@@ -286,6 +369,16 @@ export default function InvoicesPage() {
       )
     },
     {
+      key: 'type',
+      header: 'Jenis',
+      render: (invoice) =>
+        invoice.type === 'vendor_period' ? (
+          <StatusBadge color="purple">Periode</StatusBadge>
+        ) : (
+          <StatusBadge color="blue">Transaksi</StatusBadge>
+        )
+    },
+    {
       key: 'issued',
       header: 'Tanggal terbit',
       render: (invoice) => (
@@ -301,13 +394,24 @@ export default function InvoicesPage() {
     },
     {
       key: 'order',
-      header: 'No. Order',
-      mobileLabel: 'Order',
-      render: (invoice) => (
-        <Link href={`/admin/orders/${invoice.orderId}`}>
-          {invoice.orderId.substring(0, 8)}...
-        </Link>
-      )
+      header: 'Sumber',
+      mobileLabel: 'Sumber',
+      render: (invoice) =>
+        invoice.type === 'vendor_period' && invoice.periodStart && invoice.periodEnd ? (
+          <Text fontSize="sm">
+            {format(new Date(invoice.periodStart), 'dd MMM yyyy', { locale: id })}
+            {' – '}
+            {format(new Date(invoice.periodEnd), 'dd MMM yyyy', { locale: id })}
+          </Text>
+        ) : invoice.orderId ? (
+          <Link href={`/admin/orders/${invoice.orderId}`}>
+            {invoice.orderId.substring(0, 8)}...
+          </Link>
+        ) : (
+          <Text fontSize="sm" color="text-muted">
+            -
+          </Text>
+        )
     },
     {
       key: 'total',
@@ -484,21 +588,30 @@ export default function InvoicesPage() {
           { label: 'Invoice' }
         ]}
         actions={
-          <Menu>
-            <MenuButton
-              as={Button}
+          <HStack spacing={2}>
+            <Button
               size="sm"
-              variant="outline"
               colorScheme="brand"
-              isDisabled={!filteredInvoices.length}
+              onClick={vendorPeriodModal.onOpen}
             >
-              Export
-            </MenuButton>
-            <MenuList>
-              <MenuItem onClick={handleExportCSV}>Export CSV</MenuItem>
-              <MenuItem onClick={handleExportPDF}>Export PDF</MenuItem>
-            </MenuList>
-          </Menu>
+              Buat invoice vendor
+            </Button>
+            <Menu>
+              <MenuButton
+                as={Button}
+                size="sm"
+                variant="outline"
+                colorScheme="brand"
+                isDisabled={!filteredInvoices.length}
+              >
+                Export
+              </MenuButton>
+              <MenuList>
+                <MenuItem onClick={handleExportCSV}>Export CSV</MenuItem>
+                <MenuItem onClick={handleExportPDF}>Export PDF</MenuItem>
+              </MenuList>
+            </Menu>
+          </HStack>
         }
       />
 
@@ -637,6 +750,117 @@ export default function InvoicesPage() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      <Modal
+        isOpen={vendorPeriodModal.isOpen}
+        onClose={closeVendorPeriodModal}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Buat invoice vendor</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack align="stretch" spacing={4}>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm">Vendor</FormLabel>
+                <Select
+                  size="sm"
+                  placeholder="Pilih vendor"
+                  value={periodVendor}
+                  onChange={(e) => setPeriodVendor(e.target.value)}
+                >
+                  {vendorOptionsAll.map((vendor) => (
+                    <option key={vendor.id} value={vendor.id}>
+                      {vendor.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel fontSize="sm">Tanggal mulai</FormLabel>
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={periodStart}
+                    onChange={(e) => setPeriodStart(e.target.value)}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel fontSize="sm">Tanggal selesai</FormLabel>
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={periodEnd}
+                    onChange={(e) => setPeriodEnd(e.target.value)}
+                  />
+                </FormControl>
+              </SimpleGrid>
+
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                <FormControl>
+                  <FormLabel fontSize="sm">Jatuh tempo (opsional)</FormLabel>
+                  <Input
+                    type="date"
+                    size="sm"
+                    value={periodDueDate}
+                    onChange={(e) => setPeriodDueDate(e.target.value)}
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel fontSize="sm">Grup item</FormLabel>
+                  <Select
+                    size="sm"
+                    value={periodGroupBy}
+                    onChange={(e) =>
+                      setPeriodGroupBy(e.target.value as 'product' | 'order')
+                    }
+                  >
+                    <option value="product">Per produk</option>
+                    <option value="order">Per order</option>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+
+              {overlappingPeriodInvoices.length > 0 && (
+                <Alert status="warning" borderRadius="lg">
+                  <AlertIcon />
+                  <AlertDescription fontSize="sm">
+                    Sudah ada {overlappingPeriodInvoices.length} invoice periode
+                    vendor ini yang tumpang tindih:{' '}
+                    {overlappingPeriodInvoices
+                      .map((invoice) => invoice.invoiceNumber)
+                      .join(', ')}
+                    . Pastikan tidak menagih ganda.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={closeVendorPeriodModal}
+              isDisabled={isCreating}
+            >
+              Batal
+            </Button>
+            <Button
+              colorScheme="brand"
+              onClick={handleCreateVendorPeriod}
+              isLoading={isCreating}
+              loadingText="Membuat..."
+              isDisabled={!periodVendor || !periodStart || !periodEnd}
+            >
+              Buat invoice
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Layout>
   )
 }

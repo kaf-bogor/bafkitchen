@@ -1,8 +1,14 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 
 import { ViewIcon } from '@chakra-ui/icons'
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box,
   Button,
   ButtonGroup,
@@ -17,7 +23,9 @@ import {
   MenuList,
   Select,
   SimpleGrid,
-  Text
+  Text,
+  useDisclosure,
+  useToast
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
@@ -48,14 +56,47 @@ import {
   openGoogleSheetsImportInstructions
 } from '@/utils/exportGoogleSheets'
 
-import { getOrders } from './actions'
+import { getOrders, useGenerateOrderInvoice } from './actions'
 import { useGetVendors } from '../vendors/actions'
 
 export default function Home() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
-  const { data: orders, loading: isFetching, error } = getOrders(!!user)
+  const { data: orders, loading: isFetching, error, refetch } = getOrders(!!user)
   const { data: vendorsData } = useGetVendors()
+  const { generateInvoice, loading: isGeneratingInvoice } = useGenerateOrderInvoice()
+  const toast = useToast()
+
+  const invoiceDialog = useDisclosure()
+  const invoiceCancelRef = useRef<HTMLButtonElement>(null)
+  const [pendingInvoiceOrder, setPendingInvoiceOrder] = useState<IOrder | null>(
+    null
+  )
+
+  const handleGenerateInvoice = async () => {
+    if (!pendingInvoiceOrder) return
+    try {
+      const invoice = await generateInvoice(pendingInvoiceOrder.id)
+      toast({
+        title: 'Invoice diterbitkan',
+        description: invoice.invoiceNumber,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      setPendingInvoiceOrder(null)
+      invoiceDialog.onClose()
+      refetch()
+    } catch (err) {
+      toast({
+        title: 'Gagal menerbitkan invoice',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
 
   // Filter states
   const initialDate = searchParams.get('fulfillmentDate')
@@ -348,15 +389,32 @@ export default function Home() {
   ]
 
   const renderActions = (order: IOrder) => (
-    <Link href={`/admin/orders/${order.id}`} passHref>
-      <IconButton
-        aria-label="Lihat detail order"
+    <Menu placement="bottom-end">
+      <MenuButton
+        as={IconButton}
+        aria-label="Aksi order"
         icon={<ViewIcon />}
         size="sm"
         colorScheme="brand"
         variant="outline"
       />
-    </Link>
+      <MenuList>
+        <MenuItem as={Link} href={`/admin/orders/${order.id}`}>
+          Lihat detail
+        </MenuItem>
+        {order.status !== 'Invoice Issued' &&
+          order.status !== 'Invoice Settled' && (
+            <MenuItem
+              onClick={() => {
+                setPendingInvoiceOrder(order)
+                invoiceDialog.onOpen()
+              }}
+            >
+              Buatkan invoice
+            </MenuItem>
+          )}
+      </MenuList>
+    </Menu>
   )
 
   const activeFilterCount = [
@@ -562,6 +620,47 @@ export default function Home() {
           )}
         </CardBody>
       </Card>
+
+      <AlertDialog
+        isOpen={invoiceDialog.isOpen}
+        leastDestructiveRef={invoiceCancelRef}
+        onClose={invoiceDialog.onClose}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="600">
+              Buatkan invoice
+            </AlertDialogHeader>
+            <AlertDialogBody color="text-body">
+              Terbitkan invoice untuk order{' '}
+              <strong>
+                {pendingInvoiceOrder?.orderNumber || pendingInvoiceOrder?.id}
+              </strong>
+              ? Status order akan berubah menjadi{' '}
+              <strong>Invoice diterbitkan</strong>.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={invoiceCancelRef}
+                onClick={invoiceDialog.onClose}
+                isDisabled={isGeneratingInvoice}
+              >
+                Batal
+              </Button>
+              <Button
+                colorScheme="brand"
+                onClick={handleGenerateInvoice}
+                ml={3}
+                isLoading={isGeneratingInvoice}
+                loadingText="Menerbitkan..."
+              >
+                Ya, buatkan
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Layout>
   )
 }

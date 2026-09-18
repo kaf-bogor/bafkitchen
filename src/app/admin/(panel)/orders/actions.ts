@@ -59,3 +59,30 @@ export const useGetOrders = (enabled: boolean = true) => {
 
 // Alias for backward compatibility
 export const getOrders = useGetOrders
+
+export const useGenerateOrderInvoice = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const generateInvoice = async (orderId: string) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{
+        invoice: { id: string; invoiceNumber: string }
+      }>('/api/invoices', {
+        method: 'POST',
+        body: JSON.stringify({ orderId })
+      })
+      return res.invoice
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { generateInvoice, loading, error }
+}

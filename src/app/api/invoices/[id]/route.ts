@@ -1,37 +1,6 @@
 import { getSession, requireAdmin } from '@/lib/server/auth'
-import { json, db, parseJson } from '@/lib/server/db'
-
-const transformInvoiceRow = (row: {
-  id: string
-  invoice_number: string | null
-  order_id: string | null
-  vendor_id: string | null
-  vendor_name: string | null
-  total_amount: number
-  status: string
-  due_date: string | null
-  issued_date: string | null
-  settled_date: string | null
-  items: string
-  customer: string
-  created_at: string
-  updated_at: string
-}) => ({
-  id: row.id,
-  invoiceNumber: row.invoice_number ?? '',
-  orderId: row.order_id ?? '',
-  vendorId: row.vendor_id ?? '',
-  vendorName: row.vendor_name ?? '',
-  totalAmount: row.total_amount,
-  status: row.status,
-  dueDate: row.due_date ?? new Date().toISOString(),
-  issuedDate: row.issued_date ?? new Date().toISOString(),
-  settledDate: row.settled_date ?? undefined,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  items: parseJson(row.items, []),
-  customer: parseJson(row.customer, {})
-})
+import { json, db } from '@/lib/server/db'
+import { mapInvoiceRow, type InvoiceRow } from '@/lib/server/invoices'
 
 export async function GET(request: Request, ctx: { params: { id: string } }) {
   const session = await getSession(request)
@@ -40,21 +9,27 @@ export async function GET(request: Request, ctx: { params: { id: string } }) {
   const row = await db()
     .prepare('SELECT * FROM invoices WHERE id = ?')
     .bind(ctx.params.id)
-    .first<Parameters<typeof transformInvoiceRow>[0]>()
+    .first<InvoiceRow>()
   if (!row) return json({ error: 'Invoice not found' }, { status: 404 })
 
-  // Non-admins can only view invoices belonging to their own vendor.
+  // Non-admins can only view invoices containing their own vendor's items.
   if (session.role !== 'admin') {
     const vendor = await db()
       .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
       .bind(session.uid)
       .first<{ id: string }>()
-    if (!vendor || vendor.id !== row.vendor_id) {
-      return json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const mapped = mapInvoiceRow(row, vendor ? { vendorId: vendor.id } : undefined)
+    const belongs =
+      vendor &&
+      (mapped.vendorId === vendor.id ||
+        mapped.items.some(
+          (item) => (item as { vendorId?: string }).vendorId === vendor.id
+        ))
+    if (!belongs) return json({ error: 'Forbidden' }, { status: 403 })
+    return json({ invoice: mapped })
   }
 
-  return json({ invoice: transformInvoiceRow(row) })
+  return json({ invoice: mapInvoiceRow(row) })
 }
 
 export async function PUT(request: Request, ctx: { params: { id: string } }) {
@@ -90,6 +65,6 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   const row = await database
     .prepare('SELECT * FROM invoices WHERE id = ?')
     .bind(ctx.params.id)
-    .first<Parameters<typeof transformInvoiceRow>[0]>()
-  return json({ invoice: row ? transformInvoiceRow(row) : null })
+    .first<InvoiceRow>()
+  return json({ invoice: row ? mapInvoiceRow(row) : null })
 }

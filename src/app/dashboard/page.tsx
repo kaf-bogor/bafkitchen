@@ -93,12 +93,13 @@ export default function VendorDashboard() {
     let overdueCount = 0
 
     vendorInvoices.forEach((invoice) => {
-      totalAmount += invoice.totalAmount
+      const amount = invoice.vendorTotal ?? invoice.totalAmount
+      totalAmount += amount
 
       if (invoice.status === EInvoiceStatus.SETTLED) {
-        settledAmount += invoice.totalAmount
+        settledAmount += amount
       } else {
-        pendingAmount += invoice.totalAmount
+        pendingAmount += amount
 
         if (new Date(invoice.dueDate) < now) {
           overdueCount++
@@ -229,12 +230,35 @@ export default function VendorDashboard() {
                               </Text>
                             </Td>
                             <Td>
-                              <Link href={`/admin/orders/${invoice.orderId}`}>
-                                {invoice.orderId.substring(0, 8)}...
-                              </Link>
+                              {invoice.orderId ? (
+                                <Link href={`/admin/orders/${invoice.orderId}`}>
+                                  {invoice.orderId.substring(0, 8)}...
+                                </Link>
+                              ) : invoice.periodStart && invoice.periodEnd ? (
+                                <Text fontSize="xs" color="text-muted">
+                                  {format(
+                                    new Date(invoice.periodStart),
+                                    'dd MMM',
+                                    { locale: id }
+                                  )}
+                                  {' – '}
+                                  {format(
+                                    new Date(invoice.periodEnd),
+                                    'dd MMM yyyy',
+                                    { locale: id }
+                                  )}
+                                </Text>
+                              ) : (
+                                <Text fontSize="sm" color="text-muted">
+                                  -
+                                </Text>
+                              )}
                             </Td>
                             <Td>
-                              <Price value={invoice.totalAmount} size="sm" />
+                              <Price
+                                value={invoice.vendorTotal ?? invoice.totalAmount}
+                                size="sm"
+                              />
                             </Td>
                             <Td>
                               <HStack spacing={2} flexWrap="wrap">

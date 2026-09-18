@@ -1,10 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 
 import {
   Alert,
   AlertDescription,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   AlertIcon,
   AlertTitle,
   Box,
@@ -46,6 +52,7 @@ import { mapOrderStatusToColor, mapOrderStatusToMessage, getNextStatus, getActio
 import { uploadMedia } from '@/utils/auth'
 
 import { useGetOrder, useGetOrderActivities, useUpdateOrderStatus, useUpdatePaymentProof } from './actions'
+import { useGenerateOrderInvoice } from '../actions'
 import StatusUpdateConfirmDialog from '../components/StatusUpdateConfirmDialog'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -70,9 +77,12 @@ export default function OrderDetailsPage() {
   const { data: activities, refetch: refetchActivities } = useGetOrderActivities(orderId as string, !!user)
   const { updateOrderStatus } = useUpdateOrderStatus()
   const { updatePaymentProof, loading: isUpdatingProof } = useUpdatePaymentProof()
+  const { generateInvoice, loading: isGeneratingInvoice } = useGenerateOrderInvoice()
 
   const confirmDialog = useDisclosure()
   const proofDialog = useDisclosure()
+  const invoiceDialog = useDisclosure()
+  const invoiceCancelRef = useRef<HTMLButtonElement>(null)
 
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [proofFile, setProofFile] = useState<File | null>(null)
@@ -164,6 +174,30 @@ export default function OrderDetailsPage() {
     }
   }
 
+  const handleGenerateInvoice = async () => {
+    if (!order) return
+    try {
+      const invoice = await generateInvoice(order.id)
+      toast({
+        title: 'Invoice diterbitkan',
+        description: invoice.invoiceNumber,
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+      invoiceDialog.onClose()
+      await Promise.all([refetch(), refetchActivities()])
+    } catch (err) {
+      toast({
+        title: 'Gagal menerbitkan invoice',
+        description: (err as Error).message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true
+      })
+    }
+  }
+
   const breadcrumbs = [
     { label: 'Dasbor', path: '/admin' },
     { label: 'Order', path: '/admin/orders' },
@@ -193,6 +227,17 @@ export default function OrderDetailsPage() {
                 <StatusBadge color={mapOrderStatusToColor[order.status]}>
                   {mapOrderStatusToMessage[order.status] || order.status}
                 </StatusBadge>
+                {order.status !== 'Invoice Issued' &&
+                  order.status !== 'Invoice Settled' && (
+                    <Button
+                      colorScheme="brand"
+                      variant="outline"
+                      size="sm"
+                      onClick={invoiceDialog.onOpen}
+                    >
+                      Buatkan invoice
+                    </Button>
+                  )}
                 {getActionDescription(order.status) && (
                   <Button
                     colorScheme="brand"
@@ -529,6 +574,44 @@ export default function OrderDetailsPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <AlertDialog
+        isOpen={invoiceDialog.isOpen}
+        leastDestructiveRef={invoiceCancelRef}
+        onClose={invoiceDialog.onClose}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="600">
+              Buatkan invoice
+            </AlertDialogHeader>
+            <AlertDialogBody color="text-body">
+              Terbitkan invoice untuk order{' '}
+              <strong>{order?.orderNumber || orderId}</strong>? Status order akan
+              berubah menjadi <strong>Invoice diterbitkan</strong>.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={invoiceCancelRef}
+                onClick={invoiceDialog.onClose}
+                isDisabled={isGeneratingInvoice}
+              >
+                Batal
+              </Button>
+              <Button
+                colorScheme="brand"
+                onClick={handleGenerateInvoice}
+                ml={3}
+                isLoading={isGeneratingInvoice}
+                loadingText="Menerbitkan..."
+              >
+                Ya, buatkan
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Layout>
   )
 }

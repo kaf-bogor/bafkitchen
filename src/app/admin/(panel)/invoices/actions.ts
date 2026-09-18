@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-import { IInvoice, IUpdateInvoiceStatusRequest, EInvoiceStatus } from '@/interfaces/invoice'
+import {
+  IInvoice,
+  IUpdateInvoiceStatusRequest,
+  ICreateVendorPeriodInvoiceRequest,
+  EInvoiceStatus
+} from '@/interfaces/invoice'
 import { apiFetch } from '@/utils/api'
 
 const POLL_INTERVAL = 5000
@@ -108,7 +113,7 @@ export const useGetInvoice = (invoiceId: string) => {
   return { data, loading, error, refetch: fetchInvoice }
 }
 
-// Generate invoices for an order
+// Generate the transaction invoice for an order (also sets it to Invoice Issued)
 export const useGenerateInvoicesForOrder = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -118,11 +123,11 @@ export const useGenerateInvoicesForOrder = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ invoices: IInvoice[] }>('/api/invoices', {
+      const res = await apiFetch<{ invoice: IInvoice }>('/api/invoices', {
         method: 'POST',
         body: JSON.stringify({ orderId })
       })
-      return res.invoices
+      return transformInvoiceData(res.invoice)
     } catch (err) {
       setError(err as Error)
       throw err
@@ -132,6 +137,37 @@ export const useGenerateInvoicesForOrder = () => {
   }
 
   return { generateInvoicesForOrder, loading, error }
+}
+
+// Generate a consolidated vendor invoice for a date range
+export const useCreateVendorPeriodInvoice = () => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const createVendorPeriodInvoice = async (
+    request: ICreateVendorPeriodInvoiceRequest
+  ) => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await apiFetch<{ invoice: IInvoice }>(
+        '/api/invoices/vendor-period',
+        {
+          method: 'POST',
+          body: JSON.stringify(request)
+        }
+      )
+      return transformInvoiceData(res.invoice)
+    } catch (err) {
+      setError(err as Error)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { createVendorPeriodInvoice, loading, error }
 }
 
 // Update invoice status

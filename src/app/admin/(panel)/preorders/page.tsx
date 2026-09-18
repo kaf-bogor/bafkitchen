@@ -38,7 +38,7 @@ import { currency } from '@/utils'
 
 import { useGetOrders } from '../orders/actions'
 
-const PREORDER_TABS = ['Semua', 'Menunggu pembayaran', 'Diproses', 'Siap', 'Dikirim', 'Selesai', 'Dibatalkan']
+const PREORDER_TABS = ['Semua', 'Menunggu pembayaran', 'Diproses', 'Siap', 'Diambil', 'Selesai', 'Dibatalkan']
 
 export default function PreOrdersPage() {
   const { user } = useAuth()
@@ -76,17 +76,21 @@ export default function PreOrdersPage() {
     if (tab === 'Siap') {
       return preOrders.filter((o) => o.status === 'Payment Confirmed' || o.status === 'Order Processing')
     }
-    if (tab === 'Dikirim') {
-      return preOrders.filter((o) => o.status === 'Order Shipped')
+    if (tab === 'Diambil') {
+      return preOrders.filter((o) => o.status === 'Order Picked Up')
     }
     if (tab === 'Selesai') {
-      return preOrders.filter((o) => o.status === 'Order Delivered' || o.status === 'Invoice Settled')
+      return preOrders.filter(
+        (o) => o.status === 'Invoice Issued' || o.status === 'Invoice Settled'
+      )
     }
     if (tab === 'Dibatalkan') {
       return preOrders.filter((o) => o.status === 'Cancelled')
     }
     if (tab === 'Diproses') {
-      return preOrders.filter((o) => o.status === 'Payment Confirmed' || o.status === 'Order Processing' || o.status === 'Order Shipped')
+      return preOrders.filter(
+        (o) => o.status === 'Payment Confirmed' || o.status === 'Order Processing'
+      )
     }
     if (tab === 'Menunggu pembayaran') {
       return preOrders.filter((o) => o.status === 'Payment Pending')

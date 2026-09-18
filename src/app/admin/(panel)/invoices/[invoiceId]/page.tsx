@@ -146,6 +146,10 @@ export default function InvoiceDetailsPage() {
     new Date(invoice.dueDate) < new Date() &&
     invoice.status !== EInvoiceStatus.SETTLED
 
+  const showVendorColumn = Boolean(
+    invoice?.items?.some((item) => item.vendorName)
+  )
+
   return (
     <Layout isFetching={isFetching} error={error as Error}>
       {invoice ? (
@@ -199,34 +203,97 @@ export default function InvoiceDetailsPage() {
                         </Text>
                       }
                     />
+                    <InfoRow
+                      label="Jenis"
+                      value={
+                        invoice.type === 'vendor_period'
+                          ? 'Periode vendor'
+                          : 'Transaksi'
+                      }
+                    />
+                    {invoice.type === 'vendor_period' &&
+                      invoice.periodStart &&
+                      invoice.periodEnd && (
+                        <InfoRow
+                          label="Periode"
+                          value={`${format(
+                            new Date(invoice.periodStart),
+                            'dd MMM yyyy',
+                            { locale: id }
+                          )} – ${format(
+                            new Date(invoice.periodEnd),
+                            'dd MMM yyyy',
+                            { locale: id }
+                          )}`}
+                        />
+                      )}
                   </VStack>
                 </CardBody>
               </Card>
 
-              <Card>
-                <CardHeader title="Informasi pelanggan" />
-                <CardBody>
-                  <VStack align="stretch" spacing={3}>
-                    <InfoRow
-                      label="Nama"
-                      value={invoice.customer?.name || '-'}
-                    />
-                    <InfoRow
-                      label="No. telepon"
-                      value={invoice.customer?.phoneNumber || '-'}
-                    />
-                    {invoice.customer?.namaSantri && (
+              {invoice.type === 'vendor_period' ? (
+                <Card>
+                  <CardHeader
+                    title="Order sumber"
+                    description={`${invoice.orderIds?.length || 0} transaksi`}
+                  />
+                  <CardBody>
+                    {invoice.orderIds && invoice.orderIds.length > 0 ? (
+                      <VStack align="stretch" spacing={2}>
+                        {invoice.orderIds.map((order) => (
+                          <HStack
+                            key={order.id}
+                            justify="space-between"
+                            align="start"
+                          >
+                            <Link href={`/admin/orders/${order.id}`}>
+                              <Text fontSize="sm" color="brand.600">
+                                {order.orderNumber || order.id.substring(0, 8)}
+                              </Text>
+                            </Link>
+                            {order.createdAt && (
+                              <Text fontSize="xs" color="text-muted">
+                                {format(new Date(order.createdAt), 'dd MMM yyyy', {
+                                  locale: id
+                                })}
+                              </Text>
+                            )}
+                          </HStack>
+                        ))}
+                      </VStack>
+                    ) : (
+                      <Text fontSize="sm" color="text-muted">
+                        Tidak ada order sumber.
+                      </Text>
+                    )}
+                  </CardBody>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader title="Informasi pelanggan" />
+                  <CardBody>
+                    <VStack align="stretch" spacing={3}>
                       <InfoRow
-                        label="Nama santri"
-                        value={invoice.customer.namaSantri}
+                        label="Nama"
+                        value={invoice.customer?.name || '-'}
                       />
-                    )}
-                    {invoice.customer?.kelas && (
-                      <InfoRow label="Kelas" value={invoice.customer.kelas} />
-                    )}
-                  </VStack>
-                </CardBody>
-              </Card>
+                      <InfoRow
+                        label="No. telepon"
+                        value={invoice.customer?.phoneNumber || '-'}
+                      />
+                      {invoice.customer?.namaSantri && (
+                        <InfoRow
+                          label="Nama santri"
+                          value={invoice.customer.namaSantri}
+                        />
+                      )}
+                      {invoice.customer?.kelas && (
+                        <InfoRow label="Kelas" value={invoice.customer.kelas} />
+                      )}
+                    </VStack>
+                  </CardBody>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader title="Rincian item" />
@@ -236,6 +303,7 @@ export default function InvoiceDetailsPage() {
                       <Thead>
                         <Tr>
                           <Th>Produk</Th>
+                          {showVendorColumn && <Th>Vendor</Th>}
                           <Th isNumeric>Jumlah</Th>
                           <Th isNumeric>Harga satuan</Th>
                           <Th isNumeric>Total</Th>
@@ -244,10 +312,30 @@ export default function InvoiceDetailsPage() {
                       <Tbody>
                         {invoice.items.map((item, index) => (
                           <Tr key={index}>
-                            <Td>{item.productName}</Td>
+                            <Td>
+                              {item.productName}
+                              {item.orderCount && item.orderCount > 1 ? (
+                                <Text fontSize="xs" color="text-muted">
+                                  {item.orderCount} transaksi
+                                </Text>
+                              ) : null}
+                            </Td>
+                            {showVendorColumn && (
+                              <Td>
+                                <Text fontSize="sm">
+                                  {item.vendorName || '-'}
+                                </Text>
+                              </Td>
+                            )}
                             <Td isNumeric>{item.quantity}</Td>
                             <Td isNumeric>
-                              <Price value={item.unitPrice} size="sm" />
+                              {item.orderNumber || item.unitPrice === 0 ? (
+                                <Text fontSize="sm" color="text-muted">
+                                  -
+                                </Text>
+                              ) : (
+                                <Price value={item.unitPrice} size="sm" />
+                              )}
                             </Td>
                             <Td isNumeric>
                               <Price value={item.totalPrice} size="sm" />
@@ -337,11 +425,13 @@ export default function InvoiceDetailsPage() {
                 <CardHeader title="Aksi" />
                 <CardBody>
                   <VStack spacing={3} align="stretch">
-                    <Link href={`/admin/orders/${invoice.orderId}`}>
-                      <Button w="full" variant="outline" colorScheme="brand">
-                        Lihat order
-                      </Button>
-                    </Link>
+                    {invoice.orderId && (
+                      <Link href={`/admin/orders/${invoice.orderId}`}>
+                        <Button w="full" variant="outline" colorScheme="brand">
+                          Lihat order
+                        </Button>
+                      </Link>
+                    )}
                     <Link href={`/dashboard?vendorId=${invoice.vendorId}`}>
                       <Button w="full" variant="outline" colorScheme="brand">
                         Lihat dashboard vendor
