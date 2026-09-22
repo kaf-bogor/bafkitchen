@@ -8,6 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
+  Badge,
   Box,
   Button,
   Divider,
@@ -34,7 +35,7 @@ import ProductImage from '@/components/ProductImage'
 import { Card, CardBody, CardHeader, EmptyState, Price } from '@/components/ui'
 import { useCart } from '@/hooks/useCart'
 import { IProduct, IOrder } from '@/interfaces'
-import { schema, order } from '@/utils'
+import { schema, order, discount as discountUtil, currency } from '@/utils'
 
 import { useCreateOrders } from './actions'
 
@@ -290,7 +291,14 @@ export default function CartPage() {
               />
               <CardBody p={0}>
                 <Stack spacing={0}>
-                  {items.map((product, index) => (
+                  {items.map((product, index) => {
+                    const linePricing = discountUtil.getLinePricing(
+                      product.price,
+                      product.quantity,
+                      product.discounts
+                    )
+                    const hasDiscount = linePricing.amount > 0
+                    return (
                     <Box key={product.id}>
                       <VStack
                         p={{ base: 4, sm: 5 }}
@@ -327,7 +335,31 @@ export default function CartPage() {
                             >
                               {product.name}
                             </Text>
-                            <Price value={product.price} size="sm" />
+                            {hasDiscount ? (
+                              <HStack spacing={2} align="baseline" flexWrap="wrap">
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="600"
+                                  color="brand.700"
+                                >
+                                  {currency.toIDRFormat(linePricing.unitPrice)}
+                                </Text>
+                                <Text
+                                  fontSize="xs"
+                                  color="text-subtle"
+                                  textDecoration="line-through"
+                                >
+                                  {currency.toIDRFormat(product.price)}
+                                </Text>
+                                <Badge colorScheme="red" fontSize="xs">
+                                  {discountUtil.discountLabel(
+                                    linePricing.discount!
+                                  )}
+                                </Badge>
+                              </HStack>
+                            ) : (
+                              <Price value={product.price} size="sm" />
+                            )}
                           </VStack>
                         </Flex>
 
@@ -373,10 +405,7 @@ export default function CartPage() {
                               onClick={() => handleAddQty(product)}
                             />
                           </HStack>
-                          <Price
-                            value={product.price * product.quantity}
-                            size="md"
-                          />
+                          <Price value={linePricing.lineTotal} size="md" />
                         </Flex>
 
                         <Box>
@@ -406,7 +435,8 @@ export default function CartPage() {
                       </VStack>
                       {index < items.length - 1 && <Divider />}
                     </Box>
-                  ))}
+                    )
+                  })}
                 </Stack>
               </CardBody>
             </Card>

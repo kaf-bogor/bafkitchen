@@ -22,6 +22,14 @@ export interface IPosOrderRequest {
   cashierName?: string
 }
 
+export interface IProductOrderDiscount {
+  id: string
+  name: string
+  type: 'percentage' | 'fixed'
+  value: number
+  amount: number
+}
+
 export interface IProductOrder {
   id: number
   quantity: number
@@ -33,6 +41,8 @@ export interface IProductOrder {
     imageUrl: string
     priceBase: number
     price: number
+    originalPrice?: number
+    discount?: IProductOrderDiscount | null
     vendor?: {
       id: string
       name: string

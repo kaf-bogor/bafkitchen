@@ -1,6 +1,10 @@
 import { getSession } from '@/lib/server/auth'
 import { json, db, now, parseJson } from '@/lib/server/db'
+import { loadDiscountsForProducts } from '@/lib/server/discounts'
 import { generateOrderId, generateOrderNumber } from '@/lib/server/orderNumber'
+import { getLinePricing } from '@/utils/discount'
+
+import type { IProductDiscount } from '@/interfaces/discount'
 
 interface ProductOrder {
   id: number
@@ -13,8 +17,24 @@ interface ProductOrder {
     imageUrl: string
     priceBase: number
     price: number
+    originalPrice?: number
+    discount?: {
+      id: string
+      name: string
+      type: 'percentage' | 'fixed'
+      value: number
+      amount: number
+    } | null
     vendor: { id: string; name: string } | null
   }
+}
+
+interface ProductPriceRow {
+  id: string
+  name: string
+  image_url: string | null
+  price: number
+  price_base: number | null
 }
 
 interface CartItem {
@@ -123,23 +143,68 @@ export async function POST(request: Request) {
 
   if (!body?.items?.length) return json({ error: 'Cart is empty' }, { status: 400 })
 
+  const database = db()
+  const itemIds = Array.from(
+    new Set(body.items.map((item) => item.id).filter(Boolean))
+  ) as string[]
+
+  const productMap = new Map<string, ProductPriceRow>()
+  let discountsMap = new Map<string, IProductDiscount[]>()
+  if (itemIds.length) {
+    const placeholders = itemIds.map(() => '?').join(',')
+    const { results } = await database
+      .prepare(
+        `SELECT id, name, image_url, price, price_base FROM products WHERE id IN (${placeholders})`
+      )
+      .bind(...itemIds)
+      .all<ProductPriceRow>()
+    for (const row of results) productMap.set(row.id, row)
+    discountsMap = await loadDiscountsForProducts(database, itemIds)
+  }
+
   const productOrders: ProductOrder[] = body.items.map((item, index) => {
     const value = item as CartItem & { priceBase?: number; price?: number }
+    const dbProduct = productMap.get(item.id || '')
+    const listPrice = dbProduct ? dbProduct.price ?? 0 : value.price || 0
+    const priceBase = dbProduct
+      ? dbProduct.price_base ?? 0
+      : value.priceBase || 0
+    const quantity = item.quantity || 0
+    const pricing = getLinePricing(
+      listPrice,
+      quantity,
+      discountsMap.get(item.id || '') || []
+    )
     return {
       id: index + 1,
-      quantity: item.quantity || 0,
+      quantity,
       productId: item.id || '',
       notes: item.notes || '',
       product: {
         id: item.id || '',
-        name: item.name || '',
-        imageUrl: item.imageUrl || '',
-        priceBase: value.priceBase || 0,
-        price: value.price || 0,
+        name: dbProduct?.name || item.name || '',
+        imageUrl: dbProduct?.image_url || item.imageUrl || '',
+        priceBase,
+        price: pricing.unitPrice,
+        originalPrice: listPrice,
+        discount: pricing.discount
+          ? {
+              id: pricing.discount.id,
+              name: pricing.discount.name,
+              type: pricing.discount.type,
+              value: pricing.discount.value,
+              amount: pricing.amount
+            }
+          : null,
         vendor: item.vendor ? { id: item.vendor.id, name: item.vendor.name } : null
       }
     }
   })
+
+  const total = productOrders.reduce(
+    (sum, po) => sum + po.product.price * po.quantity,
+    0
+  )
 
   const vendorMap = new Map<string, { id: string; name: string }>()
   productOrders.forEach((po) => {
@@ -174,7 +239,7 @@ export async function POST(request: Request) {
     }
   ]
 
-  await db()
+  await database
     .prepare(
       `INSERT INTO orders (id, order_number, product_orders, total, customer, status, store, vendors, channel, payment, cashier, activities, fulfillment_date, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?)`
@@ -183,7 +248,7 @@ export async function POST(request: Request) {
       id,
       orderNumber,
       JSON.stringify(productOrders),
-      body.totalPrice || 0,
+      total,
       JSON.stringify(customer),
       'Payment Pending',
       JSON.stringify({ name: 'Bazaf' }),
@@ -199,7 +264,7 @@ export async function POST(request: Request) {
   return json({
     id,
     orderNumber,
-    total: body.totalPrice || 0,
+    total,
     channel: body.channel === 'preorder' ? 'preorder' : 'pos',
     fulfillmentDate: body.fulfillmentDate ?? null,
     createdAt: ts,

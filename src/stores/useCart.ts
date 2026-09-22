@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { IProduct, IProductCart } from '@/interfaces/product'
+import { getLinePricing } from '@/utils/discount'
 
 export interface CartState {
   products: IProductCart[]
@@ -16,6 +17,7 @@ export interface CartActions {
   clearCart: () => void
   getProducts: () => IProductCart[]
   getTotalPrice: () => number
+  getLineTotal: (productId: string) => number
   updateProductQuantity: (productId: string, num: number) => void
   updateProductNote: (productId: string, note: string) => void
 }
@@ -63,8 +65,20 @@ export const cartStore = create<CartState & CartActions>()(
 
       getProducts: () => get().products,
 
+      getLineTotal: (productId) => {
+        const product = get().products.find((p) => p.id === productId)
+        if (!product) return 0
+        return getLinePricing(
+          product.price,
+          product.quantity,
+          product.discounts
+        ).lineTotal
+      },
+
       getTotalPrice: () => get().products.reduce(
-        (acc, p) => acc + p.price * p.quantity, 0
+        (acc, p) =>
+          acc + getLinePricing(p.price, p.quantity, p.discounts).lineTotal,
+        0
       ),
 
       updateProductQuantity: (productId, num) => set((state) => ({

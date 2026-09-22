@@ -1,6 +1,7 @@
 import { IProduct, IOrder } from '@/interfaces'
 
 import { toIDRFormat } from './currency'
+import { discountLabel, getLinePricing } from './discount'
 
 export const generateOrderText = ({
   items,
@@ -17,11 +18,26 @@ export const generateOrderText = ({
     `Assalamualaikum, saya mau order.\n` +
     items
       .map((product, i) => {
+        const pricing = getLinePricing(
+          product.price,
+          product.quantity,
+          product.discounts
+        )
         const note = product.notes?.trim()
+        const priceLine =
+          pricing.amount > 0
+            ? `Harga (@): ${toIDRFormat(pricing.unitPrice)} (asli ${toIDRFormat(
+                product.price
+              )})`
+            : `Harga (@): ${toIDRFormat(product.price)}`
+        const discountLine =
+          pricing.amount > 0
+            ? `\n    Diskon: ${discountLabel(pricing.discount!)}`
+            : ''
         return `\n${i + 1}. *${product.name}*
     Quantity: ${product.quantity}
-    Harga (@): ${toIDRFormat(product.price)}
-    Total Harga: ${toIDRFormat(product.price * product.quantity)}${
+    ${priceLine}
+    Total Harga: ${toIDRFormat(pricing.lineTotal)}${discountLine}${
       note ? `\n    Catatan: ${note}` : ''
     }`
       })
@@ -49,8 +65,19 @@ export const generateOrderHtmlEmail = ({
   orderId: string
 }) => {
   const itemsHtml = items
-    .map(
-      (product, i) => `
+    .map((product, i) => {
+      const pricing = getLinePricing(
+        product.price,
+        product.quantity,
+        product.discounts
+      )
+      const priceCell =
+        pricing.amount > 0
+          ? `<s>${toIDRFormat(product.price)}</s> ${toIDRFormat(
+              pricing.unitPrice
+            )}<br/><small>Diskon: ${discountLabel(pricing.discount!)}</small>`
+          : toIDRFormat(product.price)
+      return `
       <tr>
         <td>${i + 1}. ${product.name}${
           product.notes
@@ -58,11 +85,11 @@ export const generateOrderHtmlEmail = ({
             : ''
         }</td>
         <td>${product.quantity}</td>
-        <td>${toIDRFormat(product.price)}</td>
-        <td>${toIDRFormat(product.price * product.quantity)}</td>
+        <td>${priceCell}</td>
+        <td>${toIDRFormat(pricing.lineTotal)}</td>
       </tr>
     `
-    )
+    })
     .join('')
 
   const html = `

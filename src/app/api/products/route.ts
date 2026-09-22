@@ -1,6 +1,13 @@
 import { getSession, requireAuth } from '@/lib/server/auth'
 import { json, db, now, uuid, parseJson } from '@/lib/server/db'
+import {
+  loadDiscountsForProduct,
+  loadDiscountsForProducts,
+  replaceProductDiscounts
+} from '@/lib/server/discounts'
 import { getVendorForUser } from '@/lib/server/vendors'
+
+import type { IProductDiscount, IProductDiscountInput } from '@/interfaces/discount'
 
 export interface ProductRow {
   id: string
@@ -47,7 +54,8 @@ const DEFAULT_VENDOR = {
 const transformProduct = (
   row: ProductRow,
   categories: { id: string; name: string }[],
-  vendor?: Record<string, unknown> | null
+  vendor?: Record<string, unknown> | null,
+  discounts: IProductDiscount[] = []
 ) => ({
   id: row.id,
   name: row.name,
@@ -76,7 +84,8 @@ const transformProduct = (
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   vendor: vendor ?? parseJson<Record<string, unknown> | null>(row.vendor, null) ?? DEFAULT_VENDOR,
-  categories
+  categories,
+  discounts
 })
 
 async function loadCategories(database: D1Database, productId: string) {
@@ -279,6 +288,11 @@ export async function GET(request: Request) {
     .all<Record<string, unknown> & { id: string }>()
   const vendorMap = new Map(vendorRows.results.map((v) => [v.id, v]))
 
+  const discountsMap = await loadDiscountsForProducts(
+    database,
+    pageRows.map((row) => row.id)
+  )
+
   const products = pageRows.map((row) => {
     const storedVendor = parseJson<{ id?: string; name?: string } | null>(
       row.vendor,
@@ -289,7 +303,12 @@ export async function GET(request: Request) {
       const v = vendorMap.get(storedVendor.id)
       if (v) vendor = v
     }
-    return transformProduct(row, categoriesMap.get(row.id) || [], vendor)
+    return transformProduct(
+      row,
+      categoriesMap.get(row.id) || [],
+      vendor,
+      discountsMap.get(row.id) || []
+    )
   })
 
   return json({ products, total })
@@ -325,6 +344,7 @@ export async function POST(request: Request) {
     preorderMaxQty?: number | null
     preorderCapacity?: number | null
     fulfillmentType?: string
+    discounts?: IProductDiscountInput[]
   } | null
 
   if (!body || !body.name) return json({ error: 'Name is required' }, { status: 400 })
@@ -390,14 +410,19 @@ export async function POST(request: Request) {
     .run()
 
   if (categoryIds.length) await replaceProductCategories(database, id, categoryIds)
+  await replaceProductDiscounts(database, id, body.discounts)
 
   const row = await database
     .prepare('SELECT * FROM products WHERE id = ?')
     .bind(id)
     .first<ProductRow>()
-  const [categories, vendor] = await Promise.all([
+  const [categories, vendor, discounts] = await Promise.all([
     loadCategories(database, id),
-    row ? loadVendor(database, row) : Promise.resolve(null)
+    row ? loadVendor(database, row) : Promise.resolve(null),
+    loadDiscountsForProduct(database, id)
   ])
-  return json({ product: row ? transformProduct(row, categories, vendor) : null }, { status: 201 })
+  return json(
+    { product: row ? transformProduct(row, categories, vendor, discounts) : null },
+    { status: 201 }
+  )
 }

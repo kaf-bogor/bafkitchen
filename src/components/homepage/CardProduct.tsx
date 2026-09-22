@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 import ProductImage from '@/components/ProductImage'
 import { IProduct } from '@/interfaces'
-import { currency, date } from '@/utils'
+import { currency, date, discount as discountUtil } from '@/utils'
 
 function CardProduct({
   product,
@@ -17,12 +17,25 @@ function CardProduct({
   onRemoveQty,
   onUpdateQty
 }: Props) {
-  const { name, price, vendor, imageUrl } = product
+  const { name, price, vendor, imageUrl, discounts } = product
 
   const safeVendor = vendor || { name: 'Bazaf' }
   const [cartState, setCartState] = useState<CartState>('default')
   const isPreorder = product.availability === 'preorder'
   const availabilityLabel = isPreorder ? 'Pre-order' : 'Tersedia'
+
+  const pricing = discountUtil.getLinePricing(
+    price,
+    qty > 0 ? qty : 1,
+    discounts
+  )
+  const teaser = discountUtil.getTeaserDiscount(discounts)
+  const hasDiscount = pricing.amount > 0
+  const badgeLabel = hasDiscount
+    ? discountUtil.discountLabel(pricing.discount!)
+    : teaser && (teaser.minQuantity || 1) > 1
+      ? `Diskon mulai ${teaser.minQuantity} pcs`
+      : null
 
   return (
     <Box
@@ -71,6 +84,23 @@ function CardProduct({
             </Text>
           </Flex>
         </Flex>
+        {badgeLabel && (
+          <Flex
+            position="absolute"
+            top={3}
+            right={3}
+            bg="red.500"
+            color="white"
+            py={1}
+            px={2.5}
+            borderRadius="full"
+            boxShadow="sm"
+          >
+            <Text fontSize="xs" fontWeight="700">
+              {badgeLabel}
+            </Text>
+          </Flex>
+        )}
       </Box>
 
       <Stack p={4} spacing={1.5} flex="1" align="stretch">
@@ -104,16 +134,32 @@ function CardProduct({
             {date.formatDateRange(product.preorderStart, product.preorderEnd)}
           </Text>
         )}
-        <Text
-          mt="auto"
-          pt={1}
-          fontSize="lg"
-          fontWeight="700"
-          color="brand.700"
-          letterSpacing="-0.01em"
-        >
-          {currency.toIDRFormat(price)}
-        </Text>
+        {hasDiscount ? (
+          <Flex mt="auto" pt={1} align="baseline" gap={2} wrap="wrap">
+            <Text
+              fontSize="lg"
+              fontWeight="700"
+              color="brand.700"
+              letterSpacing="-0.01em"
+            >
+              {currency.toIDRFormat(pricing.unitPrice)}
+            </Text>
+            <Text fontSize="sm" color="gray.400" textDecoration="line-through">
+              {currency.toIDRFormat(price)}
+            </Text>
+          </Flex>
+        ) : (
+          <Text
+            mt="auto"
+            pt={1}
+            fontSize="lg"
+            fontWeight="700"
+            color="brand.700"
+            letterSpacing="-0.01em"
+          >
+            {currency.toIDRFormat(price)}
+          </Text>
+        )}
       </Stack>
 
       <Box p={3} pt={0}>

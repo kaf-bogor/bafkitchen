@@ -155,7 +155,8 @@ export const useCreateProducts = () => {
         preorderMinQty: product.preorderMinQty ?? null,
         preorderMaxQty: product.preorderMaxQty ?? null,
         preorderCapacity: product.preorderCapacity ?? null,
-        fulfillmentType: product.fulfillmentType ?? 'takeaway'
+        fulfillmentType: product.fulfillmentType ?? 'takeaway',
+        discounts: product.discounts ?? []
       }
       const res = await apiFetch<{ product: IProductResponse }>('/api/products', {
         method: 'POST',
@@ -215,7 +216,8 @@ export const useUpdateProducts = () => {
         preorderMinQty: product.preorderMinQty ?? null,
         preorderMaxQty: product.preorderMaxQty ?? null,
         preorderCapacity: product.preorderCapacity ?? null,
-        fulfillmentType: product.fulfillmentType ?? 'takeaway'
+        fulfillmentType: product.fulfillmentType ?? 'takeaway',
+        discounts: product.discounts ?? []
       }
       const res = await apiFetch<{ product: IProductResponse }>(
         `/api/products/${product.id}`,

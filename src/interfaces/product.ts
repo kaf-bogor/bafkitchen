@@ -1,4 +1,5 @@
 import { ICategory } from '@/interfaces/category'
+import { IProductDiscount, IProductDiscountInput } from '@/interfaces/discount'
 import { IVendor } from '@/interfaces/vendor'
 
 export interface ICreateProductRequest {
@@ -29,6 +30,7 @@ export interface ICreateProductRequest {
   preorderMaxQty?: number | null
   preorderCapacity?: number | null
   fulfillmentType?: string
+  discounts?: IProductDiscountInput[]
 }
 
 export interface IProductsResponse {
@@ -84,6 +86,7 @@ export interface IProductResponse {
   vendor: IVendor
   categories: ICategory[]
   activities?: IProductActivity[]
+  discounts?: IProductDiscount[]
 }
 
 export interface ICategoryInput {
@@ -120,6 +123,7 @@ export interface ICreateProductInput {
   preorderMaxQty?: number | null
   preorderCapacity?: number | null
   fulfillmentType?: string
+  discounts?: IProductDiscountInput[]
 }
 
 export type IProduct = {
@@ -135,6 +139,7 @@ export type IProduct = {
   availability?: string
   preorderStart?: string | null
   preorderEnd?: string | null
+  discounts?: IProductDiscount[]
 }
 
 export const IProduct = {
@@ -150,7 +155,8 @@ export const IProduct = {
     imageUrl: product.imageUrl,
     availability: product.availability || 'ready',
     preorderStart: product.preorderStart ?? null,
-    preorderEnd: product.preorderEnd ?? null
+    preorderEnd: product.preorderEnd ?? null,
+    discounts: product.discounts ?? []
   })
 }
 
@@ -184,6 +190,7 @@ export interface IEditProductRequest {
   preorderMaxQty?: number | null
   preorderCapacity?: number | null
   fulfillmentType?: string
+  discounts?: IProductDiscountInput[]
 }
 
 export interface IProductCart extends IProduct {

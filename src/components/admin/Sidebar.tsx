@@ -85,7 +85,8 @@ function Sidebar({ ...rest }: Props) {
       title: 'Katalog',
       items: [
         { text: 'Produk', path: '/admin/products', icon: AiOutlineShopping },
-        { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags }
+        { text: 'Kategori', path: '/admin/categories', icon: AiOutlineTags },
+        { text: 'Diskon', path: '/admin/discounts', icon: AiOutlineTags }
       ]
     },
     {

@@ -49,6 +49,19 @@ export const adminProductForm = z.object({
   preorderMaxQty: z.number().nullable().optional(),
   preorderCapacity: z.number().nullable().optional(),
   fulfillmentType: z.string().optional(),
+  discounts: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        type: z.enum(['percentage', 'fixed']),
+        value: z.number({ required_error: 'Nilai diskon diperlukan' }).min(0),
+        minQuantity: z.number().min(1).optional(),
+        startDate: z.string().nullable().optional(),
+        endDate: z.string().nullable().optional(),
+        isActive: z.boolean().optional()
+      })
+    )
+    .optional(),
   image: z.any().optional()
 })
 

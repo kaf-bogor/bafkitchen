@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react'
 
-import { AddIcon } from '@chakra-ui/icons'
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons'
 import {
   Accordion,
   AccordionButton,
@@ -23,6 +23,7 @@ import {
   Select,
   SimpleGrid,
   Switch,
+  Text,
   Textarea,
   VStack,
   FormErrorMessage,
@@ -40,6 +41,7 @@ import { useGetCategories, useCreateCategories } from '@/app/admin/(panel)/categ
 import { getVendors } from '@/app/admin/(panel)/vendors/actions'
 import ProductImage from '@/components/ProductImage'
 import { Card, CardBody, CardHeader, LabelWithTooltip } from '@/components/ui'
+import { IProductDiscountInput } from '@/interfaces/discount'
 import {
   IEditProductRequest,
   IProductResponse,
@@ -102,7 +104,8 @@ export default function ProductForm({
     initialValues: {
       ...product,
       vendor: lockedVendor ?? product.vendor,
-      categoryIds: product.categories?.map(({ id }) => id) || []
+      categoryIds: product.categories?.map(({ id }) => id) || [],
+      discounts: product.discounts ?? []
     },
     validationSchema: toFormikValidationSchema(schema.adminProductForm),
     onSubmit: (values) => {
@@ -114,6 +117,32 @@ export default function ProductForm({
       }
     }
   })
+
+  const discounts: IProductDiscountInput[] = (values as any).discounts || []
+  const setDiscounts = (next: IProductDiscountInput[]) =>
+    setFieldValue('discounts', next)
+  const addDiscount = () =>
+    setDiscounts([
+      ...discounts,
+      {
+        name: '',
+        type: 'percentage',
+        value: 0,
+        minQuantity: 1,
+        startDate: null,
+        endDate: null,
+        isActive: true
+      }
+    ])
+  const updateDiscount = (
+    index: number,
+    patch: Partial<IProductDiscountInput>
+  ) =>
+    setDiscounts(
+      discounts.map((d, i) => (i === index ? { ...d, ...patch } : d))
+    )
+  const removeDiscount = (index: number) =>
+    setDiscounts(discounts.filter((_, i) => i !== index))
 
   useEffect(() => {
     if (dataCategories?.length && values.vendor?.id) {
@@ -379,6 +408,194 @@ export default function ProductForm({
                     <FormErrorMessage>{errors.stock}</FormErrorMessage>
                   </FormControl>
                 </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader title="Diskon" />
+              <CardBody>
+                <VStack gap={4} align="stretch">
+                  <Text fontSize="sm" color="text-muted">
+                    Atur diskon berdasarkan waktu (tanggal) dan jumlah pembelian
+                    (quantity). Bila beberapa diskon cocok, yang terbesar dipakai.
+                  </Text>
+
+                  {discounts.length === 0 && (
+                    <Text fontSize="sm" color="text-subtle">
+                      Belum ada diskon.
+                    </Text>
+                  )}
+
+                  {discounts.map((discount, index) => (
+                    <Box
+                      key={index}
+                      border="1px solid"
+                      borderColor="border-subtle"
+                      borderRadius="lg"
+                      p={4}
+                      bg="surface"
+                    >
+                      <Flex justify="space-between" align="center" mb={3}>
+                        <Text fontWeight="600" fontSize="sm" color="text-strong">
+                          Diskon {index + 1}
+                        </Text>
+                        <IconButton
+                          aria-label="Hapus diskon"
+                          icon={<DeleteIcon />}
+                          size="xs"
+                          variant="ghost"
+                          colorScheme="red"
+                          onClick={() => removeDiscount(index)}
+                        />
+                      </Flex>
+
+                      <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+                        <FormControl>
+                          <FormLabel>Nama diskon (opsional)</FormLabel>
+                          <Input
+                            value={discount.name || ''}
+                            onChange={(e) =>
+                              updateDiscount(index, { name: e.target.value })
+                            }
+                            placeholder="cth., Promo Ramadan"
+                          />
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel>Tipe diskon</FormLabel>
+                          <Select
+                            value={discount.type}
+                            onChange={(e) =>
+                              updateDiscount(index, {
+                                type: e.target
+                                  .value as IProductDiscountInput['type'],
+                                value: 0
+                              })
+                            }
+                          >
+                            <option value="percentage">Persen (%)</option>
+                            <option value="fixed">Nominal (Rp)</option>
+                          </Select>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel>Nilai diskon</FormLabel>
+                          {discount.type === 'percentage' ? (
+                            <Input
+                              as={NumericFormat}
+                              value={discount.value}
+                              suffix="%"
+                              thousandSeparator=""
+                              onValueChange={(v: NumberFormatValues) =>
+                                updateDiscount(index, {
+                                  value: parseFloat(v.value) || 0
+                                })
+                              }
+                              placeholder="cth., 20"
+                            />
+                          ) : (
+                            <Input
+                              as={NumericFormat}
+                              value={discount.value}
+                              prefix="Rp."
+                              thousandSeparator="."
+                              decimalSeparator=","
+                              onValueChange={(v: NumberFormatValues) =>
+                                updateDiscount(index, {
+                                  value: parseFloat(v.value) || 0
+                                })
+                              }
+                              placeholder="cth., 5000"
+                            />
+                          )}
+                          <FormHelperText>
+                            {discount.type === 'percentage'
+                              ? 'Persentase potongan dari harga jual.'
+                              : 'Potongan nominal per unit.'}
+                          </FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel>Minimal quantity</FormLabel>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={discount.minQuantity ?? 1}
+                            onChange={(e) =>
+                              updateDiscount(index, {
+                                minQuantity: Number(e.target.value)
+                              })
+                            }
+                          />
+                          <FormHelperText>
+                            Diskon berlaku jika jumlah beli mencapai angka ini.
+                          </FormHelperText>
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel>Tanggal mulai</FormLabel>
+                          <Input
+                            type="date"
+                            value={discount.startDate || ''}
+                            onChange={(e) =>
+                              updateDiscount(index, {
+                                startDate: e.target.value || null
+                              })
+                            }
+                          />
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel>Tanggal berakhir</FormLabel>
+                          <Input
+                            type="date"
+                            value={discount.endDate || ''}
+                            onChange={(e) =>
+                              updateDiscount(index, {
+                                endDate: e.target.value || null
+                              })
+                            }
+                          />
+                        </FormControl>
+                      </SimpleGrid>
+
+                      <FormControl
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        gap={4}
+                        mt={3}
+                      >
+                        <Box>
+                          <FormLabel mb={0}>Aktif</FormLabel>
+                          <FormHelperText mt={1}>
+                            Nonaktifkan untuk menyembunyikan diskon tanpa
+                            menghapus.
+                          </FormHelperText>
+                        </Box>
+                        <Switch
+                          colorScheme="brand"
+                          isChecked={discount.isActive !== false}
+                          onChange={(e) =>
+                            updateDiscount(index, {
+                              isActive: e.target.checked
+                            })
+                          }
+                        />
+                      </FormControl>
+                    </Box>
+                  ))}
+
+                  <Button
+                    type="button"
+                    leftIcon={<AddIcon />}
+                    variant="outline"
+                    alignSelf="flex-start"
+                    onClick={addDiscount}
+                  >
+                    Tambah diskon
+                  </Button>
+                </VStack>
               </CardBody>
             </Card>
 

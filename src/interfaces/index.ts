@@ -1,5 +1,6 @@
 export * as IOrder from "./order";
 export * as ICategory from "./category";
+export * as IDiscount from "./discount";
 export * as IProduct from "./product";
 export * as IPurchase from "./purchase";
 export * as IStore from "./store";

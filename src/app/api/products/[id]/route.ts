@@ -3,12 +3,17 @@ import { env } from 'cloudflare:workers'
 import { requireAdmin, requireAuth } from '@/lib/server/auth'
 import { json, db, now, parseJson } from '@/lib/server/db'
 import {
+  loadDiscountsForProduct,
+  replaceProductDiscounts
+} from '@/lib/server/discounts'
+import {
   recordProductActivity,
   snapshotProduct
 } from '@/lib/server/productActivities'
 import { getVendorForUser } from '@/lib/server/vendors'
 
 import type { ProductRow } from '../route'
+import type { IProductDiscountInput } from '@/interfaces/discount'
 
 const DEFAULT_VENDOR = {
   id: 'bazaf',
@@ -45,6 +50,8 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
   const vendor =
     storedVendor ?? DEFAULT_VENDOR
 
+  const discounts = await loadDiscountsForProduct(database, ctx.params.id)
+
   return json({
     product: {
       id: row.id,
@@ -74,7 +81,8 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
       updatedAt: row.updated_at,
       activities: parseJson(row.activities, []),
       vendor,
-      categories: results
+      categories: results,
+      discounts
     }
   })
 }
@@ -109,6 +117,7 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     preorderMaxQty?: number | null
     preorderCapacity?: number | null
     fulfillmentType?: string
+    discounts?: IProductDiscountInput[]
   } | null
 
   const database = db()
@@ -202,6 +211,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
       .run()
   }
 
+  await replaceProductDiscounts(database, ctx.params.id, body.discounts)
+
   const row = await database
     .prepare('SELECT * FROM products WHERE id = ?')
     .bind(ctx.params.id)
@@ -215,6 +226,7 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .bind(ctx.params.id)
     .all<CategoryRow>()
   const storedVendor = parseJson(row?.vendor ?? null, null)
+  const discounts = await loadDiscountsForProduct(database, ctx.params.id)
   if (row) {
     await recordProductActivity(
       database,
@@ -253,7 +265,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
           createdAt: row.created_at,
           updatedAt: row.updated_at,
           vendor: storedVendor ?? DEFAULT_VENDOR,
-          categories: results
+          categories: results,
+          discounts
         }
       : null
   })
@@ -356,6 +369,7 @@ export async function DELETE(request: Request, ctx: { params: { id: string } }) 
     .first<{ image_key: string | null }>()
 
   await database.prepare('DELETE FROM product_categories WHERE product_id = ?').bind(ctx.params.id).run()
+  await database.prepare('DELETE FROM product_discounts WHERE product_id = ?').bind(ctx.params.id).run()
   await database.prepare('DELETE FROM products WHERE id = ?').bind(ctx.params.id).run()
 
   if (existing?.image_key && env.BUCKET) {
