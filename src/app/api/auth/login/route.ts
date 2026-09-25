@@ -16,8 +16,13 @@ export async function POST(request: Request) {
   const email = body?.email?.trim().toLowerCase()
   const password = body?.password
 
-  if (!email || !password) return json({ error: 'Email and password are required' }, { status: 400 })
-  if (password.length < 8) return json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+  if (!email || !password)
+    return json({ error: 'Email and password are required' }, { status: 400 })
+  if (password.length < 8)
+    return json(
+      { error: 'Password must be at least 8 characters' },
+      { status: 400 }
+    )
 
   const database = db()
   const ts = now()
@@ -27,17 +32,20 @@ export async function POST(request: Request) {
       .prepare('SELECT id FROM users WHERE email = ?')
       .bind(email)
       .first()
-    if (existing) return json({ error: 'An account with this email already exists' }, { status: 409 })
+    if (existing)
+      return json(
+        { error: 'An account with this email already exists' },
+        { status: 409 }
+      )
 
     const userId = uuid()
     const passwordHash = await hashPassword(password)
     const isBootstrapAdmin = email === process.env.BOOTSTRAP_ADMIN_EMAIL
-    const requestedRole =
-      isBootstrapAdmin
-        ? 'admin'
-        : body.role === 'admin'
-          ? 'user'
-          : body.role ?? 'customer'
+    const requestedRole = isBootstrapAdmin
+      ? 'admin'
+      : body.role === 'admin'
+        ? 'user'
+        : body.role ?? 'customer'
 
     await database
       .prepare(

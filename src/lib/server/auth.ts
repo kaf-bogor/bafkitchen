@@ -22,7 +22,10 @@ function base64UrlEncode(data: Uint8Array | string): string {
 
 function base64UrlDecode(value: string): Uint8Array<ArrayBuffer> {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+  const padded = base64.padEnd(
+    base64.length + ((4 - (base64.length % 4)) % 4),
+    '='
+  )
   const binary = atob(padded)
   const buffer = new ArrayBuffer(binary.length)
   const bytes = new Uint8Array(buffer)
@@ -40,7 +43,9 @@ function secretKey(secret: string): Promise<CryptoKey> {
   )
 }
 
-export async function signJwt(payload: Record<string, unknown>): Promise<string> {
+export async function signJwt(
+  payload: Record<string, unknown>
+): Promise<string> {
   const secret = process.env.AUTH_SECRET
   if (!secret) throw new Error('AUTH_SECRET is not set')
   const header = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
@@ -102,7 +107,9 @@ export function parseCookies(request: Request): Record<string, string> {
   )
 }
 
-export async function getSession(request: Request): Promise<SessionUser | null> {
+export async function getSession(
+  request: Request
+): Promise<SessionUser | null> {
   const cookies = parseCookies(request)
   const token = cookies[SESSION_COOKIE]
   if (!token) return null
@@ -205,7 +212,8 @@ export async function verifyPassword(
   const expectedBytes = base64UrlDecode(expected)
   if (actualBytes.length !== expectedBytes.length) return false
   let diff = 0
-  for (let i = 0; i < actualBytes.length; i++) diff |= actualBytes[i] ^ expectedBytes[i]
+  for (let i = 0; i < actualBytes.length; i++)
+    diff |= actualBytes[i] ^ expectedBytes[i]
   return diff === 0
 }
 

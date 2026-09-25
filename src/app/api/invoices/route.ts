@@ -16,7 +16,9 @@ export async function GET(request: Request) {
   // Non-admin users can only access invoices containing their own vendor's items.
   if (session.role !== 'admin') {
     const vendor = await db()
-      .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+      .prepare(
+        'SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1'
+      )
       .bind(session.uid)
       .first<{ id: string }>()
     if (!vendor) return json({ invoices: [] })
@@ -53,7 +55,8 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     orderId?: string
   } | null
-  if (!body?.orderId) return json({ error: 'orderId is required' }, { status: 400 })
+  if (!body?.orderId)
+    return json({ error: 'orderId is required' }, { status: 400 })
 
   const database = db()
   const order = await database
@@ -65,7 +68,10 @@ export async function POST(request: Request) {
   try {
     const invoice = await generateInvoiceForOrder(body.orderId)
 
-    if (order.status !== 'Invoice Issued' && order.status !== 'Invoice Settled') {
+    if (
+      order.status !== 'Invoice Issued' &&
+      order.status !== 'Invoice Settled'
+    ) {
       const activities = parseJson<Record<string, unknown>[]>(
         order.activities,
         []
@@ -83,7 +89,9 @@ export async function POST(request: Request) {
         createdAt: ts
       })
       await database
-        .prepare('UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?')
+        .prepare(
+          'UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?'
+        )
         .bind('Invoice Issued', JSON.stringify(activities), ts, body.orderId)
         .run()
     }

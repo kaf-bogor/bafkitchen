@@ -43,7 +43,9 @@ export const buildReport = (
   const vendorMap = new Map<string, ReportRow>()
   const productMap = new Map<string, ReportRow>()
 
-  const relevant = (orders || []).filter((order) => order.status !== 'Cancelled')
+  const relevant = (orders || []).filter(
+    (order) => order.status !== 'Cancelled'
+  )
 
   for (const order of relevant) {
     let orderIncluded = false

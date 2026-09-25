@@ -74,18 +74,25 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .prepare('SELECT id FROM categories WHERE id = ?')
     .bind(ctx.params.id)
     .first()
-  if (!existing) return json({ error: 'Category does not exist' }, { status: 404 })
+  if (!existing)
+    return json({ error: 'Category does not exist' }, { status: 404 })
 
   if (body?.vendorId) {
     const vendor = await database
       .prepare('SELECT id FROM vendors WHERE id = ? AND is_active = 1')
       .bind(body.vendorId)
       .first()
-    if (!vendor) return json({ error: 'Vendor does not exist or is inactive' }, { status: 400 })
+    if (!vendor)
+      return json(
+        { error: 'Vendor does not exist or is inactive' },
+        { status: 400 }
+      )
   }
 
   await database
-    .prepare('UPDATE categories SET name = ?, vendor_id = ?, updated_at = ? WHERE id = ?')
+    .prepare(
+      'UPDATE categories SET name = ?, vendor_id = ?, updated_at = ? WHERE id = ?'
+    )
     .bind(name, body?.vendorId ?? null, now(), ctx.params.id)
     .run()
 

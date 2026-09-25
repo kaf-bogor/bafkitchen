@@ -20,7 +20,9 @@ export const useGetProduct = (productId: string) => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ product: IProductResponse }>(`/api/products/${productId}`)
+      const res = await apiFetch<{ product: IProductResponse }>(
+        `/api/products/${productId}`
+      )
       setData(res.product)
     } catch (err) {
       setError(err as Error)
@@ -72,7 +74,7 @@ export const useGetProducts = (params?: IFetchProductRequest) => {
     } finally {
       setLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     params?.q,
     params?.categoryIds?.join(','),
@@ -158,10 +160,13 @@ export const useCreateProducts = () => {
         fulfillmentType: product.fulfillmentType ?? 'takeaway',
         discounts: product.discounts ?? []
       }
-      const res = await apiFetch<{ product: IProductResponse }>('/api/products', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      const res = await apiFetch<{ product: IProductResponse }>(
+        '/api/products',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }
+      )
       return res.product as any
     } catch (err) {
       setError(err as Error)

@@ -52,7 +52,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
 
   const name = body?.name?.trim()
   const email = body?.email?.trim().toLowerCase()
-  if (!name || !email) return json({ error: 'Name and email are required' }, { status: 400 })
+  if (!name || !email)
+    return json({ error: 'Name and email are required' }, { status: 400 })
 
   const database = db()
   const existing = await database
@@ -66,7 +67,10 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .bind(email, ctx.params.id)
     .first()
   if (duplicate)
-    return json({ error: 'A user with this email already exists' }, { status: 409 })
+    return json(
+      { error: 'A user with this email already exists' },
+      { status: 409 }
+    )
 
   const password = body?.password?.trim()
   if (password) {
@@ -111,12 +115,18 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   return json({ user: transformUser(row) })
 }
 
-export async function DELETE(request: Request, ctx: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  ctx: { params: { id: string } }
+) {
   const auth = await requireAdmin(request)
   if (auth instanceof Response) return auth
 
   if (auth.uid === ctx.params.id)
-    return json({ error: 'You cannot delete your own account' }, { status: 400 })
+    return json(
+      { error: 'You cannot delete your own account' },
+      { status: 400 }
+    )
 
   const existing = await db()
     .prepare('SELECT id FROM users WHERE id = ?')

@@ -127,11 +127,7 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
 
   let customerY = 78.5
   if (isPeriod) {
-    pdf.text(
-      `Jumlah order: ${invoice.orderIds?.length || 0}`,
-      col2X,
-      customerY
-    )
+    pdf.text(`Jumlah order: ${invoice.orderIds?.length || 0}`, col2X, customerY)
     customerY += 5
   } else {
     if (invoice.customer?.phoneNumber) {
@@ -196,9 +192,14 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
         align: 'right'
       })
     }
-    pdf.text(currency.toIDRFormat(item.totalPrice), PAGE_WIDTH - MARGIN - 3, y, {
-      align: 'right'
-    })
+    pdf.text(
+      currency.toIDRFormat(item.totalPrice),
+      PAGE_WIDTH - MARGIN - 3,
+      y,
+      {
+        align: 'right'
+      }
+    )
 
     setColor(pdf, 'draw', LINE)
     pdf.line(MARGIN, y + 3, PAGE_WIDTH - MARGIN, y + 3)
@@ -217,9 +218,14 @@ export const exportInvoiceToPDF = (invoice: IInvoice) => {
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(11)
   pdf.text('Total', boxX, y + 3)
-  pdf.text(currency.toIDRFormat(invoice.totalAmount), PAGE_WIDTH - MARGIN, y + 3, {
-    align: 'right'
-  })
+  pdf.text(
+    currency.toIDRFormat(invoice.totalAmount),
+    PAGE_WIDTH - MARGIN,
+    y + 3,
+    {
+      align: 'right'
+    }
+  )
   y += 14
 
   // ---- Payment note ----
@@ -352,9 +358,14 @@ export const exportInvoicesListToPDF = (
       y
     )
     pdf.text(vendor, MARGIN + 72, y)
-    pdf.text(currency.toIDRFormat(invoice.totalAmount), pageWidth - MARGIN - 40, y, {
-      align: 'right'
-    })
+    pdf.text(
+      currency.toIDRFormat(invoice.totalAmount),
+      pageWidth - MARGIN - 40,
+      y,
+      {
+        align: 'right'
+      }
+    )
     setColor(pdf, 'text', status.color)
     pdf.text(status.label, pageWidth - MARGIN - 3, y, { align: 'right' })
 
@@ -371,8 +382,7 @@ export const exportInvoicesListToPDF = (
   pdf.text('Dibuat oleh Bazaf', pageWidth - MARGIN, 281, { align: 'right' })
 
   pdf.save(
-    filename ||
-      `Invoices_List_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
+    filename || `Invoices_List_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`
   )
 }
 
@@ -454,9 +464,14 @@ export const exportReportToPDF = (
       if (i === 0) {
         pdf.text(String(col).toUpperCase(), MARGIN + 3, y)
       } else {
-        pdf.text(String(col).toUpperCase(), MARGIN + colWidth * (i + 1) - 3, y, {
-          align: 'right'
-        })
+        pdf.text(
+          String(col).toUpperCase(),
+          MARGIN + colWidth * (i + 1) - 3,
+          y,
+          {
+            align: 'right'
+          }
+        )
       }
     })
     y += 8
@@ -611,9 +626,10 @@ export const exportStockChecklistToPDF = (
       item.productName.length > 48
         ? `${item.productName.substring(0, 48)}...`
         : item.productName
-    const note = (item.note || '').length > 22
-      ? `${(item.note || '').substring(0, 22)}...`
-      : item.note || ''
+    const note =
+      (item.note || '').length > 22
+        ? `${(item.note || '').substring(0, 22)}...`
+        : item.note || ''
 
     setColor(pdf, 'text', BODY)
     pdf.text(String(index + 1), cols.no, y)

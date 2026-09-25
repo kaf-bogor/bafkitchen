@@ -48,7 +48,13 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .prepare(
       'UPDATE vendors SET name = ?, user_id = ?, type = COALESCE(?, type), updated_at = ? WHERE id = ?'
     )
-    .bind(name, body?.userId?.trim() ?? null, body?.type ?? null, now(), ctx.params.id)
+    .bind(
+      name,
+      body?.userId?.trim() ?? null,
+      body?.type ?? null,
+      now(),
+      ctx.params.id
+    )
     .run()
 
   const row = await db()
@@ -59,7 +65,10 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   return json({ vendor: transformVendor(row) })
 }
 
-export async function DELETE(request: Request, ctx: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  ctx: { params: { id: string } }
+) {
   const auth = await requireAdmin(request)
   if (auth instanceof Response) return auth
 

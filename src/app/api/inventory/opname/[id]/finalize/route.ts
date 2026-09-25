@@ -29,10 +29,7 @@ export async function POST(request: Request, ctx: { params: { id: string } }) {
     .all<StockOpnameItemRow>()
 
   if (!items.length) {
-    return json(
-      { error: 'Belum ada stok fisik yang diisi' },
-      { status: 400 }
-    )
+    return json({ error: 'Belum ada stok fisik yang diisi' }, { status: 400 })
   }
 
   const ts = now()

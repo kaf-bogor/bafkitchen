@@ -50,7 +50,8 @@ export async function GET(
     .prepare('SELECT * FROM purchases WHERE id = ?')
     .bind(id)
     .first<PurchaseRow>()
-  if (!row) return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
+  if (!row)
+    return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
 
   const items = await loadPurchaseItems(id)
   return json({ purchase: transformPurchase(row, items) })
@@ -69,9 +70,12 @@ export async function PUT(
     .prepare('SELECT * FROM purchases WHERE id = ?')
     .bind(id)
     .first<PurchaseRow>()
-  if (!existing) return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
+  if (!existing)
+    return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
 
-  const body = (await request.json().catch(() => null)) as UpdatePurchaseBody | null
+  const body = (await request
+    .json()
+    .catch(() => null)) as UpdatePurchaseBody | null
   const items = sanitizeItems(body?.items)
   if (!items.length) {
     return json({ error: 'Tambahkan minimal satu produk' }, { status: 400 })
@@ -137,7 +141,9 @@ export async function PUT(
   for (const [productId, qty] of oldQtyByProduct) {
     statements.push(
       database
-        .prepare('UPDATE products SET stock = stock - ?, updated_at = ? WHERE id = ?')
+        .prepare(
+          'UPDATE products SET stock = stock - ?, updated_at = ? WHERE id = ?'
+        )
         .bind(qty, ts, productId)
     )
   }
@@ -149,7 +155,9 @@ export async function PUT(
       .bind(id)
   )
   statements.push(
-    database.prepare('DELETE FROM purchase_items WHERE purchase_id = ?').bind(id)
+    database
+      .prepare('DELETE FROM purchase_items WHERE purchase_id = ?')
+      .bind(id)
   )
 
   for (const item of items) {
@@ -236,7 +244,8 @@ export async function DELETE(
     .prepare('SELECT * FROM purchases WHERE id = ?')
     .bind(id)
     .first<PurchaseRow>()
-  if (!existing) return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
+  if (!existing)
+    return json({ error: 'Nota pembelian tidak ditemukan' }, { status: 404 })
 
   const { results: itemRows } = await database
     .prepare('SELECT * FROM purchase_items WHERE purchase_id = ?')
@@ -256,7 +265,9 @@ export async function DELETE(
   for (const [productId, qty] of qtyByProduct) {
     statements.push(
       database
-        .prepare('UPDATE products SET stock = stock - ?, updated_at = ? WHERE id = ?')
+        .prepare(
+          'UPDATE products SET stock = stock - ?, updated_at = ? WHERE id = ?'
+        )
         .bind(qty, ts, productId)
     )
   }
@@ -268,9 +279,13 @@ export async function DELETE(
       .bind(id)
   )
   statements.push(
-    database.prepare('DELETE FROM purchase_items WHERE purchase_id = ?').bind(id)
+    database
+      .prepare('DELETE FROM purchase_items WHERE purchase_id = ?')
+      .bind(id)
   )
-  statements.push(database.prepare('DELETE FROM purchases WHERE id = ?').bind(id))
+  statements.push(
+    database.prepare('DELETE FROM purchases WHERE id = ?').bind(id)
+  )
 
   await database.batch(statements)
 

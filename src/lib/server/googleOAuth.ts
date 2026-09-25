@@ -1,8 +1,10 @@
 import { parseCookies } from '@/lib/server/auth'
 
-export const GOOGLE_AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
+export const GOOGLE_AUTH_ENDPOINT =
+  'https://accounts.google.com/o/oauth2/v2/auth'
 export const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
-export const GOOGLE_TOKENINFO_ENDPOINT = 'https://oauth2.googleapis.com/tokeninfo'
+export const GOOGLE_TOKENINFO_ENDPOINT =
+  'https://oauth2.googleapis.com/tokeninfo'
 export const OAUTH_STATE_COOKIE = 'bazaf_oauth_state'
 
 export interface GoogleUserInfo {

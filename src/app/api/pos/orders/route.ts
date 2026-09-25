@@ -21,7 +21,8 @@ export async function POST(request: Request) {
     cashierName?: string
   } | null
 
-  if (!body?.items?.length) return json({ error: 'Cart is empty' }, { status: 400 })
+  if (!body?.items?.length)
+    return json({ error: 'Cart is empty' }, { status: 400 })
 
   const productOrders = body.items.map((item, index) => ({
     id: index + 1,
@@ -33,7 +34,9 @@ export async function POST(request: Request) {
       imageUrl: item.imageUrl || '',
       priceBase: item.priceBase || 0,
       price: item.price || 0,
-      vendor: item.vendor ? { id: item.vendor.id, name: item.vendor.name } : null
+      vendor: item.vendor
+        ? { id: item.vendor.id, name: item.vendor.name }
+        : null
     }
   }))
 

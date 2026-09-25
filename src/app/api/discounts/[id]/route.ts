@@ -3,7 +3,11 @@ import { json, db, now, parseJson } from '@/lib/server/db'
 import { mapDiscountRow, type DiscountRow } from '@/lib/server/discounts'
 import { getVendorForUser } from '@/lib/server/vendors'
 
-async function authorize(database: D1Database, request: Request, discountId: string) {
+async function authorize(
+  database: D1Database,
+  request: Request,
+  discountId: string
+) {
   const auth = await requireAuth(request)
   if (auth instanceof Response) return auth
 
@@ -31,10 +35,7 @@ async function authorize(database: D1Database, request: Request, discountId: str
   return row
 }
 
-export async function PATCH(
-  request: Request,
-  ctx: { params: { id: string } }
-) {
+export async function PATCH(request: Request, ctx: { params: { id: string } }) {
   const database = db()
   const auth = await authorize(database, request, ctx.params.id)
   if (auth instanceof Response) return auth
@@ -82,7 +83,8 @@ export async function PATCH(
     params.push(body.isActive ? 1 : 0)
   }
 
-  if (!sets.length) return json({ error: 'No fields to update' }, { status: 400 })
+  if (!sets.length)
+    return json({ error: 'No fields to update' }, { status: 400 })
 
   sets.push('updated_at = ?')
   params.push(now())

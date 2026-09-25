@@ -117,10 +117,13 @@ export const useUpdateUser = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ user: IUser.IUser }>(`/api/users/${request.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(request)
-      })
+      const res = await apiFetch<{ user: IUser.IUser }>(
+        `/api/users/${request.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(request)
+        }
+      )
       return res.user
     } catch (err) {
       setError(err as Error)

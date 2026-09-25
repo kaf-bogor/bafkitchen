@@ -27,39 +27,45 @@ export const cartStore = create<CartState & CartActions>()(
     (set, get) => ({
       products: [],
 
-      addProduct: (product) => set((state) => {
-        const existingProduct = state.products.find(p => p.id === product.id)
-        if (existingProduct) {
-          return {
-            products: state.products.map(p => 
-              p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
-            )
+      addProduct: (product) =>
+        set((state) => {
+          const existingProduct = state.products.find(
+            (p) => p.id === product.id
+          )
+          if (existingProduct) {
+            return {
+              products: state.products.map((p) =>
+                p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+              )
+            }
           }
-        }
-        const newProduct = 'quantity' in product 
-          ? product as IProductCart
-          : { ...product as IProduct, quantity: 1 }
-        return { products: [...state.products, newProduct] }
-      }),
+          const newProduct =
+            'quantity' in product
+              ? (product as IProductCart)
+              : { ...(product as IProduct), quantity: 1 }
+          return { products: [...state.products, newProduct] }
+        }),
 
-      removeProduct: (productId) => set((state) => ({
-        products: state.products.filter(p => p.id !== productId)
-      })),
+      removeProduct: (productId) =>
+        set((state) => ({
+          products: state.products.filter((p) => p.id !== productId)
+        })),
 
       getTotalQuantity: (productId) => {
-        const products = productId 
-          ? get().products.filter(p => p.id === productId)
+        const products = productId
+          ? get().products.filter((p) => p.id === productId)
           : get().products
         return products.reduce((acc, p) => acc + p.quantity, 0)
       },
 
-      reduceQuantity: (productId) => set((state) => ({
-        products: state.products.map(p => 
-          p.id === productId && p.quantity > 0 
-            ? { ...p, quantity: p.quantity - 1 } 
-            : p
-        )
-      })),
+      reduceQuantity: (productId) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === productId && p.quantity > 0
+              ? { ...p, quantity: p.quantity - 1 }
+              : p
+          )
+        })),
 
       clearCart: () => set({ products: [] }),
 
@@ -75,23 +81,26 @@ export const cartStore = create<CartState & CartActions>()(
         ).lineTotal
       },
 
-      getTotalPrice: () => get().products.reduce(
-        (acc, p) =>
-          acc + getLinePricing(p.price, p.quantity, p.discounts).lineTotal,
-        0
-      ),
+      getTotalPrice: () =>
+        get().products.reduce(
+          (acc, p) =>
+            acc + getLinePricing(p.price, p.quantity, p.discounts).lineTotal,
+          0
+        ),
 
-      updateProductQuantity: (productId, num) => set((state) => ({
-        products: state.products.map(p => 
-          p.id === productId ? { ...p, quantity: num } : p
-        )
-      })),
+      updateProductQuantity: (productId, num) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === productId ? { ...p, quantity: num } : p
+          )
+        })),
 
-      updateProductNote: (productId, note) => set((state) => ({
-        products: state.products.map(p =>
-          p.id === productId ? { ...p, notes: note } : p
-        )
-      }))
+      updateProductNote: (productId, note) =>
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.id === productId ? { ...p, notes: note } : p
+          )
+        }))
     }),
     {
       name: 'cart-bazaf'

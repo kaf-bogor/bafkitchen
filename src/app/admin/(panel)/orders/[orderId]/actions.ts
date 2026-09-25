@@ -36,7 +36,9 @@ const fetchOrder = async (orderId: string): Promise<IOrderType> => {
 }
 
 // Fetch order activities from order document
-const fetchOrderActivities = async (orderId: string): Promise<IOrderActivity[]> => {
+const fetchOrderActivities = async (
+  orderId: string
+): Promise<IOrderActivity[]> => {
   const res = await apiFetch<{ order: OrderApiShape }>(`/api/orders/${orderId}`)
   const activities = res.order.activities || []
 
@@ -104,7 +106,10 @@ export const useGetOrder = (orderId: string, enabled: boolean = true) => {
   return { data, loading, error, refetch: fetchOrderData }
 }
 
-export const useGetOrderActivities = (orderId: string, enabled: boolean = true) => {
+export const useGetOrderActivities = (
+  orderId: string,
+  enabled: boolean = true
+) => {
   const [data, setData] = useState<IOrderActivity[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)

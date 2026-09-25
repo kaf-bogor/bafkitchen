@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-import { IVendor, ICreateVendorRequest, IUpdateVendorRequest } from '@/interfaces/vendor'
+import {
+  IVendor,
+  ICreateVendorRequest,
+  IUpdateVendorRequest
+} from '@/interfaces/vendor'
 import { apiFetch } from '@/utils/api'
 
 const transformVendorData = (vendor: IVendor): IVendor => ({
@@ -34,7 +38,9 @@ export const useGetVendors = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ vendors: IVendor[] }>('/api/vendors?includeInactive=1')
+      const res = await apiFetch<{ vendors: IVendor[] }>(
+        '/api/vendors?includeInactive=1'
+      )
       setData(res.vendors.map(transformVendorData))
     } catch (err) {
       setError(err as Error)
@@ -66,7 +72,9 @@ export const useGetVendor = (vendorId: string) => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ vendor: IVendor }>(`/api/vendors/${vendorId}`)
+      const res = await apiFetch<{ vendor: IVendor }>(
+        `/api/vendors/${vendorId}`
+      )
       setData(transformVendorData(res.vendor))
     } catch (err) {
       setError(err as Error)
@@ -123,14 +131,17 @@ export const useUpdateVendor = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ vendor: IVendor }>(`/api/vendors/${request.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          name: request.name,
-          userId: request.userId,
-          type: request.type
-        })
-      })
+      const res = await apiFetch<{ vendor: IVendor }>(
+        `/api/vendors/${request.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: request.name,
+            userId: request.userId,
+            type: request.type
+          })
+        }
+      )
       return transformVendorData(res.vendor)
     } catch (err) {
       setError(err as Error)

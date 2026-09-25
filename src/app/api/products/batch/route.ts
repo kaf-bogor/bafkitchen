@@ -66,7 +66,8 @@ export async function POST(request: Request) {
     params.push(fields.approvalStatus)
   }
 
-  if (!sets.length) return json({ error: 'No fields to update' }, { status: 400 })
+  if (!sets.length)
+    return json({ error: 'No fields to update' }, { status: 400 })
 
   sets.push('updated_at = ?')
   params.push(now())
@@ -80,7 +81,9 @@ export async function POST(request: Request) {
     .all<ProductRow>()
 
   await database
-    .prepare(`UPDATE products SET ${sets.join(', ')} WHERE id IN (${placeholders})`)
+    .prepare(
+      `UPDATE products SET ${sets.join(', ')} WHERE id IN (${placeholders})`
+    )
     .bind(...params, ...ids)
     .run()
 

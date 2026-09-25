@@ -27,7 +27,20 @@ export async function GET(request: Request) {
     codeChallenge: challenge
   })
 
-  const headers = new Headers({ Location: authUrl })
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mengalihkan…</title>
+    <script>location.replace(${JSON.stringify(authUrl)})</script>
+  </head>
+  <body>Mengalihkan ke Google…</body>
+</html>`
+
+  const headers = new Headers({
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store'
+  })
   headers.append('Set-Cookie', buildStateCookie(state, verifier))
-  return new Response(null, { status: 302, headers })
+  return new Response(html, { status: 200, headers })
 }

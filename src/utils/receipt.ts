@@ -48,7 +48,11 @@ export const buildReceiptData = (order: {
     quantity: po.quantity || 0
   })),
   total: order.total,
-  payment: order.payment || { method: 'Tunai', tendered: order.total, change: 0 }
+  payment: order.payment || {
+    method: 'Tunai',
+    tendered: order.total,
+    change: 0
+  }
 })
 
 // Generates an 80mm thermal-style receipt PDF
@@ -125,14 +129,24 @@ export const exportReceiptToPDF = (receipt: IReceiptData) => {
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8)
   pdf.text(`Bayar (${receipt.payment.method})`, margin, y)
-  pdf.text(currency.toIDRFormat(receipt.payment.tendered), pageWidth - margin, y, {
-    align: 'right'
-  })
+  pdf.text(
+    currency.toIDRFormat(receipt.payment.tendered),
+    pageWidth - margin,
+    y,
+    {
+      align: 'right'
+    }
+  )
   y += lineHeight
   pdf.text('Kembalian', margin, y)
-  pdf.text(currency.toIDRFormat(receipt.payment.change), pageWidth - margin, y, {
-    align: 'right'
-  })
+  pdf.text(
+    currency.toIDRFormat(receipt.payment.change),
+    pageWidth - margin,
+    y,
+    {
+      align: 'right'
+    }
+  )
   y += lineHeight + 4
 
   pdf.text('Terima kasih!', pageWidth / 2, y, { align: 'center' })

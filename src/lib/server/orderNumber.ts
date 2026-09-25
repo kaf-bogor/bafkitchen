@@ -26,7 +26,20 @@ export const generateOrderNumber = async (): Promise<string> => {
 }
 
 // First letter of the Indonesian month name (Januari..Desember).
-const MONTH_LETTERS = ['j', 'f', 'm', 'a', 'm', 'j', 'j', 'a', 's', 'o', 'n', 'd']
+const MONTH_LETTERS = [
+  'j',
+  'f',
+  'm',
+  'a',
+  'm',
+  'j',
+  'j',
+  'a',
+  's',
+  'o',
+  'n',
+  'd'
+]
 
 /**
  * Short, readable order id: first letter of the month + a globally

@@ -133,7 +133,10 @@ export async function generateInvoiceForOrder(orderId: string) {
   if (!row) throw new Error('Order not found')
 
   const productOrders = parseJson<ProductOrder[]>(row.product_orders, [])
-  const orderVendors = parseJson<{ id: string; name: string }[]>(row.vendors, [])
+  const orderVendors = parseJson<{ id: string; name: string }[]>(
+    row.vendors,
+    []
+  )
   const customer = parseJson<Record<string, string>>(row.customer, {})
 
   const items = productOrders.map((productOrder) => {
@@ -322,7 +325,9 @@ export async function generateVendorPeriodInvoice(params: VendorPeriodParams) {
   const invoiceNumber = await generateInvoiceNumber('INVP')
   const due = dueDate
     ? new Date(`${dueDate}T23:59:59.999`).toISOString()
-    : new Date(Date.now() + DEFAULT_DUE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    : new Date(
+        Date.now() + DEFAULT_DUE_DAYS * 24 * 60 * 60 * 1000
+      ).toISOString()
 
   await db()
     .prepare(

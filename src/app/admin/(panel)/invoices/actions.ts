@@ -97,7 +97,9 @@ export const useGetInvoice = (invoiceId: string) => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ invoice: IInvoice }>(`/api/invoices/${invoiceId}`)
+      const res = await apiFetch<{ invoice: IInvoice }>(
+        `/api/invoices/${invoiceId}`
+      )
       setData(transformInvoiceData(res.invoice))
     } catch (err) {
       setError(err as Error)
@@ -180,13 +182,18 @@ export const useUpdateInvoiceStatus = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ invoice: IInvoice }>(`/api/invoices/${request.invoiceId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          status: request.status,
-          ...(request.status === EInvoiceStatus.SETTLED ? { settledDate: request.settledDate } : {})
-        })
-      })
+      const res = await apiFetch<{ invoice: IInvoice }>(
+        `/api/invoices/${request.invoiceId}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: request.status,
+            ...(request.status === EInvoiceStatus.SETTLED
+              ? { settledDate: request.settledDate }
+              : {})
+          })
+        }
+      )
       return transformInvoiceData(res.invoice)
     } catch (err) {
       setError(err as Error)

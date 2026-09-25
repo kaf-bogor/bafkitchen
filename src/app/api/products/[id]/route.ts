@@ -46,9 +46,11 @@ export async function GET(_request: Request, ctx: { params: { id: string } }) {
     .bind(ctx.params.id)
     .all<CategoryRow>()
 
-  const storedVendor = parseJson<{ id?: string; name?: string } | null>(row.vendor, null)
-  const vendor =
-    storedVendor ?? DEFAULT_VENDOR
+  const storedVendor = parseJson<{ id?: string; name?: string } | null>(
+    row.vendor,
+    null
+  )
+  const vendor = storedVendor ?? DEFAULT_VENDOR
 
   const discounts = await loadDiscountsForProduct(database, ctx.params.id)
 
@@ -132,7 +134,10 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   let approvalStatus = existing.approval_status || 'approved'
   if (!isAdmin) {
     const vendor = await getVendorForUser(auth.uid)
-    const existingVendor = parseJson<{ id?: string } | null>(existing.vendor, null)
+    const existingVendor = parseJson<{ id?: string } | null>(
+      existing.vendor,
+      null
+    )
     if (!vendor || existingVendor?.id !== vendor.id) {
       return json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -142,10 +147,13 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
 
   const categoryIds = body.categoryIds ?? []
   const availability = body.availability === 'preorder' ? 'preorder' : 'ready'
-  const preorderStart = availability === 'preorder' ? (body.preorderStart ?? null) : null
-  const preorderEnd = availability === 'preorder' ? (body.preorderEnd ?? null) : null
+  const preorderStart =
+    availability === 'preorder' ? body.preorderStart ?? null : null
+  const preorderEnd =
+    availability === 'preorder' ? body.preorderEnd ?? null : null
   const channels = body.channels?.length ? body.channels : ['pos']
-  const availabilityType = body.availabilityType || existing.availability_type || 'always'
+  const availabilityType =
+    body.availabilityType || existing.availability_type || 'always'
 
   // Delete the old R2 object if the image was replaced
   const oldKey = existing.image_key
@@ -186,8 +194,12 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
       preorderEnd,
       channels.join(','),
       availabilityType,
-      availabilityType === 'weekly' ? JSON.stringify(body.weeklyDays ?? []) : null,
-      availabilityType === 'specific' ? JSON.stringify(body.specificDates ?? []) : null,
+      availabilityType === 'weekly'
+        ? JSON.stringify(body.weeklyDays ?? [])
+        : null,
+      availabilityType === 'specific'
+        ? JSON.stringify(body.specificDates ?? [])
+        : null,
       body.preorderLeadDays ?? existing.preorder_lead_days,
       body.preorderCutoffTime ?? existing.preorder_cutoff_time,
       body.preorderMinQty ?? existing.preorder_min_qty,
@@ -206,7 +218,9 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     .run()
   for (const cid of categoryIds) {
     await database
-      .prepare('INSERT OR IGNORE INTO product_categories (product_id, category_id) VALUES (?, ?)')
+      .prepare(
+        'INSERT OR IGNORE INTO product_categories (product_id, category_id) VALUES (?, ?)'
+      )
       .bind(ctx.params.id, cid)
       .run()
   }
@@ -358,7 +372,10 @@ export async function PATCH(request: Request, ctx: { params: { id: string } }) {
   return json({ id: ctx.params.id })
 }
 
-export async function DELETE(request: Request, ctx: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  ctx: { params: { id: string } }
+) {
   const auth = await requireAdmin(request)
   if (auth instanceof Response) return auth
 
@@ -368,9 +385,18 @@ export async function DELETE(request: Request, ctx: { params: { id: string } }) 
     .bind(ctx.params.id)
     .first<{ image_key: string | null }>()
 
-  await database.prepare('DELETE FROM product_categories WHERE product_id = ?').bind(ctx.params.id).run()
-  await database.prepare('DELETE FROM product_discounts WHERE product_id = ?').bind(ctx.params.id).run()
-  await database.prepare('DELETE FROM products WHERE id = ?').bind(ctx.params.id).run()
+  await database
+    .prepare('DELETE FROM product_categories WHERE product_id = ?')
+    .bind(ctx.params.id)
+    .run()
+  await database
+    .prepare('DELETE FROM product_discounts WHERE product_id = ?')
+    .bind(ctx.params.id)
+    .run()
+  await database
+    .prepare('DELETE FROM products WHERE id = ?')
+    .bind(ctx.params.id)
+    .run()
 
   if (existing?.image_key && env.BUCKET) {
     try {

@@ -60,7 +60,9 @@ export async function GET(request: Request) {
   // Non-admins can only see orders that include their own vendor.
   if (session.role !== 'admin') {
     const vendor = await db()
-      .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+      .prepare(
+        'SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1'
+      )
       .bind(session.uid)
       .first<{ id: string }>()
     if (!vendor) return json({ orders: [] })
@@ -71,7 +73,10 @@ export async function GET(request: Request) {
   const params: unknown[] = []
   if (dateStart && dateEnd) {
     conditions.push('created_at >= ?', 'created_at <= ?')
-    params.push(new Date(dateStart).toISOString(), new Date(dateEnd).toISOString())
+    params.push(
+      new Date(dateStart).toISOString(),
+      new Date(dateEnd).toISOString()
+    )
   }
   if (vendorId) {
     conditions.push('vendors LIKE ?')
@@ -141,7 +146,8 @@ export async function POST(request: Request) {
     fulfillmentDate?: string | null
   } | null
 
-  if (!body?.items?.length) return json({ error: 'Cart is empty' }, { status: 400 })
+  if (!body?.items?.length)
+    return json({ error: 'Cart is empty' }, { status: 400 })
 
   const database = db()
   const itemIds = Array.from(
@@ -196,7 +202,9 @@ export async function POST(request: Request) {
               amount: pricing.amount
             }
           : null,
-        vendor: item.vendor ? { id: item.vendor.id, name: item.vendor.name } : null
+        vendor: item.vendor
+          ? { id: item.vendor.id, name: item.vendor.name }
+          : null
       }
     }
   })

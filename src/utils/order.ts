@@ -80,9 +80,7 @@ export const generateOrderHtmlEmail = ({
       return `
       <tr>
         <td>${i + 1}. ${product.name}${
-          product.notes
-            ? `<br/><small>Catatan: ${product.notes}</small>`
-            : ''
+          product.notes ? `<br/><small>Catatan: ${product.notes}</small>` : ''
         }</td>
         <td>${product.quantity}</td>
         <td>${priceCell}</td>
@@ -156,55 +154,54 @@ export const generateOrderHtmlEmail = ({
   return html
 }
 
-
 export const generateReports = (orders: IOrder.IOrder[]) => {
-    let totalOrderValue = 0;
-    let totalProfit = 0;
-    let totalProductQuantity = 0;
-    const uniqueProducts = new Set();
-    const uniqueBuyers = new Set();
+  let totalOrderValue = 0
+  let totalProfit = 0
+  let totalProductQuantity = 0
+  const uniqueProducts = new Set()
+  const uniqueBuyers = new Set()
 
-    orders.forEach(order => {
-        // Safety check: ensure productOrders exists and is an array
-        if (!order.productOrders || !Array.isArray(order.productOrders)) {
-            console.warn('Order missing productOrders:', order.id);
-            return; // Skip this order
-        }
+  orders.forEach((order) => {
+    // Safety check: ensure productOrders exists and is an array
+    if (!order.productOrders || !Array.isArray(order.productOrders)) {
+      console.warn('Order missing productOrders:', order.id)
+      return // Skip this order
+    }
 
-        // Loop through each product in the order
-        order.productOrders.forEach(productOrder => {
-            // Safety checks for productOrder and product data
-            if (!productOrder || !productOrder.product) {
-                console.warn('Invalid product order data:', productOrder);
-                return; // Skip this product order
-            }
+    // Loop through each product in the order
+    order.productOrders.forEach((productOrder) => {
+      // Safety checks for productOrder and product data
+      if (!productOrder || !productOrder.product) {
+        console.warn('Invalid product order data:', productOrder)
+        return // Skip this product order
+      }
 
-            const price = productOrder.product.price || 0;
-            const basePrice = productOrder.product.priceBase || 0;
-            const quantity = productOrder.quantity || 0;
+      const price = productOrder.product.price || 0
+      const basePrice = productOrder.product.priceBase || 0
+      const quantity = productOrder.quantity || 0
 
-            // 1. Calculate order total
-            totalOrderValue += price * quantity;
+      // 1. Calculate order total
+      totalOrderValue += price * quantity
 
-            // 2. Calculate profit
-            totalProfit += (price - basePrice) * quantity;
+      // 2. Calculate profit
+      totalProfit += (price - basePrice) * quantity
 
-            // 3. Track total product quantity and unique products
-            totalProductQuantity += quantity;
-            uniqueProducts.add(productOrder.productId || productOrder.product.id);
-        });
+      // 3. Track total product quantity and unique products
+      totalProductQuantity += quantity
+      uniqueProducts.add(productOrder.productId || productOrder.product.id)
+    })
 
-        // 4. Track unique buyers
-        if (order.customerId) {
-            uniqueBuyers.add(order.customerId);
-        }
-    });
+    // 4. Track unique buyers
+    if (order.customerId) {
+      uniqueBuyers.add(order.customerId)
+    }
+  })
 
-    return {
-        totalOrderValue,
-        totalProfit,
-        totalProductQuantity,
-        uniqueProductsCount: uniqueProducts.size,
-        uniqueBuyersCount: uniqueBuyers.size
-    };
+  return {
+    totalOrderValue,
+    totalProfit,
+    totalProductQuantity,
+    uniqueProductsCount: uniqueProducts.size,
+    uniqueBuyersCount: uniqueBuyers.size
+  }
 }

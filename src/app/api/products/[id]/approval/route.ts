@@ -23,7 +23,9 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   if (!existing) return json({ error: 'Product not found' }, { status: 404 })
 
   await database
-    .prepare('UPDATE products SET approval_status = ?, updated_at = ? WHERE id = ?')
+    .prepare(
+      'UPDATE products SET approval_status = ?, updated_at = ? WHERE id = ?'
+    )
     .bind(status, now(), ctx.params.id)
     .run()
 

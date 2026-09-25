@@ -43,8 +43,7 @@ export const getLinePricing = (
 ): ILinePricing => {
   const qty = quantity || 0
   const applicable = (discounts || []).filter(
-    (d) =>
-      isDiscountActive(d, today) && qty >= Math.max(d.minQuantity || 1, 1)
+    (d) => isDiscountActive(d, today) && qty >= Math.max(d.minQuantity || 1, 1)
   )
 
   let best: ILinePricing | null = null
@@ -56,7 +55,14 @@ export const getLinePricing = (
     }
   }
 
-  return best || { discount: null, unitPrice: price, lineTotal: price * qty, amount: 0 }
+  return (
+    best || {
+      discount: null,
+      unitPrice: price,
+      lineTotal: price * qty,
+      amount: 0
+    }
+  )
 }
 
 export const getActiveDiscounts = (

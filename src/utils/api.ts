@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-export const apiFetch = async <T,>(
+export const apiFetch = async <T>(
   path: string,
   options?: RequestInit
 ): Promise<T> => {

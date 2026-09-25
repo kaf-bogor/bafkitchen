@@ -63,8 +63,15 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
       .run()
   } else {
     await database
-      .prepare('UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?')
-      .bind(newStatus, JSON.stringify([...activities, newActivity]), ts, ctx.params.id)
+      .prepare(
+        'UPDATE orders SET status = ?, activities = ?, updated_at = ? WHERE id = ?'
+      )
+      .bind(
+        newStatus,
+        JSON.stringify([...activities, newActivity]),
+        ts,
+        ctx.params.id
+      )
       .run()
   }
 
@@ -74,7 +81,9 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
       invoice = await generateInvoiceForOrder(ctx.params.id)
     } catch (error) {
       return json(
-        { error: `Order updated but invoice generation failed: ${(error as Error).message}` },
+        {
+          error: `Order updated but invoice generation failed: ${(error as Error).message}`
+        },
         { status: 500 }
       )
     }

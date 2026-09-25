@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 
-import { ISettings, ICreateSettingsRequest, IUpdateSettingsRequest } from '@/interfaces/settings'
+import {
+  ISettings,
+  ICreateSettingsRequest,
+  IUpdateSettingsRequest
+} from '@/interfaces/settings'
 import { apiFetch } from '@/utils/api'
 
 // Get settings (there should only be one document)
@@ -14,7 +18,9 @@ export const useGetSettings = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ settings: ISettings | null }>('/api/settings')
+      const res = await apiFetch<{ settings: ISettings | null }>(
+        '/api/settings'
+      )
       setData(res.settings)
     } catch (err) {
       setError(err as Error)
@@ -43,7 +49,9 @@ export const useGetSettingsById = (settingsId: string) => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ settings: ISettings | null }>('/api/settings')
+      const res = await apiFetch<{ settings: ISettings | null }>(
+        '/api/settings'
+      )
       const settings = res.settings?.id === settingsId ? res.settings : null
       setData(settings)
     } catch (err) {
@@ -65,7 +73,9 @@ export const useCreateSettings = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const createSettings = async (request: ICreateSettingsRequest): Promise<ISettings> => {
+  const createSettings = async (
+    request: ICreateSettingsRequest
+  ): Promise<ISettings> => {
     setLoading(true)
     setError(null)
 
@@ -91,19 +101,24 @@ export const useUpdateSettings = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const updateSettings = async (request: IUpdateSettingsRequest): Promise<ISettings> => {
+  const updateSettings = async (
+    request: IUpdateSettingsRequest
+  ): Promise<ISettings> => {
     setLoading(true)
     setError(null)
 
     try {
-      const res = await apiFetch<{ settings: ISettings }>(`/api/settings/${request.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          admin_phone_number: request.admin_phone_number,
-          app_name: request.app_name,
-          app_domain: request.app_domain
-        })
-      })
+      const res = await apiFetch<{ settings: ISettings }>(
+        `/api/settings/${request.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            admin_phone_number: request.admin_phone_number,
+            app_name: request.app_name,
+            app_domain: request.app_domain
+          })
+        }
+      )
       return res.settings
     } catch (err) {
       setError(err as Error)

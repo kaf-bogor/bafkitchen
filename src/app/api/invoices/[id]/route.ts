@@ -15,10 +15,15 @@ export async function GET(request: Request, ctx: { params: { id: string } }) {
   // Non-admins can only view invoices containing their own vendor's items.
   if (session.role !== 'admin') {
     const vendor = await db()
-      .prepare('SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+      .prepare(
+        'SELECT id FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1'
+      )
       .bind(session.uid)
       .first<{ id: string }>()
-    const mapped = mapInvoiceRow(row, vendor ? { vendorId: vendor.id } : undefined)
+    const mapped = mapInvoiceRow(
+      row,
+      vendor ? { vendorId: vendor.id } : undefined
+    )
     const belongs =
       vendor &&
       (mapped.vendorId === vendor.id ||
@@ -40,7 +45,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
     status?: string
     settledDate?: string
   } | null
-  if (!body?.status) return json({ error: 'Status is required' }, { status: 400 })
+  if (!body?.status)
+    return json({ error: 'Status is required' }, { status: 400 })
 
   const database = db()
   const existing = await database
@@ -52,8 +58,15 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   const ts = new Date().toISOString()
   if (body.status === 'Settled' && body.settledDate) {
     await database
-      .prepare('UPDATE invoices SET status = ?, settled_date = ?, updated_at = ? WHERE id = ?')
-      .bind(body.status, new Date(body.settledDate).toISOString(), ts, ctx.params.id)
+      .prepare(
+        'UPDATE invoices SET status = ?, settled_date = ?, updated_at = ? WHERE id = ?'
+      )
+      .bind(
+        body.status,
+        new Date(body.settledDate).toISOString(),
+        ts,
+        ctx.params.id
+      )
       .run()
   } else {
     await database

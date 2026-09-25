@@ -26,7 +26,11 @@ export const prepareOrdersForGoogleSheets = (
     dateRange?: string
   } = {}
 ): GoogleSheetsExportData => {
-  const { includeProductDetails = false, title = 'Orders Export', dateRange } = options
+  const {
+    includeProductDetails = false,
+    title = 'Orders Export',
+    dateRange
+  } = options
 
   if (includeProductDetails) {
     return prepareDetailedOrdersData(orders, title, dateRange)
@@ -67,7 +71,7 @@ const prepareSummaryOrdersData = (
     order.status || 'N/A',
     currency.toIDRFormat(order.total || 0),
     (order.total || 0).toString(),
-    order.vendors?.map(v => v.name).join(', ') || 'N/A',
+    order.vendors?.map((v) => v.name).join(', ') || 'N/A',
     (order.productOrders?.length || 0).toString(),
     order.customer?.notes || '',
     format(new Date(order.createdAt), 'dd/MM/yyyy HH:mm', { locale: id }),
@@ -137,7 +141,7 @@ const prepareDetailedOrdersData = (
           productTotal.toString(),
           currency.toIDRFormat(order.total || 0),
           (order.total || 0).toString(),
-          order.vendors?.map(v => v.name).join(', ') || 'N/A',
+          order.vendors?.map((v) => v.name).join(', ') || 'N/A',
           order.customer?.notes || '',
           format(new Date(order.createdAt), 'dd/MM/yyyy HH:mm', { locale: id }),
           format(new Date(order.updatedAt), 'dd/MM/yyyy HH:mm', { locale: id })
@@ -161,7 +165,7 @@ const prepareDetailedOrdersData = (
         '0',
         currency.toIDRFormat(order.total || 0),
         (order.total || 0).toString(),
-        order.vendors?.map(v => v.name).join(', ') || 'N/A',
+        order.vendors?.map((v) => v.name).join(', ') || 'N/A',
         order.customer?.notes || '',
         format(new Date(order.createdAt), 'dd/MM/yyyy HH:mm', { locale: id }),
         format(new Date(order.updatedAt), 'dd/MM/yyyy HH:mm', { locale: id })
@@ -182,13 +186,15 @@ const prepareDetailedOrdersData = (
 }
 
 // Create CSV for Google Sheets import
-export const createGoogleSheetsCSV = (sheetsData: GoogleSheetsExportData): string => {
+export const createGoogleSheetsCSV = (
+  sheetsData: GoogleSheetsExportData
+): string => {
   const csvRows: string[] = []
-  
+
   // Add title
   csvRows.push(`"${sheetsData.title}"`)
   csvRows.push('') // Empty row
-  
+
   // Add metadata
   csvRows.push('"Export Information"')
   csvRows.push(`"Export Date","${sheetsData.metadata.exportDate}"`)
@@ -197,15 +203,15 @@ export const createGoogleSheetsCSV = (sheetsData: GoogleSheetsExportData): strin
     csvRows.push(`"Date Range","${sheetsData.metadata.dateRange}"`)
   }
   csvRows.push('') // Empty row
-  
+
   // Add headers
-  csvRows.push(sheetsData.headers.map(header => `"${header}"`).join(','))
-  
+  csvRows.push(sheetsData.headers.map((header) => `"${header}"`).join(','))
+
   // Add data
-  sheetsData.data.forEach(row => {
-    csvRows.push(row.map(cell => `"${cell}"`).join(','))
+  sheetsData.data.forEach((row) => {
+    csvRows.push(row.map((cell) => `"${cell}"`).join(','))
   })
-  
+
   return csvRows.join('\n')
 }
 
@@ -222,14 +228,18 @@ export const downloadGoogleSheetsCSV = (
   const { filename } = options
   const sheetsData = prepareOrdersForGoogleSheets(orders, options)
   const csvContent = createGoogleSheetsCSV(sheetsData)
-  
+
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', filename || `GoogleSheets_Orders_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`)
+    link.setAttribute(
+      'download',
+      filename ||
+        `GoogleSheets_Orders_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`
+    )
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -252,9 +262,9 @@ Untuk mengimpor data Anda ke Google Sheets:
 
 Data pesanan Anda akan diimpor dengan format dan metadata yang sesuai!
   `
-  
+
   alert(instructions)
-  
+
   // Open Google Sheets in new tab
   window.open('https://sheets.google.com', '_blank')
 }

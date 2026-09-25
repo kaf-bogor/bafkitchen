@@ -31,8 +31,5 @@ export async function POST(request: Request) {
   // Relative URL so it works across dev and deployed hostnames
   const url = `/api/media/${key}`
 
-  return json(
-    { url, key },
-    { status: 201 }
-  )
+  return json({ url, key }, { status: 201 })
 }

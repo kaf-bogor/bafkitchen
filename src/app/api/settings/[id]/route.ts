@@ -47,7 +47,8 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   return json({
     settings: {
       id: ctx.params.id,
-      admin_phone_number: body?.admin_phone_number ?? row?.admin_phone_number ?? '',
+      admin_phone_number:
+        body?.admin_phone_number ?? row?.admin_phone_number ?? '',
       app_name: body?.app_name ?? row?.app_name ?? 'Bazaf',
       app_domain: body?.app_domain ?? row?.app_domain ?? '',
       created_at: row?.created_at ?? '',

@@ -82,14 +82,19 @@ export async function POST(request: Request) {
   } | null
   const name = body?.name?.trim()
   if (!name) return json({ error: 'Name is required' }, { status: 400 })
-  if (!body?.vendorId) return json({ error: 'Vendor is required' }, { status: 400 })
+  if (!body?.vendorId)
+    return json({ error: 'Vendor is required' }, { status: 400 })
 
   const database = db()
   const vendor = await database
     .prepare('SELECT * FROM vendors WHERE id = ? AND is_active = 1')
     .bind(body.vendorId)
     .first<VendorRow>()
-  if (!vendor) return json({ error: 'Vendor does not exist or is inactive' }, { status: 400 })
+  if (!vendor)
+    return json(
+      { error: 'Vendor does not exist or is inactive' },
+      { status: 400 }
+    )
 
   const ts = now()
   const id = uuid()
@@ -101,7 +106,15 @@ export async function POST(request: Request) {
     .run()
 
   return json(
-    { category: { id, name, vendorId: body.vendorId, createdAt: ts, updatedAt: ts } },
+    {
+      category: {
+        id,
+        name,
+        vendorId: body.vendorId,
+        createdAt: ts,
+        updatedAt: ts
+      }
+    },
     { status: 201 }
   )
 }

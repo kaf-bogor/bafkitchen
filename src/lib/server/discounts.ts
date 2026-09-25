@@ -1,4 +1,8 @@
-import { IProductDiscount, IProductDiscountInput, TProductDiscountType } from '@/interfaces/discount'
+import {
+  IProductDiscount,
+  IProductDiscountInput,
+  TProductDiscountType
+} from '@/interfaces/discount'
 import { now, uuid } from '@/lib/server/db'
 
 export interface DiscountRow {
@@ -65,7 +69,8 @@ export const loadDiscountsForProduct = async (
 const normalizeDiscount = (
   input: IProductDiscountInput
 ): IProductDiscountInput | null => {
-  const type: TProductDiscountType = input.type === 'fixed' ? 'fixed' : 'percentage'
+  const type: TProductDiscountType =
+    input.type === 'fixed' ? 'fixed' : 'percentage'
   const rawValue = Number(input.value)
   if (!Number.isFinite(rawValue) || rawValue <= 0) return null
   const value = type === 'percentage' ? Math.min(rawValue, 100) : rawValue

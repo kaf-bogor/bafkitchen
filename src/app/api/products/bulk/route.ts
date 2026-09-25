@@ -72,7 +72,9 @@ export async function POST(request: Request) {
       params.push((channels.length ? channels : ['pos']).join(','))
     }
     if (fields.approvalStatus !== undefined) {
-      if (!['pending', 'approved', 'rejected'].includes(fields.approvalStatus)) {
+      if (
+        !['pending', 'approved', 'rejected'].includes(fields.approvalStatus)
+      ) {
         continue
       }
       sets.push('approval_status = ?')

@@ -112,7 +112,10 @@ const APPROVAL_LABELS: Record<string, string> = {
 export type ProductSnapshot = Record<string, unknown>
 
 export const snapshotProduct = (row: ActivityProductRow): ProductSnapshot => {
-  const vendor = parseJson<{ id?: string; name?: string } | null>(row.vendor, null)
+  const vendor = parseJson<{ id?: string; name?: string } | null>(
+    row.vendor,
+    null
+  )
   return {
     name: row.name ?? '',
     sku: row.sku ?? '',

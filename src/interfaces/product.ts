@@ -16,7 +16,7 @@ export interface ICreateProductRequest {
   }
   categoryIds: string[]
   description: string
-  image?: File 
+  image?: File
   availability?: string
   preorderStart?: string | null
   preorderEnd?: string | null

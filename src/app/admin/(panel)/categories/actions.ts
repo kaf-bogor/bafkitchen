@@ -71,10 +71,13 @@ export const useCreateCategories = () => {
     setError(null)
 
     try {
-      const res = await apiFetch<{ category: ICategory.ICategory }>('/api/categories', {
-        method: 'POST',
-        body: JSON.stringify(request)
-      })
+      const res = await apiFetch<{ category: ICategory.ICategory }>(
+        '/api/categories',
+        {
+          method: 'POST',
+          body: JSON.stringify(request)
+        }
+      )
       return res.category
     } catch (err) {
       setError(err as Error)
@@ -100,7 +103,10 @@ export const useUpdateCategories = () => {
         `/api/categories/${request.id}`,
         {
           method: 'PUT',
-          body: JSON.stringify({ name: request.name, vendorId: request.vendorId })
+          body: JSON.stringify({
+            name: request.name,
+            vendorId: request.vendorId
+          })
         }
       )
       return res.category

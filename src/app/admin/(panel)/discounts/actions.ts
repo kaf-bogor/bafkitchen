@@ -34,10 +34,7 @@ export const useUpdateDiscount = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const updateDiscount = async (
-    id: string,
-    fields: { isActive?: boolean }
-  ) => {
+  const updateDiscount = async (id: string, fields: { isActive?: boolean }) => {
     setLoading(true)
     setError(null)
     try {

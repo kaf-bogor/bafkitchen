@@ -38,5 +38,11 @@
   "vars": {
     "BOOTSTRAP_ADMIN_EMAIL": "kubido@gmail.com",
     "GOOGLE_CLIENT_ID": "325348369984-nhrc953cgl9nm918jesuff0g0c3t78a5.apps.googleusercontent.com"
+  },
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
   }
 }

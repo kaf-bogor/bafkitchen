@@ -19,7 +19,10 @@ export const now = () => new Date().toISOString()
 
 export const uuid = () => crypto.randomUUID()
 
-export const parseJson = <T,>(value: string | null | undefined, fallback: T): T => {
+export const parseJson = <T>(
+  value: string | null | undefined,
+  fallback: T
+): T => {
   if (!value) return fallback
   try {
     return JSON.parse(value) as T

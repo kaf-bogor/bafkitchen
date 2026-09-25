@@ -30,11 +30,33 @@ export async function GET(request: Request) {
       ? statePayload.r
       : '/dashboard/'
 
+  const redirectResponse = (
+    destination: string,
+    cookies: string[]
+  ): Response => {
+    const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Mengalihkan…</title>
+    <script>location.replace(${JSON.stringify(destination)})</script>
+  </head>
+  <body>Mengalihkan…</body>
+</html>`
+
+    const headers = new Headers({
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store'
+    })
+    for (const c of cookies) {
+      headers.append('Set-Cookie', c)
+    }
+    return new Response(html, { status: 200, headers })
+  }
+
   const fail = (code: string): Response => {
     const location = `${loginPathFor(redirect)}?error=${code}`
-    const headers = new Headers({ Location: location })
-    headers.append('Set-Cookie', clearStateCookie())
-    return new Response(null, { status: 302, headers })
+    return redirectResponse(location, [clearStateCookie()])
   }
 
   if (
@@ -121,12 +143,12 @@ export async function GET(request: Request) {
   let destination = redirect
   if (role !== 'admin' && redirect.toLowerCase().startsWith('/admin')) {
     destination = '/admin/login?error=not_admin'
-  } else if (role === 'admin' && redirect.toLowerCase().startsWith('/dashboard')) {
+  } else if (
+    role === 'admin' &&
+    redirect.toLowerCase().startsWith('/dashboard')
+  ) {
     destination = '/admin'
   }
 
-  const headers = new Headers({ Location: destination })
-  headers.append('Set-Cookie', cookie)
-  headers.append('Set-Cookie', clearStateCookie())
-  return new Response(null, { status: 302, headers })
+  return redirectResponse(destination, [cookie, clearStateCookie()])
 }

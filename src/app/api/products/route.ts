@@ -7,7 +7,10 @@ import {
 } from '@/lib/server/discounts'
 import { getVendorForUser } from '@/lib/server/vendors'
 
-import type { IProductDiscount, IProductDiscountInput } from '@/interfaces/discount'
+import type {
+  IProductDiscount,
+  IProductDiscountInput
+} from '@/interfaces/discount'
 
 export interface ProductRow {
   id: string
@@ -83,7 +86,10 @@ const transformProduct = (
   approvalStatus: row.approval_status || 'approved',
   createdAt: row.created_at,
   updatedAt: row.updated_at,
-  vendor: vendor ?? parseJson<Record<string, unknown> | null>(row.vendor, null) ?? DEFAULT_VENDOR,
+  vendor:
+    vendor ??
+    parseJson<Record<string, unknown> | null>(row.vendor, null) ??
+    DEFAULT_VENDOR,
   categories,
   discounts
 })
@@ -104,7 +110,10 @@ async function loadVendor(
   database: D1Database,
   row: ProductRow
 ): Promise<Record<string, unknown> | null | undefined> {
-  const storedVendor = parseJson<{ id?: string; name?: string } | null>(row.vendor, null)
+  const storedVendor = parseJson<{ id?: string; name?: string } | null>(
+    row.vendor,
+    null
+  )
   if (storedVendor?.id && storedVendor.id !== 'bazaf') {
     const v = await database
       .prepare('SELECT * FROM vendors WHERE id = ?')
@@ -120,7 +129,10 @@ async function replaceProductCategories(
   productId: string,
   categoryIds: string[]
 ) {
-  await database.prepare('DELETE FROM product_categories WHERE product_id = ?').bind(productId).run()
+  await database
+    .prepare('DELETE FROM product_categories WHERE product_id = ?')
+    .bind(productId)
+    .run()
   const stmt = database.prepare(
     'INSERT OR IGNORE INTO product_categories (product_id, category_id) VALUES (?, ?)'
   )
@@ -158,7 +170,9 @@ export async function GET(request: Request) {
       rows.push(...results)
     }
     const seen = new Set<string>()
-    productRows = rows.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+    productRows = rows.filter((p) =>
+      seen.has(p.id) ? false : (seen.add(p.id), true)
+    )
   } else {
     const { results } = await database
       .prepare('SELECT * FROM products ORDER BY created_at DESC')
@@ -217,7 +231,8 @@ export async function GET(request: Request) {
     productRows = vendor
       ? productRows.filter(
           (row) =>
-            parseJson<{ id?: string } | null>(row.vendor, null)?.id === vendor.id
+            parseJson<{ id?: string } | null>(row.vendor, null)?.id ===
+            vendor.id
         )
       : []
   }
@@ -347,7 +362,8 @@ export async function POST(request: Request) {
     discounts?: IProductDiscountInput[]
   } | null
 
-  if (!body || !body.name) return json({ error: 'Name is required' }, { status: 400 })
+  if (!body || !body.name)
+    return json({ error: 'Name is required' }, { status: 400 })
 
   const database = db()
   const isAdmin = auth.role === 'admin'
@@ -391,12 +407,16 @@ export async function POST(request: Request) {
       body.imageUrl ?? '',
       body.imageKey ?? null,
       availability,
-      availability === 'preorder' ? (body.preorderStart ?? null) : null,
-      availability === 'preorder' ? (body.preorderEnd ?? null) : null,
+      availability === 'preorder' ? body.preorderStart ?? null : null,
+      availability === 'preorder' ? body.preorderEnd ?? null : null,
       channels.join(','),
       availabilityType,
-      availabilityType === 'weekly' ? JSON.stringify(body.weeklyDays ?? []) : null,
-      availabilityType === 'specific' ? JSON.stringify(body.specificDates ?? []) : null,
+      availabilityType === 'weekly'
+        ? JSON.stringify(body.weeklyDays ?? [])
+        : null,
+      availabilityType === 'specific'
+        ? JSON.stringify(body.specificDates ?? [])
+        : null,
       body.preorderLeadDays ?? null,
       body.preorderCutoffTime ?? null,
       body.preorderMinQty ?? null,
@@ -409,7 +429,8 @@ export async function POST(request: Request) {
     )
     .run()
 
-  if (categoryIds.length) await replaceProductCategories(database, id, categoryIds)
+  if (categoryIds.length)
+    await replaceProductCategories(database, id, categoryIds)
   await replaceProductDiscounts(database, id, body.discounts)
 
   const row = await database
@@ -422,7 +443,9 @@ export async function POST(request: Request) {
     loadDiscountsForProduct(database, id)
   ])
   return json(
-    { product: row ? transformProduct(row, categories, vendor, discounts) : null },
+    {
+      product: row ? transformProduct(row, categories, vendor, discounts) : null
+    },
     { status: 201 }
   )
 }

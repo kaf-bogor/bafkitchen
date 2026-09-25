@@ -25,7 +25,7 @@ export interface IInvoice {
 
   // Invoice items (products from this specific vendor)
   items: IInvoiceItem[]
-  
+
   // Customer and order details
   customer: {
     name: string
@@ -51,7 +51,7 @@ export enum EInvoiceStatus {
   // eslint-disable-next-line no-unused-vars
   PENDING = 'Pending',
   // eslint-disable-next-line no-unused-vars
-  ISSUED = 'Issued', 
+  ISSUED = 'Issued',
   // eslint-disable-next-line no-unused-vars
   OVERDUE = 'Overdue',
   // eslint-disable-next-line no-unused-vars

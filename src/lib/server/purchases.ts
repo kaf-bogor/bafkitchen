@@ -48,9 +48,7 @@ export const generatePurchaseNumber = async (): Promise<string> => {
   return `PB-${String(next).padStart(3, '0')}${suffix}`
 }
 
-export const transformPurchaseItem = (
-  row: PurchaseItemRow
-): IPurchaseItem => ({
+export const transformPurchaseItem = (row: PurchaseItemRow): IPurchaseItem => ({
   id: row.id,
   purchaseId: row.purchase_id,
   productId: row.product_id,

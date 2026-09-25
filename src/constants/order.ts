@@ -15,7 +15,7 @@ export const orderStatusFlow = [
   EOrderStatus.ORDER_PICKED_UP,
   EOrderStatus.INVOICE_ISSUED,
   EOrderStatus.INVOICE_SETTLED
-];
+]
 
 export const mapOrderStatusToColor: { [key: string]: string } = {
   [EOrderStatus.PAYMENT_PENDING]: 'orange',
@@ -53,7 +53,7 @@ export const getNextStatusMessage = (currentStatus: string): string | null => {
 // Action descriptions for each status transition (in Bahasa Indonesia)
 export const mapStatusToActionDescription: { [key: string]: string } = {
   [EOrderStatus.PAYMENT_PENDING]: 'Konfirmasi Pembayaran',
-  [EOrderStatus.PAYMENT_CONFIRMED]: 'Proses Pesanan', 
+  [EOrderStatus.PAYMENT_CONFIRMED]: 'Proses Pesanan',
   [EOrderStatus.ORDER_PROCESSING]: 'Tandai Diambil',
   [EOrderStatus.ORDER_PICKED_UP]: 'Terbitkan Invoice',
   [EOrderStatus.INVOICE_ISSUED]: 'Tandai Lunas'

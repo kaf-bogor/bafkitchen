@@ -119,7 +119,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Saat konfirmasi pembayaran, unggah bukti pembayaran (bisa diubah lagi dari detail).'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/pesanan.png', caption: 'Daftar pesanan' },
+      {
+        type: 'image',
+        src: '/guide/admin/pesanan.png',
+        caption: 'Daftar pesanan'
+      },
       {
         type: 'image',
         src: '/guide/admin/pesanan-detail.png',
@@ -131,7 +135,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'admin-preorder',
     title: 'Pre-order',
     role: 'admin',
-    description: 'Memantau pesanan pre-order/catering dan tanggal pemenuhannya.',
+    description:
+      'Memantau pesanan pre-order/catering dan tanggal pemenuhannya.',
     steps: [
       'Buka menu Pre-order.',
       'Lihat ringkasan di kartu atas.',
@@ -139,7 +144,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Klik ikon mata untuk membuka detail pesanan.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/preorder.png', caption: 'Daftar pre-order' }
+      {
+        type: 'image',
+        src: '/guide/admin/preorder.png',
+        caption: 'Daftar pre-order'
+      }
     ]
   },
   {
@@ -155,7 +164,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Tambah/Ubah produk langsung dari admin bila perlu.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/produk.png', caption: 'Daftar produk & approval' },
+      {
+        type: 'image',
+        src: '/guide/admin/produk.png',
+        caption: 'Daftar produk & approval'
+      },
       {
         type: 'video',
         src: '/guide/admin/produk-approval.webm',
@@ -174,7 +187,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Gunakan menu ⋮ pada baris untuk mengubah.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/kategori.png', caption: 'Daftar kategori' }
+      {
+        type: 'image',
+        src: '/guide/admin/kategori.png',
+        caption: 'Daftar kategori'
+      }
     ]
   },
   {
@@ -187,21 +204,30 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Pilih tanggal untuk melihat pesanan pada hari tersebut.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/kalender.png', caption: 'Kalender pesanan' }
+      {
+        type: 'image',
+        src: '/guide/admin/kalender.png',
+        caption: 'Kalender pesanan'
+      }
     ]
   },
   {
     id: 'admin-vendor',
     title: 'Vendor',
     role: 'admin',
-    description: 'Mengelola vendor dan tipe-nya (Bazaf / Baf Kitchen / Keduanya).',
+    description:
+      'Mengelola vendor dan tipe-nya (Bazaf / Baf Kitchen / Keduanya).',
     steps: [
       'Buka menu Vendor.',
       'Ubah tipe vendor langsung lewat dropdown pada baris.',
       'Klik ⋮ → Lihat dashboard untuk membuka dashboard vendor (impersonate).'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/vendor.png', caption: 'Daftar vendor' }
+      {
+        type: 'image',
+        src: '/guide/admin/vendor.png',
+        caption: 'Daftar vendor'
+      }
     ]
   },
   {
@@ -217,7 +243,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Gunakan tombol Export untuk CSV atau PDF.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/invoice.png', caption: 'Daftar invoice' },
+      {
+        type: 'image',
+        src: '/guide/admin/invoice.png',
+        caption: 'Daftar invoice'
+      },
       {
         type: 'image',
         src: '/guide/admin/invoice-detail.png',
@@ -236,7 +266,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Klik ⋮ → Ubah/Hapus untuk mengelola, atau Impersonate vendor untuk melihat sebagai vendor.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/pengguna.png', caption: 'Daftar pengguna' }
+      {
+        type: 'image',
+        src: '/guide/admin/pengguna.png',
+        caption: 'Daftar pengguna'
+      }
     ]
   },
   {
@@ -250,7 +284,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Klik Simpan.'
     ],
     media: [
-      { type: 'image', src: '/guide/admin/pengaturan.png', caption: 'Pengaturan aplikasi' }
+      {
+        type: 'image',
+        src: '/guide/admin/pengaturan.png',
+        caption: 'Pengaturan aplikasi'
+      }
     ]
   },
 
@@ -265,7 +303,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Filter berdasarkan status, lalu klik Lihat detail.'
     ],
     media: [
-      { type: 'image', src: '/guide/vendor/dashboard.png', caption: 'Dashboard vendor' }
+      {
+        type: 'image',
+        src: '/guide/vendor/dashboard.png',
+        caption: 'Dashboard vendor'
+      }
     ]
   },
   {
@@ -281,7 +323,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Ubah produk kapan saja; perubahan akan ditinjau ulang admin.'
     ],
     media: [
-      { type: 'image', src: '/guide/vendor/produk.png', caption: 'Produk vendor' },
+      {
+        type: 'image',
+        src: '/guide/vendor/produk.png',
+        caption: 'Produk vendor'
+      },
       {
         type: 'image',
         src: '/guide/vendor/produk-tambah.png',
@@ -300,7 +346,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Lihat Aktivitas terbaru pada panel kanan.'
     ],
     media: [
-      { type: 'image', src: '/guide/vendor/pengaturan.png', caption: 'Pengaturan vendor' }
+      {
+        type: 'image',
+        src: '/guide/vendor/pengaturan.png',
+        caption: 'Pengaturan vendor'
+      }
     ]
   },
 
@@ -317,7 +367,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Klik Tambah pada produk untuk memasukkannya ke keranjang.'
     ],
     media: [
-      { type: 'image', src: '/guide/pelanggan/homepage.png', caption: 'Beranda storefront' }
+      {
+        type: 'image',
+        src: '/guide/pelanggan/homepage.png',
+        caption: 'Beranda storefront'
+      }
     ]
   },
   {
@@ -333,7 +387,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Isi data pemesan, lalu klik Pesan Sekarang.'
     ],
     media: [
-      { type: 'image', src: '/guide/pelanggan/keranjang.png', caption: 'Halaman keranjang' }
+      {
+        type: 'image',
+        src: '/guide/pelanggan/keranjang.png',
+        caption: 'Halaman keranjang'
+      }
     ]
   },
   {
@@ -365,7 +423,11 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Lihat item, total, dan status pesanan.'
     ],
     media: [
-      { type: 'image', src: '/guide/pelanggan/riwayat.png', caption: 'Detail pesanan' }
+      {
+        type: 'image',
+        src: '/guide/pelanggan/riwayat.png',
+        caption: 'Detail pesanan'
+      }
     ]
   }
 ]

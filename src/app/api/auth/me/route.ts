@@ -19,7 +19,9 @@ export async function GET(request: Request) {
   if (!row) return json({ user: null })
 
   const vendor = await db()
-    .prepare('SELECT id, name FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1')
+    .prepare(
+      'SELECT id, name FROM vendors WHERE user_id = ? AND is_active = 1 LIMIT 1'
+    )
     .bind(row.id)
     .first<{ id: string; name: string }>()
 

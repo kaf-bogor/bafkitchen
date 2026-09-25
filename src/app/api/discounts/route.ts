@@ -19,7 +19,8 @@ export async function GET(request: Request) {
     allowedIds = new Set(
       productRows
         .filter(
-          (p) => parseJson<{ id?: string } | null>(p.vendor, null)?.id === vendor.id
+          (p) =>
+            parseJson<{ id?: string } | null>(p.vendor, null)?.id === vendor.id
         )
         .map((p) => p.id)
     )

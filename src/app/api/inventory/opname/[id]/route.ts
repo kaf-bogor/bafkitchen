@@ -101,7 +101,10 @@ export async function PUT(request: Request, ctx: { params: { id: string } }) {
   })
 }
 
-export async function DELETE(request: Request, ctx: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  ctx: { params: { id: string } }
+) {
   const auth = await requireAdmin(request)
   if (auth instanceof Response) return auth
 

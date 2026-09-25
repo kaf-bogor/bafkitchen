@@ -142,7 +142,8 @@ export const fetchOpnameProducts = async (
   if (filters.vendorId) {
     rows = rows.filter(
       (row) =>
-        parseJson<{ id?: string } | null>(row.vendor, null)?.id === filters.vendorId
+        parseJson<{ id?: string } | null>(row.vendor, null)?.id ===
+        filters.vendorId
     )
   }
 

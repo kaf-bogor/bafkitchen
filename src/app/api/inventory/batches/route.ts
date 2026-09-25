@@ -56,7 +56,9 @@ export async function GET(request: Request) {
     qtyRemaining: row.qty_remaining ?? 0,
     costPrice: row.cost_price ?? 0,
     sellPrice: row.sell_price ?? 0,
-    potentialProfit: ((row.sell_price ?? 0) - (row.cost_price ?? 0)) * (row.qty_remaining ?? 0),
+    potentialProfit:
+      ((row.sell_price ?? 0) - (row.cost_price ?? 0)) *
+      (row.qty_remaining ?? 0),
     receivedAt: row.received_at
   }))
 

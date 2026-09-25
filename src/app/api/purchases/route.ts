@@ -36,7 +36,9 @@ export async function GET(request: Request) {
 
   const database = db()
   const { results: purchaseRows } = await database
-    .prepare('SELECT * FROM purchases ORDER BY purchase_date DESC, created_at DESC')
+    .prepare(
+      'SELECT * FROM purchases ORDER BY purchase_date DESC, created_at DESC'
+    )
     .all<PurchaseRow>()
 
   const { results: itemRows } = await database
@@ -72,7 +74,9 @@ export async function POST(request: Request) {
   const auth = await requireAdmin(request)
   if (auth instanceof Response) return auth
 
-  const body = (await request.json().catch(() => null)) as CreatePurchaseBody | null
+  const body = (await request
+    .json()
+    .catch(() => null)) as CreatePurchaseBody | null
   const items = sanitizeItems(body?.items)
   if (!items.length) {
     return json({ error: 'Tambahkan minimal satu produk' }, { status: 400 })

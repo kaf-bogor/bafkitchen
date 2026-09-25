@@ -55,14 +55,19 @@ export async function POST(request: Request) {
 
   const name = body?.name?.trim()
   const email = body?.email?.trim().toLowerCase()
-  if (!name || !email) return json({ error: 'Name and email are required' }, { status: 400 })
+  if (!name || !email)
+    return json({ error: 'Name and email are required' }, { status: 400 })
 
   const database = db()
   const existing = await database
     .prepare('SELECT id FROM users WHERE email = ?')
     .bind(email)
     .first()
-  if (existing) return json({ error: 'A user with this email already exists' }, { status: 409 })
+  if (existing)
+    return json(
+      { error: 'A user with this email already exists' },
+      { status: 409 }
+    )
 
   const ts = now()
   const id = uuid()
@@ -71,7 +76,15 @@ export async function POST(request: Request) {
       `INSERT INTO users (id, name, email, role, phone_number, photo_url, password_hash, created_at, updated_at, last_sign_in_at)
        VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, NULL)`
     )
-    .bind(id, name, email, body?.role ?? 'user', body?.phoneNumber ?? null, ts, ts)
+    .bind(
+      id,
+      name,
+      email,
+      body?.role ?? 'user',
+      body?.phoneNumber ?? null,
+      ts,
+      ts
+    )
     .run()
 
   return json(

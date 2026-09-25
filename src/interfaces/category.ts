@@ -20,7 +20,6 @@ export interface ICategory {
   vendor?: IVendor
 }
 
-
 export interface ICategoriesResponse {
   categories: ICategory[]
 }

@@ -20,11 +20,7 @@ export const fetchCurrentUser = async (): Promise<AuthUser | null> => {
   }
 }
 
-export const handleLogout = async ({
-  onLogout
-}: {
-  onLogout: () => void
-}) => {
+export const handleLogout = async ({ onLogout }: { onLogout: () => void }) => {
   try {
     await apiFetch('/api/auth/logout', { method: 'POST' })
   } catch (error) {
@@ -64,10 +60,13 @@ export interface IUploadResponse {
 export const uploadMedia = async (image: File): Promise<IUploadResponse> => {
   const form = new FormData()
   form.append('file', image)
-  const result = await apiFetch<{ url: string; key: string }>('/api/media/upload', {
-    method: 'POST',
-    body: form
-  })
+  const result = await apiFetch<{ url: string; key: string }>(
+    '/api/media/upload',
+    {
+      method: 'POST',
+      body: form
+    }
+  )
   return {
     downloadURL: result.url,
     fullPath: result.key
