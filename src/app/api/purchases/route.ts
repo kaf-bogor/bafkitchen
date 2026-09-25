@@ -2,6 +2,11 @@ import { ICreatePurchaseItemInput } from '@/interfaces/purchase'
 import { requireAdmin } from '@/lib/server/auth'
 import { db, json, now, uuid } from '@/lib/server/db'
 import {
+  recordProductActivity,
+  snapshotProduct,
+  type ActivityProductRow
+} from '@/lib/server/productActivities'
+import {
   generatePurchaseNumber,
   loadPurchaseItems,
   PurchaseItemRow,
@@ -86,10 +91,13 @@ export async function POST(request: Request) {
   const productIds = Array.from(new Set(items.map((item) => item.productId)))
   const placeholders = productIds.map(() => '?').join(',')
   const { results: productRows } = await database
-    .prepare(`SELECT id, name FROM products WHERE id IN (${placeholders})`)
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
     .bind(...productIds)
-    .all<{ id: string; name: string }>()
+    .all<ActivityProductRow>()
   const productMap = new Map(productRows.map((row) => [row.id, row]))
+  const beforeProducts = new Map(
+    productRows.map((row) => [row.id, snapshotProduct(row)])
+  )
 
   const missing = productIds.filter((id) => !productMap.has(id))
   if (missing.length) {
@@ -194,6 +202,28 @@ export async function POST(request: Request) {
   }
 
   await database.batch(statements)
+
+  const actor = {
+    uid: auth.uid,
+    email: auth.email,
+    name: auth.name ?? auth.email
+  }
+  const { results: afterRows } = await database
+    .prepare(`SELECT * FROM products WHERE id IN (${placeholders})`)
+    .bind(...productIds)
+    .all<ActivityProductRow>()
+  for (const product of afterRows) {
+    const before = beforeProducts.get(product.id)
+    if (!before) continue
+    await recordProductActivity(
+      database,
+      product.id,
+      before,
+      snapshotProduct(product),
+      actor,
+      `Pembelian ${purchaseNumber}`
+    )
+  }
 
   const row = await database
     .prepare('SELECT * FROM purchases WHERE id = ?')

@@ -52,3 +52,16 @@ export interface IStockBatch {
   potentialProfit: number
   receivedAt: string
 }
+
+export interface IProductPurchase {
+  id: string
+  purchaseId: string
+  purchaseNumber: string
+  supplier: string
+  purchaseDate: string
+  qty: number
+  costPrice: number
+  sellPrice: number
+  subtotal: number
+  createdAt: string
+}

@@ -40,7 +40,7 @@ import {
   type IProductFieldsUpdate
 } from '@/app/admin/(panel)/products/actions'
 import { CardProduct, Layout } from '@/components'
-import { EmptyState, PageHeader, StatusBadge } from '@/components/ui'
+import { EmptyState, PageHeader, StatCard, StatusBadge } from '@/components/ui'
 import { IProductResponse } from '@/interfaces/product'
 import { currency } from '@/utils'
 
@@ -281,6 +281,18 @@ export default function ProductPage() {
     [products]
   )
 
+  const assetValueOf = (product: IProductResponse) => {
+    const stock = draft[product.id]?.stock ?? product.stock ?? 0
+    const priceBase = draft[product.id]?.priceBase ?? product.priceBase ?? 0
+    return stock * priceBase
+  }
+
+  const totalAsset = useMemo(
+    () => filtered.reduce((sum, product) => sum + assetValueOf(product), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered, draft]
+  )
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const safePage = Math.min(page, totalPages)
   const paginated = filtered.slice(
@@ -412,6 +424,15 @@ export default function ProductPage() {
         }
       />
 
+      <Box mb={5} maxW={{ base: 'full', sm: 'sm' }}>
+        <StatCard
+          label="Total nilai aset (HPP)"
+          value={currency.toIDRFormat(totalAsset)}
+          sublabel={`${filtered.length} produk · stok × HPP`}
+          tone="brand"
+        />
+      </Box>
+
       <HStack mb={5} gap={3} flexWrap="wrap">
         <InputGroup maxW="sm">
           <InputLeftElement pointerEvents="none">
@@ -531,6 +552,7 @@ export default function ProductPage() {
                   <Th isNumeric>Harga jual</Th>
                   <Th isNumeric>HPP</Th>
                   <Th isNumeric>Stok</Th>
+                  <Th isNumeric>Nilai aset</Th>
                   <Th>Status</Th>
                   <Th>Aksi</Th>
                 </Tr>
@@ -626,6 +648,11 @@ export default function ProductPage() {
                         ) : (
                           <Text fontSize="sm">{product.stock ?? 0}</Text>
                         )}
+                      </Td>
+                      <Td isNumeric>
+                        <Text fontSize="sm">
+                          {currency.toIDRFormat(assetValueOf(product))}
+                        </Text>
                       </Td>
                       <Td>{renderStatusCell(product)}</Td>
                       <Td>

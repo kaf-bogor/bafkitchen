@@ -127,7 +127,7 @@ export const snapshotProduct = (row: ActivityProductRow): ProductSnapshot => {
     vendor: vendor?.id || vendor?.name ? vendor : null,
     categoryIds: parseJson<string[]>(row.category_ids, []),
     description: row.description ?? '',
-    imageUrl: Boolean(row.image_url),
+    imageUrl: row.image_url ?? '',
     availability: row.availability || 'ready',
     preorderStart: row.preorder_start ?? null,
     preorderEnd: row.preorder_end ?? null,
@@ -179,6 +179,10 @@ export const diffProduct = (
   const changes: ProductChange[] = []
   for (const field of FIELD_ORDER) {
     if (!isEqual(before[field], after[field])) {
+      if (field === 'imageUrl') {
+        changes.push({ field, label: 'Gambar', from: '', to: 'Diperbarui' })
+        continue
+      }
       changes.push({
         field,
         label: FIELD_LABELS[field] || field,
@@ -199,7 +203,8 @@ export interface ProductActor {
 export const recordProductActivities = async (
   database: D1Database,
   entries: { productId: string; changes: ProductChange[] }[],
-  actor: ProductActor
+  actor: ProductActor,
+  action = 'Produk diperbarui'
 ) => {
   const relevant = entries.filter((entry) => entry.changes.length)
   if (!relevant.length) return
@@ -216,7 +221,7 @@ export const recordProductActivities = async (
       userId: actor.uid || '',
       userEmail: actor.email || '',
       userName: actor.name || actor.email || '',
-      action: 'Produk diperbarui',
+      action,
       changes: entry.changes,
       timestamp: ts,
       createdAt: ts
@@ -234,8 +239,9 @@ export const recordProductActivity = async (
   productId: string,
   before: ProductSnapshot,
   after: ProductSnapshot,
-  actor: ProductActor
+  actor: ProductActor,
+  action?: string
 ) => {
   const changes = diffProduct(before, after)
-  await recordProductActivities(database, [{ productId, changes }], actor)
+  await recordProductActivities(database, [{ productId, changes }], actor, action)
 }

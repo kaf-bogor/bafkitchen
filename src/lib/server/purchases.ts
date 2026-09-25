@@ -1,4 +1,4 @@
-import { IPurchase, IPurchaseItem } from '@/interfaces/purchase'
+import { IPurchase, IPurchaseItem, IProductPurchase } from '@/interfaces/purchase'
 import { db } from '@/lib/server/db'
 
 export interface PurchaseRow {
@@ -94,4 +94,46 @@ export const loadPurchaseItems = async (
     .bind(purchaseId)
     .all<PurchaseItemRow>()
   return results.map(transformPurchaseItem)
+}
+
+export interface ProductPurchaseRow {
+  id: string
+  purchase_id: string
+  purchase_number: string | null
+  supplier: string | null
+  purchase_date: string
+  qty: number
+  cost_price: number
+  sell_price: number
+  subtotal: number
+  created_at: string
+}
+
+export const loadPurchasesByProduct = async (
+  productId: string
+): Promise<IProductPurchase[]> => {
+  const { results } = await db()
+    .prepare(
+      `SELECT pi.id, pi.purchase_id, p.purchase_number, p.supplier, p.purchase_date,
+              pi.qty, pi.cost_price, pi.sell_price, pi.subtotal, pi.created_at
+       FROM purchase_items pi
+       JOIN purchases p ON p.id = pi.purchase_id
+       WHERE pi.product_id = ?
+       ORDER BY p.purchase_date DESC, pi.created_at DESC`
+    )
+    .bind(productId)
+    .all<ProductPurchaseRow>()
+
+  return results.map((row) => ({
+    id: row.id,
+    purchaseId: row.purchase_id,
+    purchaseNumber: row.purchase_number ?? '',
+    supplier: row.supplier ?? '',
+    purchaseDate: row.purchase_date,
+    qty: row.qty ?? 0,
+    costPrice: row.cost_price ?? 0,
+    sellPrice: row.sell_price ?? 0,
+    subtotal: row.subtotal ?? 0,
+    createdAt: row.created_at
+  }))
 }

@@ -5,6 +5,7 @@ import {
   IEditProductRequest,
   ICreateProductRequest
 } from '@/interfaces/product'
+import { IProductPurchase } from '@/interfaces/purchase'
 import { apiFetch } from '@/utils/api'
 import { uploadMedia } from '@/utils/auth'
 
@@ -375,4 +376,33 @@ export interface IFetchProductRequest {
   sort?: string
   limit?: number
   offset?: number
+}
+
+export const useGetProductPurchases = (productId: string) => {
+  const [data, setData] = useState<IProductPurchase[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchPurchases = useCallback(async () => {
+    if (!productId) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await apiFetch<{ purchases: IProductPurchase[] }>(
+        `/api/products/${productId}/purchases`
+      )
+      setData(res.purchases)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [productId])
+
+  useEffect(() => {
+    fetchPurchases()
+  }, [fetchPurchases])
+
+  return { data, loading, error, refetch: fetchPurchases }
 }
